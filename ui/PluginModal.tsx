@@ -5,13 +5,19 @@
  */
 
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
-import { Forms, React } from "@webpack/common";
+import { Forms, React, showToast, Toasts } from "@webpack/common";
 
 import { ITriggerSettings, settings, TriggerKeywords } from "../settings";
 import { cl } from "../utils";
 import { recentJoinStore } from "../utils/RecentJoinStore";
 import { BaseButton, Line, Note, Section, SectionMessage, SectionTitle, Setting } from "./BasicComponents";
 import { JoinedServerList } from "./JoinerServerList";
+import TriggerListUI from "./TriggerList";
+
+const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
+    maximizeRoblox: () => Promise<void>;
+    getProcess: (processName: string) => Promise<{ pid: number; name: string; path?: string; }[]>;
+};
 
 export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
     const [joins, setJoins] = React.useState(recentJoinStore.all);
@@ -63,31 +69,31 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                 </Section>
 
                 <Section title="Triggers" defaultOpen>
-                {Object.entries(TriggerKeywords)
-                    .map(([triggerKey, trigger], index) => {
-                        const keywords = trigger.keywords.join(", ");
-                        const displayName = trigger.name; // usa nome pretty como "Glitched"
+                    {Object.entries(TriggerKeywords)
+                        .map(([triggerKey, trigger], index) => {
+                            const keywords = trigger.keywords.join(", ");
+                            const displayName = trigger.name; // usa nome pretty como "Glitched"
 
-                        const style = !reactive.uiShowKeywords && index > 0 ? { marginTop: -10 } : undefined;
+                            const style = !reactive.uiShowKeywords && index > 0 ? { marginTop: -10 } : undefined;
 
-                        return reactive.uiShowKeywords ? (
-                            <>
+                            return reactive.uiShowKeywords ? (
+                                <>
+                                    <Setting
+                                        setting={triggerKey as keyof ITriggerSettings}
+                                        customTitle={displayName}
+                                    />
+                                    <Note style={{ marginTop: -20, marginBottom: 8 }}>
+                                        {keywords}
+                                    </Note>
+                                </>
+                            ) : (
                                 <Setting
+                                    style={style}
                                     setting={triggerKey as keyof ITriggerSettings}
                                     customTitle={displayName}
                                 />
-                                <Note style={{ marginTop: -20, marginBottom: 8 }}>
-                                    {keywords}
-                                </Note>
-                            </>
-                        ) : (
-                            <Setting
-                                style={style}
-                                setting={triggerKey as keyof ITriggerSettings}
-                                customTitle={displayName}
-                            />
-                        );
-                    })}
+                            );
+                        })}
                 </ Section>
 
                 <Section title="Join Options" defaultOpen>
@@ -134,6 +140,20 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Setting setting="_dev_joinReenableAutomatically" customTitle="Auto Re-enable" />
                     <Setting setting="_dev_joinAutomaticReenableDelaySeconds" customTitle="Auto Re-enable Delay (seconds)" />
                     <BaseButton onClick={addFakeJoin}>➕ Add Fake Join</BaseButton>
+                    <BaseButton onClick={Native.maximizeRoblox}>🎯 Maximize Roblox</BaseButton>
+                    <BaseButton onClick={async () => {
+                        const process = await Native.getProcess("RobloxPlayerBeta");
+                        if (!process) {
+                            showToast("Roblox not running", Toasts.Type.FAILURE);
+                            return;
+                        }
+                        console.log("SolsRadar - Processes: ", process);
+                        showToast(`Roblox PID: ${process[0].pid}`, Toasts.Type.SUCCESS);
+                    }}>🎯 Get Roblox PID</BaseButton>
+                </Section>
+
+                <Section title="Test Section" defaultOpen>
+                    <TriggerListUI />
                 </Section>
 
             </ModalContent>

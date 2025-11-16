@@ -313,7 +313,7 @@ export const TriggerKeywords = {
         type: "merchant",
         name: "Mari",
         keywords: ["mari", "voidcoin", "void coin"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/massri.png"
+        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/mari.png"
     },
     JESTER: {
         type: "merchant",
