@@ -8,81 +8,84 @@ import { CheckedTextInput } from "@components/CheckedTextInput";
 import { ModalCloseButton, ModalContent, ModalHeader, type ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { Forms, React } from "@webpack/common";
 
-import { TriggerKeywords } from "../settings";
+import { ITriggerConfiguration, settings, TriggerKeywords } from "../settings";
 import { BaseButton, Line, Section } from "./BasicComponents";
 
 /** Tipagem baseada em TriggerKeywords */
 type TriggerKey = keyof typeof TriggerKeywords;
 type TriggerData = (typeof TriggerKeywords)[TriggerKey];
 type SimpleTrigger = { key: string; name: string; iconUrl?: string; };
-type TriggerConfig = { joinEnabled: boolean; notifyEnabled: boolean; priority: number };
 
 /** Componente principal exportado (use dentro do teu Section) */
 export function TriggerListUI() {
-    const [config, setConfig] = React.useState<Record<string, TriggerConfig>>(() => {
-        const initial: Record<string, TriggerConfig> = {};
-        Object.keys(TriggerKeywords).forEach(key => {
-            initial[key] = { joinEnabled: false, notifyEnabled: false, priority: 5 };
-        });
-        return initial;
-    });
-
+    const reactive = settings.use(["_triggers"]); // Reativo pro store inteiro
     const triggers: SimpleTrigger[] = Object.entries(TriggerKeywords).map(([key, info]) => ({
         key,
         name: info.name,
         iconUrl: info.iconUrl,
     }));
 
-    const updateTrigger = (key: string, updates: Partial<TriggerConfig>) => {
-        setConfig(prev => ({
-            ...prev,
-            [key]: { ...prev[key], ...updates }
-        }));
+    const getTriggerConfig = (key: string): ITriggerConfiguration => {
+        return reactive._triggers?.[key] || {
+            enabled: false,
+            join: false,
+            notify: false,
+            priority: 5,
+            joinCooldown: 0
+        };
     };
 
-    const toggleBoth = (key: string) => {
-        const current = config[key];
+    const updateTrigger = (key: string, updates: Partial<ITriggerConfiguration>) => {
+        const current = getTriggerConfig(key);
+        const newConfig = { ...current, ...updates };
+        settings.store._triggers[key] = newConfig;
+    };
+
+    const toggleEnabled = (key: string) => {
+        const current = getTriggerConfig(key);
         updateTrigger(key, {
-            joinEnabled: !current.joinEnabled,
-            notifyEnabled: !current.notifyEnabled
+            enabled: !current.enabled
         });
     };
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {triggers.map(trigger => (
-                <TriggerRow
-                    key={trigger.key}
-                    trigger={trigger}
-                    config={config[trigger.key]}
-                    onToggleBoth={() => toggleBoth(trigger.key)}
-                    onUpdate={updates => updateTrigger(trigger.key, updates)}
-                />
-            ))}
+            {triggers.map(trigger => {
+                const config = getTriggerConfig(trigger.key);
+                return (
+                    <TriggerRow
+                        key={trigger.key}
+                        trigger={trigger}
+                        config={config}
+                        onToggleEnabled={() => toggleEnabled(trigger.key)}
+                        onUpdate={updates => updateTrigger(trigger.key, updates)}
+                    />
+                );
+            })}
         </div>
     );
 }
 
-/** Linha do trigger — card estilizado que abre o modal no left-click, toggle both no right-click */
+/** Linha do trigger — card estilizado que abre o modal no left-click, toggle enabled no right-click */
 function TriggerRow({
     trigger,
     config,
-    onToggleBoth,
+    onToggleEnabled,
     onUpdate
 }: {
     trigger: SimpleTrigger;
-    config: TriggerConfig;
-    onToggleBoth: () => void;
-    onUpdate: (updates: Partial<TriggerConfig>) => void;
+    config: ITriggerConfiguration;
+    onToggleEnabled: () => void;
+    onUpdate: (updates: Partial<ITriggerConfiguration>) => void;
 }) {
-    const isActive = config.joinEnabled || config.notifyEnabled; // Verde se join OU notify ativo
+    const isActive = config.enabled; // Verde se enabled ativo
 
     return (
         <div
             onClick={e => {
                 if (e.button === 2) { // Right-click
                     e.preventDefault();
-                    onToggleBoth();
+                    onToggleEnabled();
                     return;
                 }
                 // Left-click: open modal
@@ -98,7 +101,7 @@ function TriggerRow({
             }}
             onContextMenu={e => {
                 e.preventDefault(); // Prevent default context menu
-                onToggleBoth(); // Toggle on right-click
+                onToggleEnabled(); // Toggle enabled on right-click
             }}
             style={{
                 display: "flex",
@@ -126,7 +129,7 @@ function TriggerRow({
                 target.style.borderColor = isActive ? "rgba(59, 165, 92, 0.3)" : "rgba(255,255,255,0.1)";
                 target.style.transform = "translateY(0)";
             }}
-            title={`Right-click to toggle Join + Notify (${config.joinEnabled && config.notifyEnabled ? "ON" : "OFF"})`}
+            title={`Right-click to toggle Enabled (${config.enabled ? "ON" : "OFF"})`}
         >
             {trigger.iconUrl && (
                 <img
@@ -201,21 +204,23 @@ function TriggerConfigModal({
     onUpdate,
 }: {
     trigger: SimpleTrigger;
-    config: TriggerConfig;
+    config: ITriggerConfiguration;
     onClose: () => void;
     rootProps: ModalProps;
-    onUpdate: (updates: Partial<TriggerConfig>) => void;
+    onUpdate: (updates: Partial<ITriggerConfiguration>) => void;
 }) {
     const [localConfig, setLocalConfig] = React.useState(config);
     const [priority, setPriority] = React.useState(config.priority);
+    const [joinCooldown, setJoinCooldown] = React.useState(config.joinCooldown);
 
     React.useEffect(() => {
         setLocalConfig(config);
         setPriority(config.priority);
+        setJoinCooldown(config.joinCooldown);
     }, [config]);
 
     const handleSave = () => {
-        onUpdate({ ...localConfig, priority });
+        onUpdate({ ...localConfig, priority, joinCooldown });
         onClose();
     };
 
@@ -230,15 +235,15 @@ function TriggerConfigModal({
                 <Section title="General" defaultOpen>
                     <FakeToggle
                         label="Autojoin"
-                        value={localConfig.joinEnabled}
-                        onChange={() => setLocalConfig(prev => ({ ...prev, joinEnabled: !prev.joinEnabled }))}
+                        value={localConfig.join}
+                        onChange={() => setLocalConfig(prev => ({ ...prev, join: !prev.join }))}
                         description="Automatically join servers matching this trigger."
                     />
 
                     <FakeToggle
                         label="Notifications"
-                        value={localConfig.notifyEnabled}
-                        onChange={() => setLocalConfig(prev => ({ ...prev, notifyEnabled: !prev.notifyEnabled }))}
+                        value={localConfig.notify}
+                        onChange={() => setLocalConfig(prev => ({ ...prev, notify: !prev.notify }))}
                         description="Send desktop notifications for this trigger."
                     />
 
@@ -249,6 +254,15 @@ function TriggerConfigModal({
                         max={10}
                         onChange={setPriority}
                         description="1-10: Higher values allow overriding cooldowns for rarer events."
+                    />
+
+                    <FakeNumberInput
+                        label="Join Cooldown (seconds)"
+                        value={joinCooldown}
+                        min={0}
+                        max={300}
+                        onChange={setJoinCooldown}
+                        description="Cooldown after joining this trigger before allowing lower-priority joins."
                     />
                 </Section>
 
