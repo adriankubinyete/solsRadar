@@ -9,7 +9,7 @@ import definePlugin from "@utils/types";
 import type { Message } from "@vencord/discord-types";
 import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter, Toasts } from "@webpack/common";
 
-import { settings, TriggerKeywords } from "./settings";
+import { initTriggers, settings, TriggerKeywords } from "./settings";
 import { CustomChatBarButton } from "./ui/ChatBarButton";
 import { ChannelTypes, createLogger, jumpToMessage, sendNotification, showToast } from "./utils/index";
 import { recentJoinStore } from "./utils/RecentJoinStore";
@@ -98,8 +98,18 @@ export default definePlugin({
         NavigationRouter.transitionToGuild("@me");
     },
 
+    sync(): void {
+        const log = baselogger.inherit("sync");
+
+        log.info("Initializing triggers");
+        initTriggers(log);
+    },
+
     start(): void {
         const log = baselogger.inherit("start");
+
+        log.info("Syncing");
+        this.sync();
 
         log.trace("Loading recent joins");
         recentJoinStore.load();
@@ -111,6 +121,8 @@ export default definePlugin({
                 .then(() => log.info("Finished force-loading monitored channels"))
                 .catch(err => log.error("Error force-loading monitored channels:", err));
         }
+
+        log.perf(`Testing trigger: ${JSON.stringify(settings.store._triggers)}`);
     },
 
     stop(): void {

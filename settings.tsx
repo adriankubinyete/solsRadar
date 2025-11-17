@@ -14,6 +14,110 @@
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
+import { createLogger } from "./utils";
+
+export interface ITriggerConfiguration {
+    enabled: boolean;
+    join: boolean;
+    notify: boolean;
+    priority: number;
+    joinCooldown: number;
+}
+
+export const TriggerKeywords = {
+    GLITCHED: {
+        type: "biome",
+        name: "Glitched",
+        keywords: ["glitch", "glitched", "glich", "glith"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/GLITCHED.png",
+    },
+    DREAMSPACE: {
+        type: "biome",
+        name: "Dreamspace",
+        keywords: ["dream", "dream space", "dreamspace"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/DREAMSPACE.png",
+    },
+    BLOODRAIN: {
+        type: "biome",
+        name: "Blood Rain",
+        keywords: ["blood rain", "blood", "bloodrain"],
+        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/blood_rain.png",
+    },
+    PUMPKINMOON: {
+        type: "biome",
+        name: "Pumpkin Moon",
+        keywords: ["pump", "pumpkin", "pmoon"],
+        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/pumpkin_moonv2.png",
+    },
+    GRAVEYARD: {
+        type: "biome",
+        name: "Graveyard",
+        keywords: ["grave", "graveyard", "grave yard"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png",
+    },
+    NULL: {
+        type: "biome",
+        name: "Null",
+        keywords: ["null"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/NULL.png",
+    },
+    CORRUPTION: {
+        type: "biome",
+        name: "Corruption",
+        keywords: ["corruption", "corrupt"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/CORRUPTION.png",
+    },
+    HELL: {
+        type: "biome",
+        name: "Hell",
+        keywords: ["hell"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/HELL.png",
+    },
+    STARFALL: {
+        type: "biome",
+        name: "Starfall",
+        keywords: ["starfall", "star fall"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/STARFALL.png",
+    },
+    SANDSTORM: {
+        type: "biome",
+        name: "Sandstorm",
+        keywords: ["sand", "sand storm", "sandstorm"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/SAND%20STORM.png",
+    },
+    SNOWY: {
+        type: "biome",
+        name: "Snowy",
+        keywords: ["snowy"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/SNOWY.png",
+    },
+    WINDY: {
+        type: "biome",
+        name: "Windy",
+        keywords: ["windy"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/WINDY.png",
+    },
+    RAINY: {
+        type: "biome",
+        name: "Rainy",
+        keywords: ["rainy"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/RAINY.png",
+    },
+    MARI: {
+        type: "merchant",
+        name: "Mari",
+        keywords: ["mari", "voidcoin", "void coin"],
+        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/mari.png",
+    },
+    JESTER: {
+        type: "merchant",
+        name: "Jester",
+        keywords: ["jester", "oblivion"],
+        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/jester.png",
+    },
+ } as const;
+
+
 export const settings = definePluginSettings({
     /*
     * Main Settings
@@ -208,8 +312,40 @@ export const settings = definePluginSettings({
         default: 60,
         hidden: true
     },
+    _triggers: {
+        type: OptionType.CUSTOM,
+        default: {} as Record<string, ITriggerConfiguration>,
+        hidden: true,
+    },
 
 });
+
+export function initTriggers(logger?: ReturnType<typeof createLogger>) {
+    const log = logger?.inherit("initTriggers");
+    const validKeys = new Set(Object.keys(TriggerKeywords));
+
+    // missing triggers
+    for (const key of validKeys) {
+        if (!settings.store._triggers[key]) {
+            log?.info(`+ ADDED NEW TRIGGER "${key}"`);
+            settings.store._triggers[key] = {
+                enabled: true,
+                join: true,
+                notify: true,
+                priority: 0,
+                joinCooldown: 0
+            };
+        }
+    }
+
+    // remove stale
+    for (const key in settings.store._triggers) {
+        if (!validKeys.has(key)) {
+            log?.info(`- REMOVED STALE TRIGGER "${key}"`);
+            delete settings.store._triggers[key];
+        }
+    }
+}
 
 // Config dos biomes
 export interface ITriggerSettings {
@@ -230,95 +366,3 @@ export interface ITriggerSettings {
     JESTER: boolean;
 }
 
-export const TriggerKeywords = {
-    GLITCHED: {
-        type: "biome",
-        name: "Glitched",
-        keywords: ["glitch", "glitched", "glich", "glith"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/GLITCHED.png"
-    },
-    DREAMSPACE: {
-        type: "biome",
-        name: "Dreamspace",
-        keywords: ["dream", "dream space", "dreamspace"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/DREAMSPACE.png"
-    },
-    BLOODRAIN: {
-        type: "biome",
-        name: "Blood Rain",
-        keywords: ["blood rain", "blood", "bloodrain"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/main/assets/blood%20rain.png"
-    },
-    PUMPKINMOON: {
-        type: "biome",
-        name: "Pumpkin Moon",
-        keywords: ["pump", "pumpkin", "pmoon"],
-        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/pumpkin_moonv2.png"
-    },
-    GRAVEYARD: {
-        type: "biome",
-        name: "Graveyard",
-        keywords: ["grave", "graveyard", "grave yard"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png"
-    },
-    NULL: {
-        type: "biome",
-        name: "Null",
-        keywords: ["null"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/NULL.png"
-    },
-    CORRUPTION: {
-        type: "biome",
-        name: "Corruption",
-        keywords: ["corruption", "corrupt"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/CORRUPTION.png"
-    },
-    HELL: {
-        type: "biome",
-        name: "Hell",
-        keywords: ["hell"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/HELL.png"
-    },
-    STARFALL: {
-        type: "biome",
-        name: "Starfall",
-        keywords: ["starfall", "star fall"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/STARFALL.png"
-    },
-    SANDSTORM: {
-        type: "biome",
-        name: "Sandstorm",
-        keywords: ["sand", "sand storm", "sandstorm"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/SAND%20STORM.png"
-    },
-    SNOWY: {
-        type: "biome",
-        name: "Snowy",
-        keywords: ["snowy"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/SNOWY.png"
-    },
-    WINDY: {
-        type: "biome",
-        name: "Windy",
-        keywords: ["windy"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/WINDY.png"
-    },
-    RAINY: {
-        type: "biome",
-        name: "Rainy",
-        keywords: ["rainy"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/RAINY.png"
-    },
-    MARI: {
-        type: "merchant",
-        name: "Mari",
-        keywords: ["mari", "voidcoin", "void coin"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/mari.png"
-    },
-    JESTER: {
-        type: "merchant",
-        name: "Jester",
-        keywords: ["jester", "oblivion"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/jester.png"
-    },
- } as const;
