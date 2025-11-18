@@ -7,11 +7,11 @@
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
 import definePlugin from "@utils/types";
 import type { Message } from "@vencord/discord-types";
-import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter, Toasts } from "@webpack/common";
+import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter } from "@webpack/common";
 
 import { initTriggers, settings, TriggerDefs } from "./settings";
 import { CustomChatBarButton } from "./ui/ChatBarButton";
-import { ChannelTypes, createLogger, jumpToMessage, sendNotification, showToast } from "./utils/index";
+import { ChannelTypes, createLogger, jumpToMessage, sendNotification } from "./utils/index";
 import { recentJoinStore } from "./utils/RecentJoinStore";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
 
@@ -411,41 +411,4 @@ async function handleJoin(ctx) {
     const isBait = hasResponse && joinData.verified === true && joinData.safe === false;
 
     return { joinData, wasJoined, isBait };
-}
-
-function handleAutoDisableAndReenable(): void {
-    if (!settings.store._dev_joinReenableAutomatically) {
-        // Fall back to permanent disable if not using auto-reenable
-        if (settings.store.joinDisableAfterAutoJoin) settings.store.joinEnabled = false;
-        if (settings.store.notifyDisableAfterAutoJoin) settings.store.notifyEnabled = false;
-        return;
-    }
-
-    const delaySeconds = settings.store._dev_joinAutomaticReenableDelaySeconds || 60;
-    const delayMs = delaySeconds * 1000;
-    if (delayMs <= 0) return;
-
-    // Immediately disable if currently enabled
-    const wasJoinEnabled = settings.store.joinEnabled;
-    const wasNotifyEnabled = settings.store.notifyEnabled;
-    settings.store.joinEnabled = false;
-    settings.store.notifyEnabled = false;
-
-    // Schedule conditional re-enable
-    setTimeout(() => {
-        let reenabled = "";
-        if (wasJoinEnabled && settings.store.joinEnabled === false) {
-            settings.store.joinEnabled = true;
-            reenabled = "AutoJoin";
-        }
-
-        if (wasNotifyEnabled && settings.store.notifyEnabled === false && settings.store.uiShortcutAction === "toggleJoinAndNotifications") {
-            settings.store.notifyEnabled = true;
-            reenabled = reenabled ? `${reenabled} and Notifications` : "Notifications";
-        }
-
-        if (reenabled) {
-            showToast(`${reenabled} re-enabled.`, Toasts.Type.SUCCESS);
-        }
-    }, delayMs);
 }

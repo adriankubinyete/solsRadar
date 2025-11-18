@@ -156,20 +156,6 @@ export const settings = definePluginSettings({
     },
 
     /*
-    * After-Join behavior
-    */
-    joinDisableAfterAutoJoin: {
-        type: OptionType.BOOLEAN,
-        description: "After a successful automatic join, disable auto-join.",
-        default: true
-    },
-    notifyDisableAfterAutoJoin: {
-        type: OptionType.BOOLEAN,
-        description: "After a successful automatic join, disable notifications.",
-        default: false
-    },
-
-    /*
     * UI and shortcut
     */
     uiShowChatBarIcon: {
@@ -186,11 +172,6 @@ export const settings = definePluginSettings({
             { label: "Toggle AutoJoin", value: "toggleJoin" },
             { label: "Toggle AutoJoin and Notifications", value: "toggleJoinAndNotifications" },
         ]
-    },
-    uiShowKeywords: {
-        type: OptionType.BOOLEAN,
-        description: "Show keywords for triggers in the chat bar button's menu.",
-        default: true
     },
 
     /*
@@ -287,27 +268,10 @@ export const settings = definePluginSettings({
             { label: "Error", value: "error" },
         ]
     },
-    _dev_dedupe_link_cooldown_ms: {
-        type: OptionType.NUMBER,
-        description: "Cooldown in milliseconds to ignore duplicate links",
-        default: 10000
-    },
     _dev_verification_fail_fallback_delay_ms: {
         type: OptionType.NUMBER,
         description: "If verification after joining fails, wait this many milliseconds before executing the safety action.",
         default: 5000
-    },
-    _dev_joinReenableAutomatically: {
-        type: OptionType.BOOLEAN,
-        description: "Automatically re-enable auto-join after a successful join. Only useful with joinDisableAfterAutoJoin enabled.",
-        default: false,
-        hidden: true
-    },
-    _dev_joinAutomaticReenableDelaySeconds: {
-        type: OptionType.NUMBER,
-        description: "After a successful join, automatically re-enable auto-join after this many seconds.",
-        default: 60,
-        hidden: true
     },
     _triggers: {
         type: OptionType.CUSTOM,
