@@ -9,7 +9,7 @@ import definePlugin from "@utils/types";
 import type { Message } from "@vencord/discord-types";
 import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter, Toasts } from "@webpack/common";
 
-import { initTriggers, settings, TriggerKeywords } from "./settings";
+import { initTriggers, settings, TriggerDefs } from "./settings";
 import { CustomChatBarButton } from "./ui/ChatBarButton";
 import { ChannelTypes, createLogger, jumpToMessage, sendNotification, showToast } from "./utils/index";
 import { recentJoinStore } from "./utils/RecentJoinStore";
@@ -121,8 +121,6 @@ export default definePlugin({
                 .then(() => log.info("Finished force-loading monitored channels"))
                 .catch(err => log.error("Error force-loading monitored channels:", err));
         }
-
-        log.perf(`Testing trigger: ${JSON.stringify(settings.store._triggers)}`);
     },
 
     stop(): void {
@@ -170,6 +168,7 @@ export default definePlugin({
             // does the message contain a trigger word that is enabled?
             const match = getSingleTriggerMatch(message.content, log);
             if (!match) return; // multiple or no match
+            // log.perf(`Matched trigger: ${JSON.stringify(match)}`);
 
             // snapshots the current config, because this will change as we go
             const shouldNotify = settings.store.notifyEnabled;
@@ -233,7 +232,7 @@ function findKeywords(text: string): string[] {
     const normalized = text.toLowerCase();
 
     let matches: string[] = [];
-    matches = Object.entries(TriggerKeywords)
+    matches = Object.entries(TriggerDefs)
         .filter(([_, value]) =>
             value.keywords.some(kw => {
                 const pattern = new RegExp(`\\b${kw.replace(/\s+/g, "\\s+")}\\b`, "i");
@@ -249,6 +248,7 @@ function findKeywords(text: string): string[] {
 // - returns the TriggerKeyword object if all matched keywords resolve to exactly one unique enabled trigger
 // - returns null otherwise: no matches, matches from multiple different triggers (warns and fails to avoid ambiguity)
 // this ensures only unambiguous, active triggers proceed.
+
 function getSingleTriggerMatch(
     content: string,
     log: any
@@ -260,12 +260,19 @@ function getSingleTriggerMatch(
             return null;
         case 1:
             const matchName = matches[0];
-            if (!settings.store[matchName]) {
+            if (!settings.store._triggers[matchName].enabled) {
                 log.info(`❌ Match found but disabled: ${matchName}`);
                 return null;
             }
             log.info(`✅ Match found: ${matchName}`);
-            return TriggerKeywords[matchName];
+            // log.perf("Data1: ", settings.store._triggers[matchName]);
+            // log.perf("Data2: ", TriggerKeywords[matchName]);
+            // @FIXME: this is kinda ugly
+            return {
+                id: matchName,
+                definition: TriggerDefs[matchName],
+                settings: settings.store._triggers[matchName],
+            };
         default:
             log.warn(`❌ Multiple keyword matches (${matches.join(", ")})`);
             return null;

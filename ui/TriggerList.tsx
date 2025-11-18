@@ -4,45 +4,154 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+// NOTE: i hate this
+
 import { CheckedTextInput } from "@components/CheckedTextInput";
 import { ModalCloseButton, ModalContent, ModalHeader, type ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { Forms, React } from "@webpack/common";
 
-import { ITriggerConfiguration, settings, TriggerKeywords } from "../settings";
-import { BaseButton, Line, Section } from "./BasicComponents";
+import { DEFAULT_TRIGGER_SETTING, settings, TriggerDefs, TriggerSetting } from "../settings";
+import { Section } from "./BasicComponents";
 
-/** Tipagem baseada em TriggerKeywords */
-type TriggerKey = keyof typeof TriggerKeywords;
-type TriggerData = (typeof TriggerKeywords)[TriggerKey];
-type SimpleTrigger = { key: string; name: string; iconUrl?: string; };
+type TriggerKey = keyof typeof TriggerDefs;
+type TriggerData = (typeof TriggerDefs)[TriggerKey];
 
-/** Componente principal exportado (use dentro do teu Section) */
-export function TriggerListUI() {
-    const reactive = settings.use(["_triggers"]); // Reativo pro store inteiro
-    const triggers: SimpleTrigger[] = Object.entries(TriggerKeywords).map(([key, info]) => ({
-        key,
-        name: info.name,
-        iconUrl: info.iconUrl,
-    }));
+export function TriggerToggle({
+    label,
+    value,
+    onChange,
+    description,
+}: {
+    label: string;
+    value: boolean;
+    onChange: (v: boolean) => void;
+    description?: string;
+}) {
+    const isEnabled = value;
+    const baseBackground = isEnabled ? "rgba(59, 165, 92, 0.1)" : "rgba(116, 127, 141, 0.1)";
+    const hoverBackground = isEnabled ? "rgba(59, 165, 92, 0.15)" : "rgba(116, 127, 141, 0.15)";
+    const baseBorder = isEnabled ? "1px solid rgba(59, 165, 92, 0.3)" : "1px solid rgba(116, 127, 141, 0.2)";
+    const textColor = isEnabled ? "#3ba55c" : "#747f8d";
 
-    const getTriggerConfig = (key: string): ITriggerConfiguration => {
-        return reactive._triggers?.[key] || {
-            enabled: false,
-            join: false,
-            notify: false,
-            priority: 5,
-            joinCooldown: 0
-        };
+    return (
+        <div
+            style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px",
+                background: baseBackground,
+                border: baseBorder,
+                borderRadius: 6,
+                cursor: "pointer",
+                transition: "background 0.25s ease, border-color 0.25s ease, transform 0.2s ease",
+                marginBottom: 8,
+            }}
+            onClick={() => onChange(!value)}
+            onMouseEnter={e => {
+                const target = e.currentTarget as HTMLDivElement;
+                target.style.background = hoverBackground;
+                target.style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={e => {
+                const target = e.currentTarget as HTMLDivElement;
+                target.style.background = baseBackground;
+                target.style.transform = "translateY(0)";
+            }}
+        >
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontWeight: 600, color: "#fff", fontSize: 14 }}>{label}</span>
+                {description && (
+                    <span style={{ fontSize: 12, color: "#b9bbbe" }}>{description}</span>
+                )}
+            </div>
+            <span
+                style={{
+                    fontWeight: 600,
+                    color: textColor,
+                    fontSize: 13,
+                    padding: "4px 8px",
+                    background: "rgba(0,0,0,0.2)",
+                    borderRadius: 4,
+                }}
+            >
+                {value ? "ON" : "OFF"}
+            </span>
+        </div>
+    );
+}
+
+export function TriggerNumberInput({
+    label,
+    value,
+    min = 1,
+    max = 10,
+    onChange,
+    description,
+}: {
+    label: string;
+    value: number;
+    min?: number;
+    max?: number;
+    onChange: (v: number) => void;
+    description?: string;
+}) {
+    const [inputValue, setInputValue] = React.useState(String(value));
+
+    React.useEffect(() => {
+        setInputValue(String(value));
+    }, [value]);
+
+    const handleChange = (newVal: string) => {
+        setInputValue(newVal);
+        const numVal = Number(newVal);
+        if (!isNaN(numVal) && numVal >= min && numVal <= max) {
+            onChange(numVal);
+        }
     };
 
-    const updateTrigger = (key: string, updates: Partial<ITriggerConfiguration>) => {
-        const current = getTriggerConfig(key);
+    return (
+        <div style={{ marginBottom: 8 }}>
+            <div style={{ fontWeight: 600, color: "#fff", fontSize: 14, marginBottom: 4 }}>
+                {label}
+            </div>
+            {description && (
+                <div style={{ marginBottom: 8, color: "#b9bbbe", fontSize: 12 }}>
+                    {description}
+                </div>
+            )}
+            <CheckedTextInput
+                value={inputValue}
+                onChange={handleChange}
+                validate={v => {
+                    const num = Number(v);
+                    if (isNaN(num) || num < min || num > max) return `Must be ${min}-${max}`;
+                    return true;
+                }}
+            />
+        </div>
+    );
+}
+
+export function TriggerListUI() {
+    const reactive = settings.use(["_triggers"]); // Reativo pro store inteiro
+    const triggers = Object.entries(TriggerDefs).map(([key, info]) => ({
+        key,
+        ...info,
+    }));
+
+    const getTriggerConfig = (key: string): TriggerSetting => {
+        return reactive._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
+    };
+
+    const updateTrigger = (key: string, updates: Partial<TriggerSetting>) => {
+        const current = settings.store._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
         const newConfig = { ...current, ...updates };
         settings.store._triggers[key] = newConfig;
     };
 
     const toggleEnabled = (key: string) => {
-        const current = getTriggerConfig(key);
+        const current = settings.store._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
         updateTrigger(key, {
             enabled: !current.enabled
         });
@@ -58,7 +167,6 @@ export function TriggerListUI() {
                         trigger={trigger}
                         config={config}
                         onToggleEnabled={() => toggleEnabled(trigger.key)}
-                        onUpdate={updates => updateTrigger(trigger.key, updates)}
                     />
                 );
             })}
@@ -66,24 +174,21 @@ export function TriggerListUI() {
     );
 }
 
-/** Linha do trigger — card estilizado que abre o modal no left-click, toggle enabled no right-click */
 function TriggerRow({
     trigger,
     config,
     onToggleEnabled,
-    onUpdate
 }: {
-    trigger: SimpleTrigger;
-    config: ITriggerConfiguration;
+    trigger: { key: string } & TriggerData;
+    config: TriggerSetting;
     onToggleEnabled: () => void;
-    onUpdate: (updates: Partial<ITriggerConfiguration>) => void;
 }) {
-    const isActive = config.enabled; // Verde se enabled ativo
+    const isActive = config.enabled;
 
     return (
         <div
             onClick={e => {
-                if (e.button === 2) { // Right-click
+                if (e.button === 2) {
                     e.preventDefault();
                     onToggleEnabled();
                     return;
@@ -91,17 +196,15 @@ function TriggerRow({
                 // Left-click: open modal
                 openModal(props => (
                     <TriggerConfigModal
-                        trigger={trigger}
-                        config={config}
+                        triggerKey={trigger.key}
                         onClose={props.onClose}
                         rootProps={props}
-                        onUpdate={onUpdate}
                     />
                 ));
             }}
             onContextMenu={e => {
-                e.preventDefault(); // Prevent default context menu
-                onToggleEnabled(); // Toggle enabled on right-click
+                e.preventDefault();
+                onToggleEnabled();
             }}
             style={{
                 display: "flex",
@@ -195,37 +298,50 @@ function TriggerRow({
     );
 }
 
-/** Mini modal de configuração (fake, sem persistência) */
 function TriggerConfigModal({
-    trigger,
-    config,
+    triggerKey,
     onClose,
     rootProps,
-    onUpdate,
 }: {
-    trigger: SimpleTrigger;
-    config: ITriggerConfiguration;
+    triggerKey: string;
     onClose: () => void;
     rootProps: ModalProps;
-    onUpdate: (updates: Partial<ITriggerConfiguration>) => void;
 }) {
-    const [localConfig, setLocalConfig] = React.useState(config);
-    const [priority, setPriority] = React.useState(config.priority);
-    const [joinCooldown, setJoinCooldown] = React.useState(config.joinCooldown);
+    const reactive = settings.use(["_triggers"]);
+    const triggerInfo = TriggerDefs[triggerKey as TriggerKey];
+    const trigger = { key: triggerKey, ...triggerInfo };
+    const conf = reactive._triggers?.[triggerKey];
 
-    React.useEffect(() => {
-        setLocalConfig(config);
-        setPriority(config.priority);
-        setJoinCooldown(config.joinCooldown);
-    }, [config]);
+    if (!conf) {
+        return (
+            <ModalRoot {...rootProps}>
+                <ModalHeader>
+                    <Forms.FormTitle tag="h2">{triggerInfo.name || triggerKey} Settings</Forms.FormTitle>
+                    <ModalCloseButton onClick={onClose} />
+                </ModalHeader>
+                <ModalContent>
+                    <div>No configuration found.</div>
+                </ModalContent>
+            </ModalRoot>
+        );
+    }
 
-    const handleSave = () => {
-        onUpdate({ ...localConfig, priority, joinCooldown });
-        onClose();
-    };
+    // @NOTE: i have no f*****g clue whats going on here or why it works and im too tired to find out
+    const updateStore = React.useCallback((updates: Partial<TriggerSetting>) => {
+        console.log("updateStore called with updates:", updates);
+        const current = reactive._triggers?.[triggerKey];
+        if (!current) return;
+        // Deep clone to ensure plain object without Proxy issues
+        const plainCurrent = JSON.parse(JSON.stringify(current));
+        const newConfig = { ...plainCurrent, ...updates };
+        settings.store._triggers[triggerKey] = newConfig;
+        console.log("Updated store:", newConfig);
+    }, [triggerKey, reactive]);
+
+    const modalProps = { ...rootProps };
 
     return (
-        <ModalRoot {...rootProps}>
+        <ModalRoot {...modalProps}>
             <ModalHeader>
                 <Forms.FormTitle tag="h2">{trigger.name} Settings</Forms.FormTitle>
                 <ModalCloseButton onClick={onClose} />
@@ -233,165 +349,47 @@ function TriggerConfigModal({
 
             <ModalContent>
                 <Section title="General" defaultOpen>
-                    <FakeToggle
+                    <TriggerToggle
+                        label="Enabled"
+                        value={conf.enabled}
+                        onChange={v => updateStore({ enabled: v })}
+                        description="General toggle for this trigger."
+                    />
+
+                    <TriggerToggle
                         label="Autojoin"
-                        value={localConfig.join}
-                        onChange={() => setLocalConfig(prev => ({ ...prev, join: !prev.join }))}
+                        value={conf.join}
+                        onChange={v => updateStore({ join: v })}
                         description="Automatically join servers matching this trigger."
                     />
 
-                    <FakeToggle
+                    <TriggerToggle
                         label="Notifications"
-                        value={localConfig.notify}
-                        onChange={() => setLocalConfig(prev => ({ ...prev, notify: !prev.notify }))}
+                        value={conf.notify}
+                        onChange={v => updateStore({ notify: v })}
                         description="Send desktop notifications for this trigger."
                     />
 
-                    <FakeNumberInput
+                    <TriggerNumberInput
                         label="Priority"
-                        value={priority}
+                        value={conf.priority}
                         min={1}
                         max={10}
-                        onChange={setPriority}
+                        onChange={v => updateStore({ priority: v })}
                         description="1-10: Higher values allow overriding cooldowns for rarer events."
                     />
 
-                    <FakeNumberInput
+                    <TriggerNumberInput
                         label="Join Cooldown (seconds)"
-                        value={joinCooldown}
+                        value={conf.joinCooldown}
                         min={0}
                         max={300}
-                        onChange={setJoinCooldown}
+                        onChange={v => updateStore({ joinCooldown: v })}
                         description="Cooldown after joining this trigger before allowing lower-priority joins."
                     />
                 </Section>
-
-                <Line />
-
-                <BaseButton onClick={handleSave} style={{ marginTop: 8 }}>
-                    Save & Close
-                </BaseButton>
             </ModalContent>
         </ModalRoot>
-    );
-}
-
-/** Toggle estilizado Discord-like (fake, sem componente real) */
-function FakeToggle({
-    label,
-    value,
-    onChange,
-    description,
-}: {
-    label: string;
-    value: boolean;
-    onChange: () => void;
-    description?: string;
-}) {
-    const isEnabled = value;
-    const baseBackground = isEnabled ? "rgba(59, 165, 92, 0.1)" : "rgba(116, 127, 141, 0.1)";
-    const hoverBackground = isEnabled ? "rgba(59, 165, 92, 0.15)" : "rgba(116, 127, 141, 0.15)";
-    const baseBorder = isEnabled ? "1px solid rgba(59, 165, 92, 0.3)" : "1px solid rgba(116, 127, 141, 0.2)";
-    const textColor = isEnabled ? "#3ba55c" : "#747f8d";
-
-    return (
-        <div
-            style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "12px",
-                background: baseBackground,
-                border: baseBorder,
-                borderRadius: 6,
-                cursor: "pointer",
-                transition: "background 0.25s ease, border-color 0.25s ease, transform 0.2s ease",
-                marginBottom: 8,
-            }}
-            onClick={onChange}
-            onMouseEnter={e => {
-                const target = e.currentTarget as HTMLDivElement;
-                target.style.background = hoverBackground;
-                target.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={e => {
-                const target = e.currentTarget as HTMLDivElement;
-                target.style.background = baseBackground;
-                target.style.transform = "translateY(0)";
-            }}
-        >
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontWeight: 600, color: "#fff", fontSize: 14 }}>{label}</span>
-                {description && (
-                    <span style={{ fontSize: 12, color: "#b9bbbe" }}>{description}</span>
-                )}
-            </div>
-            <span
-                style={{
-                    fontWeight: 600,
-                    color: textColor,
-                    fontSize: 13,
-                    padding: "4px 8px",
-                    background: "rgba(0,0,0,0.2)",
-                    borderRadius: 4,
-                }}
-            >
-                {value ? "ON" : "OFF"}
-            </span>
-        </div>
-    );
-}
-
-/** Input number estilizado Discord-like (fake, simples como text input) */
-function FakeNumberInput({
-    label,
-    value,
-    min = 1,
-    max = 10,
-    onChange,
-    description,
-}: {
-    label: string;
-    value: number;
-    min?: number;
-    max?: number;
-    onChange: (v: number) => void;
-    description?: string;
-}) {
-    const [inputValue, setInputValue] = React.useState(String(value));
-
-    React.useEffect(() => {
-        setInputValue(String(value));
-    }, [value]);
-
-    const handleChange = (newVal: string) => {
-        setInputValue(newVal);
-        const numVal = Number(newVal);
-        if (!isNaN(numVal) && numVal >= min && numVal <= max) {
-            onChange(numVal);
-        }
-    };
-
-    return (
-        <div style={{ marginBottom: 8 }}>
-            <div style={{ fontWeight: 600, color: "#fff", fontSize: 14, marginBottom: 4 }}>
-                {label}
-            </div>
-            {description && (
-                <div style={{ marginBottom: 8, color: "#b9bbbe", fontSize: 12 }}>
-                    {description}
-                </div>
-            )}
-            <CheckedTextInput
-                value={inputValue}
-                onChange={handleChange}
-                validate={v => {
-                    const num = Number(v);
-                    if (isNaN(num) || num < min || num > max) return `Must be ${min}-${max}`;
-                    return true;
-                }}
-            />
-        </div>
     );
 }
 

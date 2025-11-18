@@ -16,7 +16,22 @@ import { OptionType } from "@utils/types";
 
 import { createLogger } from "./utils";
 
-export interface ITriggerConfiguration {
+export const DEFAULT_TRIGGER_SETTING: TriggerSetting = {
+    enabled: true,
+    join: true,
+    notify: true,
+    priority: 0,
+    joinCooldown: 0,
+};
+
+export interface TriggerDefinition {
+    type: "biome" | "merchant"; // ou string, se quiser aberto
+    name: string;
+    keywords: string[];
+    iconUrl: string;
+}
+
+export interface TriggerSetting {
     enabled: boolean;
     join: boolean;
     notify: boolean;
@@ -24,7 +39,7 @@ export interface ITriggerConfiguration {
     joinCooldown: number;
 }
 
-export const TriggerKeywords = {
+export const TriggerDefs = {
     GLITCHED: {
         type: "biome",
         name: "Glitched",
@@ -255,26 +270,6 @@ export const settings = definePluginSettings({
     },
 
     /*
-    * Biome detection
-    */
-    // biome stuff
-    GLITCHED: { type: OptionType.BOOLEAN, description: "", default: false },
-    DREAMSPACE: { type: OptionType.BOOLEAN, description: "", default: false },
-    BLOODRAIN: { type: OptionType.BOOLEAN, description: "", default: false },
-    PUMPKINMOON: { type: OptionType.BOOLEAN, description: "", default: false },
-    GRAVEYARD: { type: OptionType.BOOLEAN, description: "", default: false },
-    NULL: { type: OptionType.BOOLEAN, description: "", default: false },
-    CORRUPTION: { type: OptionType.BOOLEAN, description: "", default: false },
-    HELL: { type: OptionType.BOOLEAN, description: "", default: false },
-    STARFALL: { type: OptionType.BOOLEAN, description: "", default: false },
-    SANDSTORM: { type: OptionType.BOOLEAN, description: "", default: false },
-    SNOWY: { type: OptionType.BOOLEAN, description: "", default: false },
-    WINDY: { type: OptionType.BOOLEAN, description: "", default: false },
-    RAINY: { type: OptionType.BOOLEAN, description: "", default: false },
-    MARI: { type: OptionType.BOOLEAN, description: "", default: false },
-    JESTER: { type: OptionType.BOOLEAN, description: "", default: false },
-
-    /*
     * Developer options
     */
     loggingLevel: {
@@ -314,7 +309,7 @@ export const settings = definePluginSettings({
     },
     _triggers: {
         type: OptionType.CUSTOM,
-        default: {} as Record<string, ITriggerConfiguration>,
+        default: {} as Record<string, TriggerSetting>,
         hidden: true,
     },
 
@@ -322,19 +317,13 @@ export const settings = definePluginSettings({
 
 export function initTriggers(logger?: ReturnType<typeof createLogger>) {
     const log = logger?.inherit("initTriggers");
-    const validKeys = new Set(Object.keys(TriggerKeywords));
+    const validKeys = new Set(Object.keys(TriggerDefs));
 
     // missing triggers
     for (const key of validKeys) {
         if (!settings.store._triggers[key]) {
             log?.info(`+ ADDED NEW TRIGGER "${key}"`);
-            settings.store._triggers[key] = {
-                enabled: true,
-                join: true,
-                notify: true,
-                priority: 0,
-                joinCooldown: 0
-            };
+            settings.store._triggers[key] = { ...DEFAULT_TRIGGER_SETTING };
         }
     }
 
@@ -346,23 +335,3 @@ export function initTriggers(logger?: ReturnType<typeof createLogger>) {
         }
     }
 }
-
-// Config dos biomes
-export interface ITriggerSettings {
-    GLITCHED: boolean;
-    DREAMSPACE: boolean;
-    BLOODRAIN: boolean;
-    PUMPKINMOON: boolean;
-    GRAVEYARD: boolean;
-    NULL: boolean;
-    CORRUPTION: boolean;
-    HELL: boolean;
-    STARFALL: boolean;
-    SANDSTORM: boolean;
-    SNOWY: boolean;
-    WINDY: boolean;
-    RAINY: boolean;
-    MARI: boolean;
-    JESTER: boolean;
-}
-
