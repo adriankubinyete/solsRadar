@@ -35,6 +35,8 @@ Navigate to Vencord's root folder and run `pnpm build` then `pnpm inject`.
 - <https://docs.vencord.dev/installing/custom-plugins/>
 - <https://github.com/Vendicated/Vencord/tree/main/src/plugins> (for comparing code and discovering how some things are implemented)
 - <https://blog.csdn.net/gitblog_01053/article/details/151450995>
+- [maxstellar/maxstellar-Biome-Macro](https://github.com/maxstellar/maxstellar-Biome-Macro) (most biome icons source)
+- [vexthecoder/OysterDetector](https://github.com/vexthecoder/OysterDetector) (merchant icons source)
 
 # License
 

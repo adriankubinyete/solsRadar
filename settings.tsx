@@ -58,13 +58,13 @@ export const TriggerDefs = {
         type: "biome",
         name: "Blood Rain",
         keywords: ["blood rain", "blood", "bloodrain"],
-        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/blood_rain.png",
+        iconUrl: "https://maxstellar.github.io/biome_thumb/BLOOD_RAIN.png",
     },
     PUMPKINMOON: {
         type: "biome",
         name: "Pumpkin Moon",
         keywords: ["pump", "pumpkin", "pmoon"],
-        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/pumpkin_moonv2.png",
+        iconUrl: "https://maxstellar.github.io/biome_thumb/PUMPKIN_MOON.png",
     },
     GRAVEYARD: {
         type: "biome",
