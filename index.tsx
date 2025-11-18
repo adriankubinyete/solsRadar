@@ -333,7 +333,7 @@ function buildNotification(ctx) {
     let title = `🎯 SoRa :: Sniped ${match.def.name}`;
     let content = `From user ${author.username}\nSent in ${channel.name} (${guild.name})`;
 
-    let onClick = () => ro.safelyJoin(link);
+    let onClick: any = async () => await handleJoin(ctx);
 
     if (!joinData) {
         title += " - click to join!";
