@@ -5,17 +5,21 @@
  */
 
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
-import { Forms, React } from "@webpack/common";
+import { Forms, React, showToast, Toasts } from "@webpack/common";
 
-import { ITriggerSettings, settings, TriggerKeywords } from "../settings";
 import { cl } from "../utils";
 import { recentJoinStore } from "../utils/RecentJoinStore";
 import { BaseButton, Line, Note, Section, SectionMessage, SectionTitle, Setting } from "./BasicComponents";
 import { JoinedServerList } from "./JoinerServerList";
+import TriggerListUI from "./TriggerList";
+
+const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
+    maximizeRoblox: () => Promise<void>;
+    getProcess: (processName: string) => Promise<{ pid: number; name: string; path?: string; }[]>;
+};
 
 export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
     const [joins, setJoins] = React.useState(recentJoinStore.all);
-    const reactive = settings.use(["uiShowKeywords"]);
 
     // Atualiza ao mudar o store (caso o store emita eventos no futuro)
     // React.useEffect(() => {
@@ -63,36 +67,10 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                 </Section>
 
                 <Section title="Triggers" defaultOpen>
-                {Object.entries(TriggerKeywords)
-                    .map(([triggerKey, trigger], index) => {
-                        const keywords = trigger.keywords.join(", ");
-                        const displayName = trigger.name; // usa nome pretty como "Glitched"
-
-                        const style = !reactive.uiShowKeywords && index > 0 ? { marginTop: -10 } : undefined;
-
-                        return reactive.uiShowKeywords ? (
-                            <>
-                                <Setting
-                                    setting={triggerKey as keyof ITriggerSettings}
-                                    customTitle={displayName}
-                                />
-                                <Note style={{ marginTop: -20, marginBottom: 8 }}>
-                                    {keywords}
-                                </Note>
-                            </>
-                        ) : (
-                            <Setting
-                                style={style}
-                                setting={triggerKey as keyof ITriggerSettings}
-                                customTitle={displayName}
-                            />
-                        );
-                    })}
+                    <TriggerListUI />
                 </ Section>
 
                 <Section title="Join Options" defaultOpen>
-                    <Setting setting="joinDisableAfterAutoJoin" customTitle="🟦 Disable auto-join after a successful join" />
-                    <Setting setting="notifyDisableAfterAutoJoin" customTitle="🟦 Disable notifications after a successful join" />
                     <Setting setting="joinCloseGameBefore" customTitle="🟦 Close game before joining" />
                     <Note>
                         This makes your join about 1 second slower, but ✨hopefully✨ prevents the game from simply not launching at all. If you want faster joins, disable this and close your game manually before every join.
@@ -117,7 +95,6 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                         setting="uiShortcutAction"
                         customTitle="🟦 Chat Bar Button Shortcut Action"
                     />
-                    <Setting setting="uiShowKeywords" customTitle="🟦 Show trigger keywords" />
                 </Section>
 
                 <Section title="Other Options" defaultOpen>
@@ -131,9 +108,16 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Line />
                     <Setting setting="_dev_verification_fail_fallback_delay_ms" customTitle="Verification Fail Fallback Delay (ms)" />
                     <Line />
-                    <Setting setting="_dev_joinReenableAutomatically" customTitle="Auto Re-enable" />
-                    <Setting setting="_dev_joinAutomaticReenableDelaySeconds" customTitle="Auto Re-enable Delay (seconds)" />
                     <BaseButton onClick={addFakeJoin}>➕ Add Fake Join</BaseButton>
+                    <BaseButton onClick={async () => {
+                        const process = await Native.getProcess("RobloxPlayerBeta");
+                        if (!process) {
+                            showToast("Roblox not running", Toasts.Type.FAILURE);
+                            return;
+                        }
+                        console.log("SolsRadar - Processes: ", process);
+                        showToast(`Roblox PID: ${process[0].pid}`, Toasts.Type.SUCCESS);
+                    }}>🎯 Get Roblox PID</BaseButton>
                 </Section>
 
             </ModalContent>

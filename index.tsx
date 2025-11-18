@@ -7,11 +7,11 @@
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
 import definePlugin from "@utils/types";
 import type { Message } from "@vencord/discord-types";
-import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter, Toasts } from "@webpack/common";
+import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter } from "@webpack/common";
 
-import { settings, TriggerKeywords } from "./settings";
+import { initTriggers, settings, TriggerDefs } from "./settings";
 import { CustomChatBarButton } from "./ui/ChatBarButton";
-import { ChannelTypes, createLogger, jumpToMessage, sendNotification, showToast } from "./utils/index";
+import { ChannelTypes, createLogger, jumpToMessage, sendNotification } from "./utils/index";
 import { recentJoinStore } from "./utils/RecentJoinStore";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
 
@@ -27,6 +27,48 @@ const SOLS_JOIN_DATA = {
     type: "public",
     placeId: SOLS_PLACE_ID,
 } as const;
+
+const joinCooldownEnds = new Map<number, number>();
+
+// Helper to clean expired cooldowns (call periodically or on check)
+const cleanupCooldowns = () => {
+    const now = Date.now();
+    let cleaned = 0;
+    for (const [priority, end] of joinCooldownEnds.entries()) {
+        if (end <= now) {
+            joinCooldownEnds.delete(priority);
+            cleaned++;
+        }
+    }
+    if (cleaned > 0) {
+        baselogger.debug(`[Cooldown] Cleaned ${cleaned} expired cooldowns. Remaining: ${joinCooldownEnds.size}`);
+    }
+};
+
+// Returns true if can join for this priority (not in cooldown)
+const canJoinWithPriority = (priority: number): boolean => {
+    cleanupCooldowns(); // Clean on check
+    const end = joinCooldownEnds.get(priority) || 0;
+    const now = Date.now();
+    const allowed = now >= end;
+    baselogger.debug(`[Cooldown] Check priority ${priority}: end=${end}, now=${now}, allowed=${allowed} (remaining: ${joinCooldownEnds.size})`);
+    return allowed;
+};
+
+// Sets cooldown for priorities <= given priority
+const setJoinCooldown = (priority: number, cooldownSeconds: number) => {
+    const now = Date.now();
+    const endTime = now + (cooldownSeconds * 1000);
+    cleanupCooldowns(); // Clean before set
+    let setCount = 0;
+    for (let p = 1; p <= priority; p++) {
+        const currentEnd = joinCooldownEnds.get(p) || 0;
+        const newEnd = Math.max(currentEnd, endTime);
+        joinCooldownEnds.set(p, newEnd);
+        if (newEnd > currentEnd) setCount++;
+    }
+    baselogger.debug(`[Cooldown] Set cooldown for priorities <= ${priority}: ${cooldownSeconds}s (end=${endTime}, updated ${setCount}, total: ${joinCooldownEnds.size})`);
+};
 
 const patchChannelContextMenu: NavContextMenuPatchCallback = (children, { channel }) => {
     if (!channel) return children;
@@ -98,8 +140,18 @@ export default definePlugin({
         NavigationRouter.transitionToGuild("@me");
     },
 
+    sync(): void {
+        const log = baselogger.inherit("sync");
+
+        log.info("Initializing triggers");
+        initTriggers(log);
+    },
+
     start(): void {
         const log = baselogger.inherit("start");
+
+        log.info("Syncing");
+        this.sync();
 
         log.trace("Loading recent joins");
         recentJoinStore.load();
@@ -158,10 +210,11 @@ export default definePlugin({
             // does the message contain a trigger word that is enabled?
             const match = getSingleTriggerMatch(message.content, log);
             if (!match) return; // multiple or no match
+            // log.perf(`Matched trigger: ${JSON.stringify(match)}`);
 
             // snapshots the current config, because this will change as we go
-            const shouldNotify = settings.store.notifyEnabled;
-            const shouldJoin = settings.store.joinEnabled;
+            const shouldNotify = settings.store.notifyEnabled && match.settings.notify;
+            const shouldJoin = settings.store.joinEnabled && match.settings.join && canJoinWithPriority(match.settings.priority);
 
             // Build context
             const ctx = {
@@ -178,16 +231,22 @@ export default definePlugin({
                 joinData: null as IJoinData | null
             };
 
+            let wasJoined = false;
+            let isBait = false;
+
             if (shouldJoin) {
-                const { joinData, wasJoined, isBait } = await handleJoin(ctx);
+                const { joinData, wasJoined: joined, isBait: bait } = await handleJoin(ctx);
                 ctx.joinData = joinData;
+                wasJoined = joined;
+                isBait = bait;
 
                 if (isBait) {
                     handleBait(ctx);
                 }
 
                 if (wasJoined && !isBait) {
-                    handleAutoDisableAndReenable(); // handle post-join settings-related stuff
+                    // Set cooldown after successful join
+                    setJoinCooldown(match.settings.priority, match.settings.joinCooldown);
                 }
             }
 
@@ -221,7 +280,7 @@ function findKeywords(text: string): string[] {
     const normalized = text.toLowerCase();
 
     let matches: string[] = [];
-    matches = Object.entries(TriggerKeywords)
+    matches = Object.entries(TriggerDefs)
         .filter(([_, value]) =>
             value.keywords.some(kw => {
                 const pattern = new RegExp(`\\b${kw.replace(/\s+/g, "\\s+")}\\b`, "i");
@@ -237,6 +296,7 @@ function findKeywords(text: string): string[] {
 // - returns the TriggerKeyword object if all matched keywords resolve to exactly one unique enabled trigger
 // - returns null otherwise: no matches, matches from multiple different triggers (warns and fails to avoid ambiguity)
 // this ensures only unambiguous, active triggers proceed.
+
 function getSingleTriggerMatch(
     content: string,
     log: any
@@ -248,12 +308,19 @@ function getSingleTriggerMatch(
             return null;
         case 1:
             const matchName = matches[0];
-            if (!settings.store[matchName]) {
+            if (!settings.store._triggers[matchName].enabled) {
                 log.info(`❌ Match found but disabled: ${matchName}`);
                 return null;
             }
             log.info(`✅ Match found: ${matchName}`);
-            return TriggerKeywords[matchName];
+            // log.perf("Data1: ", settings.store._triggers[matchName]);
+            // log.perf("Data2: ", TriggerKeywords[matchName]);
+            // @FIXME: this is kinda ugly
+            return {
+                id: matchName,
+                def: TriggerDefs[matchName],
+                settings: settings.store._triggers[matchName],
+            };
         default:
             log.warn(`❌ Multiple keyword matches (${matches.join(", ")})`);
             return null;
@@ -263,27 +330,27 @@ function getSingleTriggerMatch(
 function buildNotification(ctx) {
     const { joinData, match, author, channel, guild, ro, link, message } = ctx;
 
-    let title = `🎯 SoRa :: Sniped ${match.name}`;
+    let title = `🎯 SoRa :: Sniped ${match.def.name}`;
     let content = `From user ${author.username}\nSent in ${channel.name} (${guild.name})`;
 
     let onClick = () => ro.safelyJoin(link);
 
     if (!joinData) {
         title += " - click to join!";
-        return { title, content, icon: match.iconUrl, onClick };
+        return { title, content, icon: match.def.iconUrl, onClick };
     }
 
     onClick = () => jumpToMessage(message.id, channel.id, guild.id);
 
     if (joinData.joined) {
-        title = `🎯 SoRa :: Joined ${match.name}`;
+        title = `🎯 SoRa :: Joined ${match.def.name}`;
     }
 
     if (joinData.verified === false) content += "\n⚠️ Link was not verified";
     if (joinData.verified && joinData.safe) content += "\n✅ Link was verified";
 
     if (joinData.verified && joinData.safe === false) {
-        title = `⚠️ SoRa :: Bait link detected (${match.name})`;
+        title = `⚠️ SoRa :: Bait link detected (${match.def.name})`;
 
         if (joinData.joined) {
             title += " - click to go to message";
@@ -293,7 +360,7 @@ function buildNotification(ctx) {
 
     if (joinData.message) content += `\n${joinData.message}`;
 
-    return { title, content, icon: match.iconUrl, onClick };
+    return { title, content, icon: match.def.iconUrl, onClick };
 }
 
 function handleBait(ctx) {
@@ -330,9 +397,9 @@ async function handleJoin(ctx) {
     const joinData = await ro.safelyJoin(link);
 
     recentJoinStore.add({
-        title: `${match.name} sniped!`,
+        title: `${match.def.name} sniped!`,
         description: `Sent in ${channel.name} (${guild.name})`,
-        iconUrl: match.iconUrl,
+        iconUrl: match.def.iconUrl,
         authorName: author.username,
         authorAvatarUrl: avatarUrl,
         messageJumpUrl,
@@ -344,41 +411,4 @@ async function handleJoin(ctx) {
     const isBait = hasResponse && joinData.verified === true && joinData.safe === false;
 
     return { joinData, wasJoined, isBait };
-}
-
-function handleAutoDisableAndReenable(): void {
-    if (!settings.store._dev_joinReenableAutomatically) {
-        // Fall back to permanent disable if not using auto-reenable
-        if (settings.store.joinDisableAfterAutoJoin) settings.store.joinEnabled = false;
-        if (settings.store.notifyDisableAfterAutoJoin) settings.store.notifyEnabled = false;
-        return;
-    }
-
-    const delaySeconds = settings.store._dev_joinAutomaticReenableDelaySeconds || 60;
-    const delayMs = delaySeconds * 1000;
-    if (delayMs <= 0) return;
-
-    // Immediately disable if currently enabled
-    const wasJoinEnabled = settings.store.joinEnabled;
-    const wasNotifyEnabled = settings.store.notifyEnabled;
-    settings.store.joinEnabled = false;
-    settings.store.notifyEnabled = false;
-
-    // Schedule conditional re-enable
-    setTimeout(() => {
-        let reenabled = "";
-        if (wasJoinEnabled && settings.store.joinEnabled === false) {
-            settings.store.joinEnabled = true;
-            reenabled = "AutoJoin";
-        }
-
-        if (wasNotifyEnabled && settings.store.notifyEnabled === false && settings.store.uiShortcutAction === "toggleJoinAndNotifications") {
-            settings.store.notifyEnabled = true;
-            reenabled = reenabled ? `${reenabled} and Notifications` : "Notifications";
-        }
-
-        if (reenabled) {
-            showToast(`${reenabled} re-enabled.`, Toasts.Type.SUCCESS);
-        }
-    }, delayMs);
 }

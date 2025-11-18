@@ -14,6 +14,127 @@
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
+import { createLogger } from "./utils";
+
+// @TODO: maybe add keywords here too so user can change it?
+// @TODO (farther away): maybe add a way to add custom triggers????
+export const DEFAULT_TRIGGER_SETTING: TriggerSetting = {
+    enabled: false,
+    join: true,
+    notify: true,
+    priority: 0,
+    joinCooldown: 0,
+};
+
+export interface TriggerDefinition {
+    type: "biome" | "merchant"; // ou string, se quiser aberto
+    name: string;
+    keywords: string[];
+    iconUrl: string;
+}
+
+export interface TriggerSetting {
+    enabled: boolean;
+    join: boolean;
+    notify: boolean;
+    priority: number;
+    joinCooldown: number;
+}
+
+export const TriggerDefs = {
+    GLITCHED: {
+        type: "biome",
+        name: "Glitched",
+        keywords: ["glitch", "glitched", "glich", "glith"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/GLITCHED.png",
+    },
+    DREAMSPACE: {
+        type: "biome",
+        name: "Dreamspace",
+        keywords: ["dream", "dream space", "dreamspace"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/DREAMSPACE.png",
+    },
+    BLOODRAIN: {
+        type: "biome",
+        name: "Blood Rain",
+        keywords: ["blood rain", "blood", "bloodrain"],
+        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/blood_rain.png",
+    },
+    PUMPKINMOON: {
+        type: "biome",
+        name: "Pumpkin Moon",
+        keywords: ["pump", "pumpkin", "pmoon"],
+        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/pumpkin_moonv2.png",
+    },
+    GRAVEYARD: {
+        type: "biome",
+        name: "Graveyard",
+        keywords: ["grave", "graveyard", "grave yard"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png",
+    },
+    NULL: {
+        type: "biome",
+        name: "Null",
+        keywords: ["null"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/NULL.png",
+    },
+    CORRUPTION: {
+        type: "biome",
+        name: "Corruption",
+        keywords: ["corruption", "corrupt"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/CORRUPTION.png",
+    },
+    HELL: {
+        type: "biome",
+        name: "Hell",
+        keywords: ["hell"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/HELL.png",
+    },
+    STARFALL: {
+        type: "biome",
+        name: "Starfall",
+        keywords: ["starfall", "star fall"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/STARFALL.png",
+    },
+    SANDSTORM: {
+        type: "biome",
+        name: "Sandstorm",
+        keywords: ["sand", "sand storm", "sandstorm"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/SAND%20STORM.png",
+    },
+    SNOWY: {
+        type: "biome",
+        name: "Snowy",
+        keywords: ["snowy"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/SNOWY.png",
+    },
+    WINDY: {
+        type: "biome",
+        name: "Windy",
+        keywords: ["windy"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/WINDY.png",
+    },
+    RAINY: {
+        type: "biome",
+        name: "Rainy",
+        keywords: ["rainy"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/RAINY.png",
+    },
+    MARI: {
+        type: "merchant",
+        name: "Mari",
+        keywords: ["mari", "voidcoin", "void coin"],
+        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/mari.png",
+    },
+    JESTER: {
+        type: "merchant",
+        name: "Jester",
+        keywords: ["jester", "oblivion"],
+        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/jester.png",
+    },
+} as const;
+
+
 export const settings = definePluginSettings({
     /*
     * Main Settings
@@ -35,20 +156,6 @@ export const settings = definePluginSettings({
     },
 
     /*
-    * After-Join behavior
-    */
-    joinDisableAfterAutoJoin: {
-        type: OptionType.BOOLEAN,
-        description: "After a successful automatic join, disable auto-join.",
-        default: true
-    },
-    notifyDisableAfterAutoJoin: {
-        type: OptionType.BOOLEAN,
-        description: "After a successful automatic join, disable notifications.",
-        default: false
-    },
-
-    /*
     * UI and shortcut
     */
     uiShowChatBarIcon: {
@@ -65,11 +172,6 @@ export const settings = definePluginSettings({
             { label: "Toggle AutoJoin", value: "toggleJoin" },
             { label: "Toggle AutoJoin and Notifications", value: "toggleJoinAndNotifications" },
         ]
-    },
-    uiShowKeywords: {
-        type: OptionType.BOOLEAN,
-        description: "Show keywords for triggers in the chat bar button's menu.",
-        default: true
     },
 
     /*
@@ -151,26 +253,6 @@ export const settings = definePluginSettings({
     },
 
     /*
-    * Biome detection
-    */
-    // biome stuff
-    GLITCHED: { type: OptionType.BOOLEAN, description: "", default: false },
-    DREAMSPACE: { type: OptionType.BOOLEAN, description: "", default: false },
-    BLOODRAIN: { type: OptionType.BOOLEAN, description: "", default: false },
-    PUMPKINMOON: { type: OptionType.BOOLEAN, description: "", default: false },
-    GRAVEYARD: { type: OptionType.BOOLEAN, description: "", default: false },
-    NULL: { type: OptionType.BOOLEAN, description: "", default: false },
-    CORRUPTION: { type: OptionType.BOOLEAN, description: "", default: false },
-    HELL: { type: OptionType.BOOLEAN, description: "", default: false },
-    STARFALL: { type: OptionType.BOOLEAN, description: "", default: false },
-    SANDSTORM: { type: OptionType.BOOLEAN, description: "", default: false },
-    SNOWY: { type: OptionType.BOOLEAN, description: "", default: false },
-    WINDY: { type: OptionType.BOOLEAN, description: "", default: false },
-    RAINY: { type: OptionType.BOOLEAN, description: "", default: false },
-    MARI: { type: OptionType.BOOLEAN, description: "", default: false },
-    JESTER: { type: OptionType.BOOLEAN, description: "", default: false },
-
-    /*
     * Developer options
     */
     loggingLevel: {
@@ -186,139 +268,36 @@ export const settings = definePluginSettings({
             { label: "Error", value: "error" },
         ]
     },
-    _dev_dedupe_link_cooldown_ms: {
-        type: OptionType.NUMBER,
-        description: "Cooldown in milliseconds to ignore duplicate links",
-        default: 10000
-    },
     _dev_verification_fail_fallback_delay_ms: {
         type: OptionType.NUMBER,
         description: "If verification after joining fails, wait this many milliseconds before executing the safety action.",
         default: 5000
     },
-    _dev_joinReenableAutomatically: {
-        type: OptionType.BOOLEAN,
-        description: "Automatically re-enable auto-join after a successful join. Only useful with joinDisableAfterAutoJoin enabled.",
-        default: false,
-        hidden: true
-    },
-    _dev_joinAutomaticReenableDelaySeconds: {
-        type: OptionType.NUMBER,
-        description: "After a successful join, automatically re-enable auto-join after this many seconds.",
-        default: 60,
-        hidden: true
+    _triggers: {
+        type: OptionType.CUSTOM,
+        default: {} as Record<string, TriggerSetting>,
+        hidden: true,
     },
 
 });
 
-// Config dos biomes
-export interface ITriggerSettings {
-    GLITCHED: boolean;
-    DREAMSPACE: boolean;
-    BLOODRAIN: boolean;
-    PUMPKINMOON: boolean;
-    GRAVEYARD: boolean;
-    NULL: boolean;
-    CORRUPTION: boolean;
-    HELL: boolean;
-    STARFALL: boolean;
-    SANDSTORM: boolean;
-    SNOWY: boolean;
-    WINDY: boolean;
-    RAINY: boolean;
-    MARI: boolean;
-    JESTER: boolean;
-}
+export function initTriggers(logger?: ReturnType<typeof createLogger>) {
+    const log = logger?.inherit("initTriggers");
+    const validKeys = new Set(Object.keys(TriggerDefs));
 
-export const TriggerKeywords = {
-    GLITCHED: {
-        type: "biome",
-        name: "Glitched",
-        keywords: ["glitch", "glitched", "glich", "glith"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/GLITCHED.png"
-    },
-    DREAMSPACE: {
-        type: "biome",
-        name: "Dreamspace",
-        keywords: ["dream", "dream space", "dreamspace"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/DREAMSPACE.png"
-    },
-    BLOODRAIN: {
-        type: "biome",
-        name: "Blood Rain",
-        keywords: ["blood rain", "blood", "bloodrain"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/main/assets/blood%20rain.png"
-    },
-    PUMPKINMOON: {
-        type: "biome",
-        name: "Pumpkin Moon",
-        keywords: ["pump", "pumpkin", "pmoon"],
-        iconUrl: "https://raw.githubusercontent.com/xVapure/Noteab-Macro/refs/heads/main/images/pumpkin_moonv2.png"
-    },
-    GRAVEYARD: {
-        type: "biome",
-        name: "Graveyard",
-        keywords: ["grave", "graveyard", "grave yard"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png"
-    },
-    NULL: {
-        type: "biome",
-        name: "Null",
-        keywords: ["null"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/NULL.png"
-    },
-    CORRUPTION: {
-        type: "biome",
-        name: "Corruption",
-        keywords: ["corruption", "corrupt"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/CORRUPTION.png"
-    },
-    HELL: {
-        type: "biome",
-        name: "Hell",
-        keywords: ["hell"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/HELL.png"
-    },
-    STARFALL: {
-        type: "biome",
-        name: "Starfall",
-        keywords: ["starfall", "star fall"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/STARFALL.png"
-    },
-    SANDSTORM: {
-        type: "biome",
-        name: "Sandstorm",
-        keywords: ["sand", "sand storm", "sandstorm"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/SAND%20STORM.png"
-    },
-    SNOWY: {
-        type: "biome",
-        name: "Snowy",
-        keywords: ["snowy"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/SNOWY.png"
-    },
-    WINDY: {
-        type: "biome",
-        name: "Windy",
-        keywords: ["windy"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/WINDY.png"
-    },
-    RAINY: {
-        type: "biome",
-        name: "Rainy",
-        keywords: ["rainy"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/RAINY.png"
-    },
-    MARI: {
-        type: "merchant",
-        name: "Mari",
-        keywords: ["mari", "voidcoin", "void coin"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/massri.png"
-    },
-    JESTER: {
-        type: "merchant",
-        name: "Jester",
-        keywords: ["jester", "oblivion"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/jester.png"
-    },
- } as const;
+    // missing triggers
+    for (const key of validKeys) {
+        if (!settings.store._triggers[key]) {
+            log?.info(`+ ADDED NEW TRIGGER "${key}"`);
+            settings.store._triggers[key] = { ...DEFAULT_TRIGGER_SETTING };
+        }
+    }
+
+    // remove stale
+    for (const key in settings.store._triggers) {
+        if (!validKeys.has(key)) {
+            log?.info(`- REMOVED STALE TRIGGER "${key}"`);
+            delete settings.store._triggers[key];
+        }
+    }
+}

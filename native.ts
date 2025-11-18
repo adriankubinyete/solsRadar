@@ -74,6 +74,21 @@ export async function getProcess(
   }
 }
 
+export async function maximizeRoblox(_: IpcMainInvokeEvent): Promise<void> {
+  if (process.platform !== "win32") return;
+
+  try {
+    const processes = await getProcess(_, "RobloxPlayerBeta");
+
+    if (processes.length === 0) return;
+    const proc = processes[0];
+    const command = `powershell -NoProfile -Command "$p = Get-Process -Id ${proc.pid}; Add-Type -MemberDefinition '[DllImport(\\"user32.dll\\")] public static extern bool ShowWindow(IntPtr h, int n);' -Name W -Namespace X; [X.W]::ShowWindow($p.MainWindowHandle, 3)"`;
+    await exec(command);
+  } catch {
+    // ignore errors
+  }
+}
+
 
 export async function killProcess(_: IpcMainInvokeEvent, pid: number): Promise<void> {
   if (process.platform !== "win32") return;
