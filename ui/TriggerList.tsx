@@ -270,19 +270,51 @@ function TriggerRow({
                 )}
             </div>
             {isActive && (
-                <span
-                    style={{
-                        color: "#aaa",
-                        fontSize: 10,
-                        fontWeight: 500,
-                        background: "rgba(255,255,255,0.05)",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                        flexShrink: 0,
-                    }}
-                >
-                    P: {config.priority}
-                </span>
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+                    <span
+                        style={{
+                            color: "#aaa",
+                            fontSize: 10,
+                            fontWeight: 500,
+                            background: "rgba(255,255,255,0.05)",
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            flexShrink: 0,
+                        }}
+                    >
+                        P: {config.priority}
+                    </span>
+                    {config.join && (
+                        <span
+                            style={{
+                                color: "#5dc7f1ff",
+                                fontSize: 10,
+                                fontWeight: 500,
+                                background: "rgba(77, 171, 247, 0.1)",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                flexShrink: 0,
+                            }}
+                        >
+                            Join
+                        </span>
+                    )}
+                    {config.notify && (
+                        <span
+                            style={{
+                                color: "#f1b65dff",
+                                fontSize: 10,
+                                fontWeight: 500,
+                                background: "rgba(244, 125, 77, 0.1)",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                flexShrink: 0,
+                            }}
+                        >
+                            Notify
+                        </span>
+                    )}
+                </div>
             )}
             <span
                 style={{

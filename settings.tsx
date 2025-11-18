@@ -16,8 +16,10 @@ import { OptionType } from "@utils/types";
 
 import { createLogger } from "./utils";
 
+// @TODO: maybe add keywords here too so user can change it?
+// @TODO (farther away): maybe add a way to add custom triggers????
 export const DEFAULT_TRIGGER_SETTING: TriggerSetting = {
-    enabled: true,
+    enabled: false,
     join: true,
     notify: true,
     priority: 0,
@@ -130,7 +132,7 @@ export const TriggerDefs = {
         keywords: ["jester", "oblivion"],
         iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/jester.png",
     },
- } as const;
+} as const;
 
 
 export const settings = definePluginSettings({
