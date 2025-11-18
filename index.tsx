@@ -28,7 +28,7 @@ const SOLS_JOIN_DATA = {
     placeId: SOLS_PLACE_ID,
 } as const;
 
-const joinCooldownEnds = new Map<number, number>();
+export const joinCooldownEnds = new Map<number, number>();
 
 // Helper to clean expired cooldowns (call periodically or on check)
 const cleanupCooldowns = () => {

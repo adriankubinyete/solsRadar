@@ -10,6 +10,7 @@ import { CheckedTextInput } from "@components/CheckedTextInput";
 import { ModalCloseButton, ModalContent, ModalHeader, type ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { Forms, React } from "@webpack/common";
 
+import { joinCooldownEnds } from "../index";
 import { DEFAULT_TRIGGER_SETTING, settings, TriggerDefs, TriggerSetting } from "../settings";
 import { Section } from "./BasicComponents";
 
@@ -140,6 +141,44 @@ export function TriggerListUI() {
         ...info,
     }));
 
+    // Cooldown warning with timer
+    const [remainingSeconds, setRemainingSeconds] = React.useState(0);
+    const [highestPriority, setHighestPriority] = React.useState(0);
+
+    React.useEffect(() => {
+        const updateTimer = () => {
+            const now = Date.now();
+            let newHighest = 0;
+            let newRemaining = 0;
+
+            for (const [priority, end] of joinCooldownEnds.entries()) {
+                if (end > now) {
+                    const remaining = Math.ceil((end - now) / 1000);
+                    if (priority > newHighest || (priority === newHighest && remaining > newRemaining)) {
+                        newHighest = priority;
+                        newRemaining = remaining;
+                    }
+                }
+            }
+
+            setHighestPriority(newHighest);
+            setRemainingSeconds(newRemaining);
+
+            if (newRemaining > 0) {
+                // Schedule next tick
+                setTimeout(updateTimer, 1000);
+            }
+        };
+
+        updateTimer(); // Initial run
+
+        return () => {
+            // Cleanup: No need, as setTimeout self-cleans, but clear if you add interval
+        };
+    }, []); // Empty deps: Runs once on mount, self-schedules
+
+    const hasCooldown = remainingSeconds > 0 && highestPriority > 0;
+
     const getTriggerConfig = (key: string): TriggerSetting => {
         return reactive._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
     };
@@ -159,6 +198,23 @@ export function TriggerListUI() {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {hasCooldown && (
+                <div
+                    style={{
+                        background: "rgba(244, 125, 77, 0.1)", // Laranja bem suave
+                        border: "1px solid rgba(244, 125, 77, 0.3)",
+                        borderRadius: 4,
+                        padding: "6px 10px",
+                        color: "#f47d4d",
+                        fontSize: 12,
+                        fontWeight: 500,
+                        textAlign: "center",
+                    }}
+                >
+                    ⚠️ Priorities ≤{highestPriority} are on join cooldown! ({remainingSeconds}s) ⚠️
+                </div>
+            )}
+
             {triggers.map(trigger => {
                 const config = getTriggerConfig(trigger.key);
                 return (
@@ -179,7 +235,7 @@ function TriggerRow({
     config,
     onToggleEnabled,
 }: {
-    trigger: { key: string } & TriggerData;
+    trigger: { key: string; } & TriggerData;
     config: TriggerSetting;
     onToggleEnabled: () => void;
 }) {
