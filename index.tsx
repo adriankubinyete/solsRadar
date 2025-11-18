@@ -28,6 +28,48 @@ const SOLS_JOIN_DATA = {
     placeId: SOLS_PLACE_ID,
 } as const;
 
+const joinCooldownEnds = new Map<number, number>();
+
+// Helper to clean expired cooldowns (call periodically or on check)
+const cleanupCooldowns = () => {
+    const now = Date.now();
+    let cleaned = 0;
+    for (const [priority, end] of joinCooldownEnds.entries()) {
+        if (end <= now) {
+            joinCooldownEnds.delete(priority);
+            cleaned++;
+        }
+    }
+    if (cleaned > 0) {
+        baselogger.debug(`[Cooldown] Cleaned ${cleaned} expired cooldowns. Remaining: ${joinCooldownEnds.size}`);
+    }
+};
+
+// Returns true if can join for this priority (not in cooldown)
+const canJoinWithPriority = (priority: number): boolean => {
+    cleanupCooldowns(); // Clean on check
+    const end = joinCooldownEnds.get(priority) || 0;
+    const now = Date.now();
+    const allowed = now >= end;
+    baselogger.debug(`[Cooldown] Check priority ${priority}: end=${end}, now=${now}, allowed=${allowed} (remaining: ${joinCooldownEnds.size})`);
+    return allowed;
+};
+
+// Sets cooldown for priorities <= given priority
+const setJoinCooldown = (priority: number, cooldownSeconds: number) => {
+    const now = Date.now();
+    const endTime = now + (cooldownSeconds * 1000);
+    cleanupCooldowns(); // Clean before set
+    let setCount = 0;
+    for (let p = 1; p <= priority; p++) {
+        const currentEnd = joinCooldownEnds.get(p) || 0;
+        const newEnd = Math.max(currentEnd, endTime);
+        joinCooldownEnds.set(p, newEnd);
+        if (newEnd > currentEnd) setCount++;
+    }
+    baselogger.debug(`[Cooldown] Set cooldown for priorities <= ${priority}: ${cooldownSeconds}s (end=${endTime}, updated ${setCount}, total: ${joinCooldownEnds.size})`);
+};
+
 const patchChannelContextMenu: NavContextMenuPatchCallback = (children, { channel }) => {
     if (!channel) return children;
 
@@ -171,8 +213,8 @@ export default definePlugin({
             // log.perf(`Matched trigger: ${JSON.stringify(match)}`);
 
             // snapshots the current config, because this will change as we go
-            const shouldNotify = settings.store.notifyEnabled;
-            const shouldJoin = settings.store.joinEnabled;
+            const shouldNotify = settings.store.notifyEnabled && match.settings.notify;
+            const shouldJoin = settings.store.joinEnabled && match.settings.join && canJoinWithPriority(match.settings.priority);
 
             // Build context
             const ctx = {
@@ -189,16 +231,22 @@ export default definePlugin({
                 joinData: null as IJoinData | null
             };
 
+            let wasJoined = false;
+            let isBait = false;
+
             if (shouldJoin) {
-                const { joinData, wasJoined, isBait } = await handleJoin(ctx);
+                const { joinData, wasJoined: joined, isBait: bait } = await handleJoin(ctx);
                 ctx.joinData = joinData;
+                wasJoined = joined;
+                isBait = bait;
 
                 if (isBait) {
                     handleBait(ctx);
                 }
 
                 if (wasJoined && !isBait) {
-                    handleAutoDisableAndReenable(); // handle post-join settings-related stuff
+                    // Set cooldown after successful join
+                    setJoinCooldown(match.settings.priority, match.settings.joinCooldown);
                 }
             }
 
@@ -270,7 +318,7 @@ function getSingleTriggerMatch(
             // @FIXME: this is kinda ugly
             return {
                 id: matchName,
-                definition: TriggerDefs[matchName],
+                def: TriggerDefs[matchName],
                 settings: settings.store._triggers[matchName],
             };
         default:
@@ -282,27 +330,27 @@ function getSingleTriggerMatch(
 function buildNotification(ctx) {
     const { joinData, match, author, channel, guild, ro, link, message } = ctx;
 
-    let title = `🎯 SoRa :: Sniped ${match.name}`;
+    let title = `🎯 SoRa :: Sniped ${match.def.name}`;
     let content = `From user ${author.username}\nSent in ${channel.name} (${guild.name})`;
 
     let onClick = () => ro.safelyJoin(link);
 
     if (!joinData) {
         title += " - click to join!";
-        return { title, content, icon: match.iconUrl, onClick };
+        return { title, content, icon: match.def.iconUrl, onClick };
     }
 
     onClick = () => jumpToMessage(message.id, channel.id, guild.id);
 
     if (joinData.joined) {
-        title = `🎯 SoRa :: Joined ${match.name}`;
+        title = `🎯 SoRa :: Joined ${match.def.name}`;
     }
 
     if (joinData.verified === false) content += "\n⚠️ Link was not verified";
     if (joinData.verified && joinData.safe) content += "\n✅ Link was verified";
 
     if (joinData.verified && joinData.safe === false) {
-        title = `⚠️ SoRa :: Bait link detected (${match.name})`;
+        title = `⚠️ SoRa :: Bait link detected (${match.def.name})`;
 
         if (joinData.joined) {
             title += " - click to go to message";
@@ -312,7 +360,7 @@ function buildNotification(ctx) {
 
     if (joinData.message) content += `\n${joinData.message}`;
 
-    return { title, content, icon: match.iconUrl, onClick };
+    return { title, content, icon: match.def.iconUrl, onClick };
 }
 
 function handleBait(ctx) {
@@ -349,9 +397,9 @@ async function handleJoin(ctx) {
     const joinData = await ro.safelyJoin(link);
 
     recentJoinStore.add({
-        title: `${match.name} sniped!`,
+        title: `${match.def.name} sniped!`,
         description: `Sent in ${channel.name} (${guild.name})`,
-        iconUrl: match.iconUrl,
+        iconUrl: match.def.iconUrl,
         authorName: author.username,
         authorAvatarUrl: avatarUrl,
         messageJumpUrl,
