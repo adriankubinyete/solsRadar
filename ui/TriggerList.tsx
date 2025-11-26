@@ -17,6 +17,168 @@ import { Section } from "./BasicComponents";
 type TriggerKey = keyof typeof TriggerDefs;
 type TriggerData = (typeof TriggerDefs)[TriggerKey];
 
+export function MinimalSearchInput({
+    value,
+    onChange,
+    placeholder = "Search..."
+}: {
+    value: string;
+    onChange: (newValue: string) => void;
+    placeholder?: string;
+}) {
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 0",
+                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
+                transition: "border-color 120ms ease",
+            }}
+        >
+            {/* SVG lupa estilo discord */}
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ color: "#b9bbbe" }}
+            >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+
+            <input
+                type="text"
+                value={value}
+                placeholder={placeholder}
+                onChange={e => onChange(e.target.value)}
+                style={{
+                    background: "transparent",
+                    border: "none",
+                    color: "white",
+                    fontSize: 14,
+                    width: "100%",
+                    outline: "none",
+                }}
+                onFocus={e => {
+                    e.currentTarget.parentElement!.style.borderBottom =
+                        "1px solid rgba(88, 101, 242, 0.8)"; // Discord blurple
+                }}
+                onBlur={e => {
+                    e.currentTarget.parentElement!.style.borderBottom =
+                        "1px solid rgba(255, 255, 255, 0.1)";
+                }}
+            />
+        </div>
+    );
+}
+
+const FILTER_ALIASES: Record<string, string> = {
+    p: "priority",
+    priority: "priority",
+
+    e: "enabled",
+    enabled: "enabled",
+
+    j: "join",
+    join: "join",
+
+    n: "notify",
+    notify: "notify",
+};
+
+function parseFilterQuery(query: string) {
+    const parts = query
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    return parts.map(raw => {
+        let part = raw.trim();
+
+        if (!part.startsWith(":"))
+            return null;
+
+        part = part.slice(1); // remove ":"
+
+        let negated = false;
+
+        if (part.startsWith("!")) {
+            negated = true;
+            part = part.slice(1); // remove "!"
+        }
+
+        const cmpMatch = part.match(/^([a-zA-Z]+)([><]=?|=)?(.*)$/);
+        if (!cmpMatch) return null;
+
+        let field = cmpMatch[1];
+        const op = cmpMatch[2] || null;
+        const value = cmpMatch[3] || null;
+
+        field = FILTER_ALIASES[field];
+        if (!field) return null;
+
+        if (!op) {
+            return {
+                type: "boolean",
+                field,
+                negated,
+            };
+        }
+
+        // COMPARISON
+        return {
+            type: "comparison",
+            field,
+            op,
+            value,
+            negated,
+        };
+    }).filter(Boolean);
+}
+
+function matchesFilters(triggerConfig: TriggerSetting, filters: any[]) {
+    for (const f of filters) {
+        const fieldValue = triggerConfig[f.field];
+
+        if (fieldValue === undefined)
+            return false;
+
+        let result = true;
+
+        if (f.type === "boolean") {
+            result = Boolean(fieldValue) === true;
+        }
+        else if (f.type === "comparison") {
+            const n = Number(fieldValue);
+            const v = Number(f.value);
+
+            switch (f.op) {
+                case ">": result = n > v; break;
+                case "<": result = n < v; break;
+                case ">=": result = n >= v; break;
+                case "<=": result = n <= v; break;
+                case "=": result = n === v; break;
+                default: result = false;
+            }
+        }
+
+        // apply negation
+        if (f.negated) result = !result;
+
+        if (!result) return false;
+    }
+
+    return true;
+}
+
+
 export function TriggerToggle({
     label,
     value,
@@ -145,6 +307,9 @@ export function TriggerListUI() {
     const [remainingSeconds, setRemainingSeconds] = React.useState(0);
     const [highestPriority, setHighestPriority] = React.useState(0);
 
+    // Search state
+    const [searchTerm, setSearchTerm] = React.useState("");
+
     React.useEffect(() => {
         const updateTimer = () => {
             const now = Date.now();
@@ -183,6 +348,23 @@ export function TriggerListUI() {
         return reactive._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
     };
 
+    const filters = parseFilterQuery(searchTerm);
+    const filteredTriggers = triggers.filter(trigger => {
+        const config = getTriggerConfig(trigger.key);
+
+        // TODO(@adrian): make it so you're able to combine text with filters
+
+        // filter search
+        if (filters.length > 0) {
+            return matchesFilters(config, filters);
+        }
+
+        // name search
+        return trigger.key
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+    });
+
     const updateTrigger = (key: string, updates: Partial<TriggerSetting>) => {
         const current = settings.store._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
         const newConfig = { ...current, ...updates };
@@ -215,17 +397,35 @@ export function TriggerListUI() {
                 </div>
             )}
 
-            {triggers.map(trigger => {
-                const config = getTriggerConfig(trigger.key);
-                return (
-                    <TriggerRow
-                        key={trigger.key}
-                        trigger={trigger}
-                        config={config}
-                        onToggleEnabled={() => toggleEnabled(trigger.key)}
-                    />
-                );
-            })}
+            {/* Search Input */}
+            <MinimalSearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Search triggers..."
+            />
+
+            {filteredTriggers.length === 0 && searchTerm ? (
+                <div style={{ textAlign: "center", color: "#b9bbbe", fontSize: 14, padding: "20px" }}>
+                    No triggers found matching "{searchTerm}"
+                </div>
+            ) : (
+                filteredTriggers.map(trigger => {
+                    const config = getTriggerConfig(trigger.key);
+                    return (
+                        <TriggerRow
+                            key={trigger.key}
+                            trigger={trigger}
+                            config={config}
+                            onToggleEnabled={() => toggleEnabled(trigger.key)}
+                        />
+                    );
+                })
+            )}
+            {searchTerm && filteredTriggers.length < triggers.length && (
+                <div style={{ textAlign: "center", color: "#b9bbbe", fontSize: 12 }}>
+                    Showing {filteredTriggers.length} of {triggers.length} triggers
+                </div>
+            )}
         </div>
     );
 }
