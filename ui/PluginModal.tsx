@@ -61,16 +61,16 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                 <SectionTitle>Recent Joins</SectionTitle>
                 <JoinedServerList joins={joins} onClose={rootProps.onClose} />
 
-                <Section title="Main Options" defaultOpen>
+                <Section title="Main Options" persistKey="mainOptions" defaultOpen>
                     <Setting setting="joinEnabled" customTitle="🎯 Automatic Join" />
                     <Setting setting="notifyEnabled" customTitle="📩 Notifications" />
                 </Section>
 
-                <Section title="Triggers" defaultOpen>
+                <Section title="Triggers" persistKey="triggers" defaultOpen>
                     <TriggerListUI />
                 </ Section>
 
-                <Section title="Join Options" defaultOpen>
+                <Section title="Join Options" persistKey="joinOptions" defaultOpen>
                     <Setting setting="joinCloseGameBefore" customTitle="🟦 Close game before joining" />
                     <Note>
                         This makes your join about 1 second slower, but ✨hopefully✨ prevents the game from simply not launching at all. If you want faster joins, disable this and close your game manually before every join.
@@ -78,7 +78,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
 
                 </Section>
 
-                <Section title="Link Verification Options" defaultOpen>
+                <Section title="Link Verification Options" persistKey="verify" defaultOpen>
                     <SectionMessage>
                         ⚠️⚠️⚠️⚠️<br />All configurations listed here will only work if you have set a Roblosecurity token to resolve links. To configure a Roblosecurity token, navigate to the plugin's settings page.
                     </SectionMessage>
@@ -89,7 +89,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Setting setting="verifyBlockedPlaceIds" customTitle="🚫 Blocked Place IDs" />
                 </Section>
 
-                <Section title="UI Options" defaultOpen>
+                <Section title="UI Options" persistKey="ui" defaultOpen>
                     <Setting setting="uiShowChatBarIcon" customTitle="🟦 Show Chat Bar Button" />
                     <Setting
                         setting="uiShortcutAction"
@@ -97,13 +97,13 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     />
                 </Section>
 
-                <Section title="Other Options" defaultOpen>
+                <Section title="Other Options" persistKey="other" defaultOpen>
                     <Setting setting="monitorNavigateToChannelsOnStartup" customTitle="🟦 Load Channels on Startup" />
                     <Setting setting="monitorGreedyMode" customTitle="🟦 Greedy Mode" />
                     <Setting setting="monitorGreedyExceptionList" customTitle="🟦 Greedy Mode Exception List" />
                 </Section>
 
-                <Section title="Developer Options" defaultOpen>
+                <Section title="Developer Options" persistKey="dev" defaultOpen>
                     <Setting setting="loggingLevel" customTitle="Console Logging Level" />
                     <Line />
                     <Setting setting="_dev_verification_fail_fallback_delay_ms" customTitle="Verification Fail Fallback Delay (ms)" />

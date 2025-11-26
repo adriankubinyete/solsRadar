@@ -7,6 +7,7 @@
 import { CheckedTextInput } from "@components/CheckedTextInput";
 import { FormSwitch } from "@components/FormSwitch";
 import { Margins } from "@components/margins";
+import { localStorage } from "@utils/localStorage";
 import { OptionType } from "@utils/types";
 import { Button, React, SearchableSelect } from "@webpack/common";
 
@@ -109,19 +110,41 @@ export function SectionTitle({ children }: { children: React.ReactNode; }) {
 export function Section({
     title,
     defaultOpen = false,
+    persistKey,
     children
 }: {
     title: React.ReactNode;
     defaultOpen?: boolean;
+    persistKey?: string;
     children: React.ReactNode;
 }) {
-    const [open, setOpen] = React.useState(defaultOpen);
+    const storageKey = persistKey ? `solsRadar.section.${persistKey}` : null;
+
+    const [open, setOpen] = React.useState(() => {
+        if (!storageKey) return defaultOpen;
+
+        const saved = localStorage.getItem(storageKey);
+        if (saved === "open") return true;
+        if (saved === "closed") return false;
+
+        return defaultOpen;
+    });
+
+    const toggle = () => {
+        setOpen(o => {
+            const newState = !o;
+            if (storageKey) {
+                localStorage.setItem(storageKey, newState ? "open" : "closed");
+            }
+            return newState;
+        });
+    };
 
     return (
         <div style={{ width: "100%", margin: "20px 0" }}>
             {/* Header */}
             <div
-                onClick={() => setOpen(o => !o)}
+                onClick={toggle}
                 style={{
                     display: "flex",
                     alignItems: "center",
@@ -177,14 +200,13 @@ export function Section({
                 />
             </div>
 
-            {/* Conteúdo suavemente animado */}
+            {/* Conteúdo animado */}
             <div
                 style={{
                     maxHeight: open ? "2000px" : "0px",
                     overflow: "hidden",
                     transition: "max-height 0.35s ease",
 
-                    // Fade + leve movimento vertical
                     opacity: open ? 1 : 0,
                     transform: open ? "translateY(0px)" : "translateY(-4px)",
                     transitionProperty: "max-height, opacity, transform, padding",
@@ -198,7 +220,6 @@ export function Section({
         </div>
     );
 }
-
 
 type SettingProps<K extends keyof typeof settings.def> = {
     setting: K;
