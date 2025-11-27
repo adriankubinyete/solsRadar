@@ -46,7 +46,7 @@ export class RobloxLinkHandler {
     private logger;
 
     constructor(private settings: any, logger?: ReturnType<typeof createLogger>) {
-        this.logger = logger ?? createLogger("RoSniper:RobloxLinkHandler");
+        this.logger = logger ?? createLogger("SolsRadar:RobloxLinkHandler");
     }
 
     private sublogger(prefix: string) {
@@ -197,7 +197,7 @@ export class RobloxLinkHandler {
         const log = this.sublogger("executeJoin");
 
         const shouldClose = this.settings.store.closeGameBeforeJoin ?? true;
-        const Native = VencordNative.pluginHelpers.RoSniper as {
+        const Native = VencordNative.pluginHelpers.SolsRadar as {
             openUri: (uri: string) => Promise<void>;
         };
 
@@ -260,7 +260,7 @@ export class RobloxLinkHandler {
 
 
     async closeRoblox(): Promise<RobloxCloseResult> {
-        const Native = (VencordNative.pluginHelpers.RoSniper as unknown) as {
+        const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
             getProcess: (processName: string) => Promise<{ pid: number; name: string; path?: string; }[]>;
             killProcess: (pid: number) => Promise<void>;
         };
@@ -279,7 +279,7 @@ export class RobloxLinkHandler {
             const token = settings.store.verifyRoblosecurityToken || "";
             if (!token) return { ok: false, expired: false, message: "Missing .ROBLOSECURITY token." };
 
-            const Native = VencordNative.pluginHelpers.RoSniper as {
+            const Native = VencordNative.pluginHelpers.SolsRadar as {
                 fetchRobloxCsrf: (token: string) => Promise<{ status: number; csrf: string | null; }>;
                 resolveRobloxShareLink: (token: string, csrf: string, shareCode: string) => Promise<{ status: number; data: any; }>;
             };
