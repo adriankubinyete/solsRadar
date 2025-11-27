@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { showNotification } from "@api/Notifications";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
 import { Forms, React, showToast, Toasts } from "@webpack/common";
 
@@ -118,6 +119,13 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                         console.log("SolsRadar - Processes: ", process);
                         showToast(`Roblox PID: ${process[0].pid}`, Toasts.Type.SUCCESS);
                     }}>🎯 Get Roblox PID</BaseButton>
+
+                    <BaseButton onClick={async () => {
+                        showNotification({
+                            title: "SoRa :: Notification Test",
+                            body: "This is a test notification from SolsRadar using Vencord's notification API!",
+                        });
+                    }}>📩 Notification Test</BaseButton>
                 </Section>
 
             </ModalContent>

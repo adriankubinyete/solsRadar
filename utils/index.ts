@@ -144,6 +144,9 @@ export function sendNotification({
     icon?: string;
     onClick?: () => void;
 }) {
+    // 26-11-25, @Adrian: as a design choice, we won't use Vencord's notification API
+    // Yes, I know this is kind of stupid, but I want native notifications
+    // maybe.TODO(@adrian): defaults to Vencord's notification API, create a setting to override to native notifications
     const notif = new window.Notification(title, { body: content, icon });
     notif.onclick = () => {
         if (onClick) {
