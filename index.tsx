@@ -279,15 +279,31 @@ function isUserBlocked(userId: string) {
 function findKeywords(text: string): string[] {
     const normalized = text.toLowerCase();
 
-    let matches: string[] = [];
-    matches = Object.entries(TriggerDefs)
-        .filter(([_, value]) =>
-            value.keywords.some(kw => {
-                const pattern = new RegExp(`\\b${kw.replace(/\s+/g, "\\s+")}\\b`, "i");
-                return pattern.test(normalized);
-            })
-        )
-        .map(([key]) => key);
+    const matches: string[] = [];
+
+    for (const [id, def] of Object.entries(TriggerDefs)) {
+        for (const rawKw of def.keywords) {
+            const kw = rawKw.toLowerCase();
+
+            // se o keyword é UMA PALAVRA sem espaços:
+            if (!kw.includes(" ")) {
+                // ex: glitch → \bglitch[a-z]*\b
+                const pattern = new RegExp(`\\b${kw}[a-z]*\\b`, "i"); // loose match ("GLITCHHHHHHH" for instance)
+                if (pattern.test(normalized)) {
+                    matches.push(id);
+                    break;
+                }
+            } else {
+                // keyword com mais de uma palavra → regex exato com espaços
+                const phrase = kw.replace(/\s+/g, "\\s+");
+                const pattern = new RegExp(`\\b${phrase}\\b`, "i");
+                if (pattern.test(normalized)) {
+                    matches.push(id);
+                    break;
+                }
+            }
+        }
+    }
 
     return matches;
 }
