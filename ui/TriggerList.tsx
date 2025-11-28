@@ -17,6 +17,8 @@ import { Section } from "./BasicComponents";
 type TriggerKey = keyof typeof TriggerDefs;
 type TriggerData = (typeof TriggerDefs)[TriggerKey];
 
+const FALLBACK_ICON = "https://discord.com/assets/881ed827548f38c6.svg";
+
 export function MinimalSearchInput({
     value,
     onChange,
@@ -441,6 +443,12 @@ function TriggerRow({
 }) {
     const isActive = config.enabled;
 
+    const [imageSrc, setImageSrc] = React.useState<string>(trigger.iconUrl || FALLBACK_ICON);
+
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+        setImageSrc(FALLBACK_ICON);
+    };
+
     return (
         <div
             onClick={e => {
@@ -490,22 +498,19 @@ function TriggerRow({
             }}
             title={`Right-click to toggle Enabled (${config.enabled ? "ON" : "OFF"})`}
         >
-            {trigger.iconUrl && (
-                <img
-                    src={trigger.iconUrl}
-                    alt=""
-                    style={{
-                        width: 40,
-                        height: 40,
-                        objectFit: "cover",
-                        borderRadius: 6,
-                        flexShrink: 0,
-                    }}
-                    onError={e => {
-                        (e.currentTarget as HTMLImageElement).style.display = "none";
-                    }}
-                />
-            )}
+            {/* Sempre renderiza a imagem, usando fallback se necessário */}
+            <img
+                src={imageSrc}
+                alt=""
+                style={{
+                    width: 40,
+                    height: 40,
+                    objectFit: "cover",
+                    borderRadius: 6,
+                    flexShrink: 0,
+                }}
+                onError={handleImageError}
+            />
             <div style={{ flex: 1 }}>
                 <div
                     style={{
