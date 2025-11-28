@@ -48,6 +48,12 @@ export const TriggerDefs = {
         keywords: ["glitch", "glitched", "glich", "glith"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/GLITCHED.png",
     },
+    CYBERSPACE: {
+        type: "biome",
+        name: "Cyberspace",
+        keywords: ["cyber", "cyberspace", "cybers", "cyberspce", "cyber space", "cyber-space"],
+        iconUrl: "", // No icon available as of now
+    },
     DREAMSPACE: {
         type: "biome",
         name: "Dreamspace",
