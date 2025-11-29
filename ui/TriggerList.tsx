@@ -441,6 +441,7 @@ function TriggerRow({
     config: TriggerSetting;
     onToggleEnabled: () => void;
 }) {
+    const reactive = settings.use(["uiShowTagsInInactiveTriggers"]);
     const isActive = config.enabled;
 
     const [imageSrc, setImageSrc] = React.useState<string>(trigger.iconUrl || FALLBACK_ICON);
@@ -530,53 +531,53 @@ function TriggerRow({
                     </span>
                 )}
             </div>
-
-            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                <span
-                    style={{
-                        color: "#aaa",
-                        fontSize: 10,
-                        fontWeight: 500,
-                        background: "rgba(255,255,255,0.05)",
-                        padding: "2px 6px",
-                        borderRadius: 4,
-                        flexShrink: 0,
-                    }}
-                >
-                    P: {config.priority}
-                </span>
-                {config.join && (
+            {(isActive || reactive.uiShowTagsInInactiveTriggers) && (
+                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                     <span
                         style={{
-                            color: "#5dc7f1ff",
+                            color: "#aaa",
                             fontSize: 10,
                             fontWeight: 500,
-                            background: "rgba(77, 171, 247, 0.1)",
+                            background: "rgba(255,255,255,0.05)",
                             padding: "2px 6px",
                             borderRadius: 4,
                             flexShrink: 0,
                         }}
                     >
-                        Join
+                        P: {config.priority}
                     </span>
-                )}
-                {config.notify && (
-                    <span
-                        style={{
-                            color: "#f1b65dff",
-                            fontSize: 10,
-                            fontWeight: 500,
-                            background: "rgba(244, 125, 77, 0.1)",
-                            padding: "2px 6px",
-                            borderRadius: 4,
-                            flexShrink: 0,
-                        }}
-                    >
-                        Notify
-                    </span>
-                )}
-            </div>
-
+                    {config.join && (
+                        <span
+                            style={{
+                                color: "#5dc7f1ff",
+                                fontSize: 10,
+                                fontWeight: 500,
+                                background: "rgba(77, 171, 247, 0.1)",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                flexShrink: 0,
+                            }}
+                        >
+                            Join
+                        </span>
+                    )}
+                    {config.notify && (
+                        <span
+                            style={{
+                                color: "#f1b65dff",
+                                fontSize: 10,
+                                fontWeight: 500,
+                                background: "rgba(244, 125, 77, 0.1)",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                flexShrink: 0,
+                            }}
+                        >
+                            Notify
+                        </span>
+                    )}
+                </div>
+            )}
             <span
                 style={{
                     color: "#999",

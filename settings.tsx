@@ -179,6 +179,11 @@ export const settings = definePluginSettings({
             { label: "Toggle AutoJoin and Notifications", value: "toggleJoinAndNotifications" },
         ]
     },
+    uiShowTagsInInactiveTriggers: {
+        type: OptionType.BOOLEAN,
+        description: "Show trigger tags even on inactive triggers on the trigger list.",
+        default: true
+    },
 
     /*
     * Monitoring

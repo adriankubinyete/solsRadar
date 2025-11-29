@@ -96,6 +96,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                         setting="uiShortcutAction"
                         customTitle="🟦 Chat Bar Button Shortcut Action"
                     />
+                    <Setting setting="uiShowTagsInInactiveTriggers" customTitle="🟦 Show Trigger Tags in Inactive Triggers" />
                 </Section>
 
                 <Section title="Other Options" persistKey="other" defaultOpen>
