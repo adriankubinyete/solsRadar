@@ -68,6 +68,9 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                 </Section>
 
                 <Section title="Triggers" persistKey="triggers" defaultOpen>
+                    <SectionMessage>
+                        Right-click a trigger to quickly enable or disable it. Left-click to open the configuration page. A trigger must be active for Join or Notify to work.<br/>
+                    </SectionMessage>
                     <TriggerListUI />
                 </ Section>
 

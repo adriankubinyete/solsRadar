@@ -647,21 +647,21 @@ function TriggerConfigModal({
                         label="Enabled"
                         value={conf.enabled}
                         onChange={v => updateStore({ enabled: v })}
-                        description="General toggle for this trigger."
+                        description="Master toggle for this trigger. Required for Join and Notify."
                     />
 
                     <TriggerToggle
                         label="Autojoin"
                         value={conf.join}
                         onChange={v => updateStore({ join: v })}
-                        description="Automatically join servers matching this trigger."
+                        description="Automatically joins when this trigger is detected."
                     />
 
                     <TriggerToggle
                         label="Notifications"
                         value={conf.notify}
                         onChange={v => updateStore({ notify: v })}
-                        description="Send desktop notifications for this trigger."
+                        description="Shows a notification when this trigger is detected."
                     />
 
                     <TriggerNumberInput
@@ -670,7 +670,7 @@ function TriggerConfigModal({
                         min={1}
                         max={10}
                         onChange={v => updateStore({ priority: v })}
-                        description="1-10: Higher values allow overriding cooldowns for rarer events."
+                        description="1-10: Higher priority can override the join cooldown when a rarer trigger appears."
                     />
 
                     <TriggerNumberInput
@@ -679,7 +679,7 @@ function TriggerConfigModal({
                         min={0}
                         max={300}
                         onChange={v => updateStore({ joinCooldown: v })}
-                        description="Cooldown after joining this trigger before allowing lower-priority joins."
+                        description="After joining this trigger, ignore triggers with priority lower or equal until the cooldown ends. Higher-priority triggers can still bypass this."
                     />
                 </Section>
             </ModalContent>
