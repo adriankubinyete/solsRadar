@@ -52,7 +52,7 @@ export const TriggerDefs = {
         type: "biome",
         name: "Cyberspace",
         keywords: ["cyber", "cyberspace", "cybers", "cyberspce", "cyber space", "cyber-space"],
-        iconUrl: "", // No icon available as of now
+        iconUrl: "https://maxstellar.github.io/biome_thumb/CYBERSPACE.png",
     },
     DREAMSPACE: {
         type: "biome",
@@ -60,24 +60,24 @@ export const TriggerDefs = {
         keywords: ["dream", "dream space", "dreamspace"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/DREAMSPACE.png",
     },
-    BLOODRAIN: {
-        type: "biome",
-        name: "Blood Rain",
-        keywords: ["blood rain", "blood", "bloodrain"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/BLOOD_RAIN.png",
-    },
-    PUMPKINMOON: {
-        type: "biome",
-        name: "Pumpkin Moon",
-        keywords: ["pump", "pumpkin", "pmoon"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/PUMPKIN_MOON.png",
-    },
-    GRAVEYARD: {
-        type: "biome",
-        name: "Graveyard",
-        keywords: ["grave", "graveyard", "grave yard"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png",
-    },
+    // BLOODRAIN: {
+    //     type: "biome",
+    //     name: "Blood Rain",
+    //     keywords: ["blood rain", "blood", "bloodrain"],
+    //     iconUrl: "https://maxstellar.github.io/biome_thumb/BLOOD_RAIN.png",
+    // },
+    // PUMPKINMOON: {
+    //     type: "biome",
+    //     name: "Pumpkin Moon",
+    //     keywords: ["pump", "pumpkin", "pmoon"],
+    //     iconUrl: "https://maxstellar.github.io/biome_thumb/PUMPKIN_MOON.png",
+    // },
+    // GRAVEYARD: {
+    //     type: "biome",
+    //     name: "Graveyard",
+    //     keywords: ["grave", "graveyard", "grave yard"],
+    //     iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png",
+    // },
     NULL: {
         type: "biome",
         name: "Null",
