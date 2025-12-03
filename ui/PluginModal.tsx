@@ -106,6 +106,8 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Setting setting="monitorNavigateToChannelsOnStartup" customTitle="🟦 Load Channels on Startup" />
                     <Setting setting="monitorGreedyMode" customTitle="🟦 Greedy Mode" />
                     <Setting setting="monitorGreedyExceptionList" customTitle="🟦 Greedy Mode Exception List" />
+                    <Setting setting="monitorInterpretEmbeds" customTitle="🟦 Interpret Embed Descriptions" />
+                    <Setting setting="monitorBlockedUserList" customTitle="🟦 Ignored Users" />
                 </Section>
 
                 <Section title="Developer Options" persistKey="dev" defaultOpen>

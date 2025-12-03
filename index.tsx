@@ -204,7 +204,19 @@ export default definePlugin({
 
             // roblox server link verification
             const ro = new RobloxLinkHandler(settings, log);
-            const link = ro.extract(message.content); // TODO: make this handle embeds too
+
+            let { content } = message;
+            if (settings.store.monitorInterpretEmbeds && message.embeds.length > 0) {
+                // log.debug(`Appending contents of ${message.embeds.length} embeds to message.content`);
+                for (const embed of message.embeds) {
+                    // log.perf("Embed:", embed);
+                    // @ts-ignore // typescript, theres no rawDescription, what are you talking about?
+                    if (embed.description) content += ` ${embed.description}`;
+                }
+                // log.trace("Final content for trigger matching:", content);
+            }
+
+            const link = ro.extract(content);
             if (!link || !link.ok) return; // message does not have a roblox server link
 
             // does the message contain a trigger word that is enabled?

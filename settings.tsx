@@ -218,6 +218,11 @@ export const settings = definePluginSettings({
         description: "Comma-separated channel IDs to ignore when using greedy mode.",
         default: ""
     },
+    monitorInterpretEmbeds: {
+        type: OptionType.BOOLEAN,
+        description: "Append embed descriptions to the message content when searching for valid trigger messages.",
+        default: true
+    },
 
     /*
     * Link verification
