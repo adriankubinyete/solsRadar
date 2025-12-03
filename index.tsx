@@ -329,7 +329,14 @@ function getSingleTriggerMatch(
     content: string,
     log: any
 ): any | null {
-    const matches = findKeywords(content);
+
+    // remove url slug from serverlinks before matching (roblox.com/games/123456789/slug_here?query=stuff -> roblox.com/games/123456789?query=stuff)
+    const cleanedContent = content.replace(
+        /(?:https?:\/\/)?(?:[\w.-]+\.)?roblox\.com\/games\/(\d+)\/[^?\s]+/gi,
+        "https://roblox.com/games/$1"
+    );
+
+    const matches = findKeywords(cleanedContent);
     switch (matches.length) {
         case 0:
             log.info("❌ No match found");
