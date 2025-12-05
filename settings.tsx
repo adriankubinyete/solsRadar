@@ -26,8 +26,23 @@ export const DEFAULT_TRIGGER_SETTING: TriggerSetting = {
     joinCooldown: 0,
 };
 
+export interface TriggerTypes {
+
+}
+
+const TriggerTypes = {
+    RARE_BIOME: "rare_biome",
+    EVENT_BIOME: "event_biome",
+    NORMAL_BIOME: "normal_biome",
+    WEATHER: "weather",
+    MERCHANT: "merchant",
+    SPECIAL: "special",
+};
+
+export type TriggerType = typeof TriggerTypes[keyof typeof TriggerTypes];
+
 export interface TriggerDefinition {
-    type: "biome" | "merchant"; // ou string, se quiser aberto
+    type: TriggerType;
     name: string;
     keywords: string[];
     iconUrl: string;
@@ -43,97 +58,115 @@ export interface TriggerSetting {
 
 export const TriggerDefs = {
     GLITCHED: {
-        type: "biome",
+        // 1/30000 per biome change
+        type: TriggerTypes.RARE_BIOME,
         name: "Glitched",
         keywords: ["glitch", "glitched", "glich", "glith"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/GLITCHED.png",
     },
     CYBERSPACE: {
-        type: "biome",
+        // 1/5000 per device use
+        type: TriggerTypes.RARE_BIOME,
         name: "Cyberspace",
         keywords: ["cyber", "cyberspace", "cybers", "cyberspce", "cyber space", "cyber-space"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/CYBERSPACE.png",
     },
     DREAMSPACE: {
-        type: "biome",
+        // 1/3500000 per second
+        type: TriggerTypes.RARE_BIOME,
         name: "Dreamspace",
         keywords: ["dream", "dream space", "dreamspace"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/DREAMSPACE.png",
     },
     // BLOODRAIN: {
-    //     type: "biome",
+    //     type: TriggerTypes.EVENT_BIOME,
     //     name: "Blood Rain",
     //     keywords: ["blood rain", "blood", "bloodrain"],
     //     iconUrl: "https://maxstellar.github.io/biome_thumb/BLOOD_RAIN.png",
     // },
     // PUMPKINMOON: {
-    //     type: "biome",
+    //     type: TriggerTypes.EVENT_BIOME,
     //     name: "Pumpkin Moon",
     //     keywords: ["pump", "pumpkin", "pmoon"],
     //     iconUrl: "https://maxstellar.github.io/biome_thumb/PUMPKIN_MOON.png",
     // },
     // GRAVEYARD: {
-    //     type: "biome",
+    //     type: TriggerTypes.EVENT_BIOME,
     //     name: "Graveyard",
     //     keywords: ["grave", "graveyard", "grave yard"],
     //     iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png",
     // },
     NULL: {
-        type: "biome",
+        // 1/10100 per second
+        type: TriggerTypes.NORMAL_BIOME,
         name: "Null",
         keywords: ["null"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/NULL.png",
     },
     CORRUPTION: {
-        type: "biome",
+        // 1/9000 per second
+        type: TriggerTypes.NORMAL_BIOME,
         name: "Corruption",
         keywords: ["corruption", "corrupt"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/CORRUPTION.png",
     },
-    HELL: {
-        type: "biome",
-        name: "Hell",
-        keywords: ["hell"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/HELL.png",
+    HEAVEN: {
+        // 1/7777 per second
+        type: TriggerTypes.NORMAL_BIOME,
+        name: "Heaven",
+        keywords: ["heaven"], // bruh (heavenly potion)
+        iconUrl: "https://maxstellar.github.io/biome_thumb/HEAVEN.png",
     },
     STARFALL: {
-        type: "biome",
+        // 1/7500 per second
+        type: TriggerTypes.NORMAL_BIOME,
         name: "Starfall",
         keywords: ["starfall", "star fall"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/STARFALL.png",
     },
+    HELL: {
+        // 1/6666 per second
+        type: TriggerTypes.NORMAL_BIOME,
+        name: "Hell",
+        keywords: ["hell"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/HELL.png",
+    },
     SANDSTORM: {
-        type: "biome",
+        // 1/3000 per second
+        type: TriggerTypes.NORMAL_BIOME,
         name: "Sandstorm",
         keywords: ["sand", "sand storm", "sandstorm"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/SAND%20STORM.png",
     },
+    RAINY: {
+        // 1/750 per second
+        type: TriggerTypes.WEATHER,
+        name: "Rainy",
+        keywords: ["rainy"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/RAINY.png",
+    },
     SNOWY: {
-        type: "biome",
+        // 1/600 per second
+        type: TriggerTypes.WEATHER,
         name: "Snowy",
         keywords: ["snowy"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/SNOWY.png",
     },
     WINDY: {
-        type: "biome",
+        // 1/500 per second
+        type: TriggerTypes.WEATHER,
         name: "Windy",
         keywords: ["windy"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/WINDY.png",
     },
-    RAINY: {
-        type: "biome",
-        name: "Rainy",
-        keywords: ["rainy"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/RAINY.png",
-    },
     MARI: {
-        type: "merchant",
+        type: TriggerTypes.MERCHANT,
         name: "Mari",
         keywords: ["mari", "voidcoin", "void coin"],
         iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/mari.png",
     },
     JESTER: {
-        type: "merchant",
+        type: TriggerTypes.MERCHANT,
         name: "Jester",
         keywords: ["jester", "oblivion"],
         iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/jester.png",
@@ -294,6 +327,7 @@ export const settings = definePluginSettings({
         type: OptionType.CUSTOM,
         default: {} as Record<string, TriggerSetting>,
         hidden: true,
+        // onChange: initTriggers // will this cause a loop??
     },
 
 });
