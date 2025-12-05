@@ -9,9 +9,10 @@ import definePlugin from "@utils/types";
 import type { Message } from "@vencord/discord-types";
 import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter } from "@webpack/common";
 
+import { createLogger } from "./CustomLogger";
 import { initTriggers, settings, TriggerDefs } from "./settings";
 import { CustomChatBarButton } from "./ui/ChatBarButton";
-import { ChannelTypes, createLogger, jumpToMessage, sendNotification } from "./utils/index";
+import { ChannelTypes, jumpToMessage, sendNotification } from "./utils/index";
 import { recentJoinStore } from "./utils/RecentJoinStore";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
 
@@ -182,7 +183,7 @@ export default definePlugin({
         async MESSAGE_CREATE({ message, optimistic }: { message: Message, optimistic: boolean; }) {
             if (optimistic) return;
 
-            const log = baselogger.inherit(`${message.id}`);
+            const log = baselogger.inherit(`MESSAGE_CREATE:${message.id}`);
 
             // get author, channel and guild objects
             const channel = ChannelStore.getChannel(message.channel_id);

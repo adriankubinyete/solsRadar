@@ -11,45 +11,6 @@ import { NavigationRouter, Toasts } from "@webpack/common";
 import { settings } from "../settings";
 export const cl = classNameFactory("vc-joiner-");
 
-export type LogLevel = "trace" | "debug" | "perf" | "info" | "warn" | "error";
-
-const COLORS: Record<LogLevel, string> = {
-    trace: "color: #6b7280",
-    debug: "color: #9ca3af",
-    perf: "color: #ff00ff",
-    info: "color: #3b82f6",
-    warn: "color: #facc15",
-    error: "color: #ef4444",
-};
-
-const LEVEL_ORDER: LogLevel[] = ["trace", "debug", "perf", "info", "warn", "error"];
-
-export function createLogger(name: string) {
-    // Função interna que lê o nível dinamicamente
-    function getCurrentLevel(): LogLevel {
-        return (settings.store.loggingLevel as LogLevel) ?? "trace";
-    }
-
-    function log(msgLevel: LogLevel, ...args: any[]) {
-        const currentLevel = getCurrentLevel();
-        if (LEVEL_ORDER.indexOf(msgLevel) < LEVEL_ORDER.indexOf(currentLevel)) return;
-        const color = COLORS[msgLevel];
-        console.log(`%c[${msgLevel.toUpperCase()}] [${name}]`, color, ...args);
-    }
-
-    return {
-        inherit(subName: string) {
-            return createLogger(`${name}.${subName}`);
-        },
-        trace: (...args: any[]) => log("trace", ...args),
-        debug: (...args: any[]) => log("debug", ...args),
-        perf: (...args: any[]) => log("perf", ...args),
-        info: (...args: any[]) => log("info", ...args),
-        warn: (...args: any[]) => log("warn", ...args),
-        error: (...args: any[]) => log("error", ...args),
-    };
-}
-
 export interface SettingMeta {
     key: string;
     type?: any;

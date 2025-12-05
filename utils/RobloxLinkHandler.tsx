@@ -4,9 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { createLogger } from "../CustomLogger";
 import { settings } from "../settings";
-import { createLogger } from "./index";
-
 interface ValidServerLink {
     ok: true;
     type: "share" | "private" | "public";

@@ -14,7 +14,7 @@
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
-import { createLogger } from "./utils";
+import { createLogger } from "./CustomLogger";
 
 // @TODO: maybe add keywords here too so user can change it?
 // @TODO (farther away): maybe add a way to add custom triggers????
