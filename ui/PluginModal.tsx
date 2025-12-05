@@ -94,7 +94,6 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                 </Section>
 
                 <Section title="UI Options" persistKey="ui" defaultOpen>
-                    <Setting setting="uiShowChatBarIcon" customTitle="🟦 Show Chat Bar Button" />
                     <Setting
                         setting="uiShortcutAction"
                         customTitle="🟦 Chat Bar Button Shortcut Action"

@@ -5,13 +5,15 @@
  */
 
 import { findGroupChildrenByChildId, NavContextMenuPatchCallback } from "@api/ContextMenu";
+import ErrorBoundary from "@components/ErrorBoundary";
 import definePlugin from "@utils/types";
 import type { Message } from "@vencord/discord-types";
 import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter } from "@webpack/common";
+import { PropsWithChildren } from "react";
 
 import { createLogger } from "./CustomLogger";
 import { initTriggers, settings, TriggerDefs } from "./settings";
-import { CustomChatBarButton } from "./ui/ChatBarButton";
+import { TitlebarButton } from "./TitlebarButton";
 import { ChannelTypes, jumpToMessage, sendNotification } from "./utils/index";
 import { recentJoinStore } from "./utils/RecentJoinStore";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
@@ -116,7 +118,32 @@ export default definePlugin({
         "channel-context": patchChannelContextMenu,
     },
 
-    renderChatBarButton: CustomChatBarButton,
+    patches: [
+        {
+            // this breaks if another plugin that messes with the titlebar is enabled
+            // i have no clue, but it has something to do with multiple patches being applied
+            // UPDATE: i THINK this is caused because theres no "titlebar" api or something, and everyone is trying to patch the same thing
+            // i am too dumb and lazy to fix this! oh well
+            // known conflicting plugins: ["VencordToolbox"]
+            find: '?"BACK_FORWARD_NAVIGATION":',
+            replacement: {
+                match: /(?<=trailing:.{0,50})\i\.Fragment,\{(?=.+?className:(\i))/,
+                replace: "$self.TriggerWrapper,{className:$1,"
+            },
+            predicate: () => settings.store.uiShowPluginIcon
+        }
+    ],
+
+    TriggerWrapper({ children, className }: PropsWithChildren<{ className: string; }>) {
+        return (
+            <>
+                {children}
+                <ErrorBoundary noop>
+                    <TitlebarButton buttonClass={className} />
+                </ErrorBoundary>
+            </>
+        );
+    },
 
     /**
      * Tenta forçar a subscrição nos canais monitorados, sem abrir o histórico.

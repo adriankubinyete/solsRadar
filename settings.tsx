@@ -164,10 +164,11 @@ export const settings = definePluginSettings({
     /*
     * UI and shortcut
     */
-    uiShowChatBarIcon: {
+    uiShowPluginIcon: {
         type: OptionType.BOOLEAN,
-        description: "Shows an icon in the chat bar for quick access to the plugin's settings.",
-        default: true
+        description: "Shows an icon in the title bar for quick access to the plugin's settings.",
+        default: true,
+        restartNeeded: true
     },
     uiShortcutAction: {
         type: OptionType.SELECT,
