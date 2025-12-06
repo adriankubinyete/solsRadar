@@ -10,121 +10,101 @@ import { promisify } from "util";
 
 const exec = promisify(execCb);
 
+type ProcessLookupTarget =
+  | { type: "tasklist"; processName: string }
+  | { type: "wmic"; processName: string };
+
+export async function getProcess(
+  _: IpcMainInvokeEvent,
+  target: ProcessLookupTarget
+): Promise<ProcessInfo[]> {
+
+  if (process.platform !== "win32") {
+    throw new Error("getProcess only works on Windows");
+  }
+
+  const { type, processName } = target;
+
+  if (!processName || typeof processName !== "string") {
+    throw new Error("Invalid argument: processName must be a non-empty string");
+  }
+
+  // this does not return path!
+  if (type === "tasklist") {
+    const { stdout } = await exec(
+      `tasklist /FI "IMAGENAME eq ${processName}" /FO CSV /NH`
+    );
+
+    const lines = stdout.trim().split(/\r?\n/).filter(Boolean);
+
+    return lines.map(line => {
+      const [name, pid] = line
+        .split(/","/)
+        .map(s => s.replace(/"/g, "").trim());
+
+      return {
+        pid: Number(pid),
+        name,
+        path: "" // tasklist does not provide path
+      };
+    });
+  }
+
+  if (type === "wmic") {
+    const cmd = `wmic process where "name='${processName}'" get ProcessId,ExecutablePath /FORMAT:CSV`;
+
+    const { stdout } = await exec(cmd);
+    const lines = stdout.trim().split(/\r?\n/).slice(2); // skip headers
+
+    const processes: ProcessInfo[] = [];
+
+    for (const line of lines) {
+      if (!line.trim()) continue;
+
+      const parts = line.split(",");
+      const executablePath = parts[1] ?? "";
+      const pid = Number(parts[2]);
+
+      if (!pid) continue;
+
+      processes.push({
+        pid,
+        name: processName,
+        path: executablePath
+      });
+    }
+
+    return processes;
+  }
+
+  throw new Error(`Unexpected type: ${type}`);
+}
+
+// DONE TEST AREA
+
 export type ProcessInfo = {
   pid: number;
   name: string;
   path: string;
 };
 
-export async function getProcess(
+export async function killProcess(
   _: IpcMainInvokeEvent,
-  processName: string
-): Promise<ProcessInfo[]> {
-  if (process.platform !== "win32") {
-    throw new Error(
-      `Unsupported platform: getProcess only works on Windows, current platform is "${process.platform}"`
-    );
-  }
-
-  if (!processName || typeof processName !== "string") {
-    throw new Error("Invalid argument: processName must be a non-empty string");
-  }
-
-  try {
-    const psCommand = `powershell -NoProfile -Command "Get-Process -Name ${processName} -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,Path | ConvertTo-Json -Compress"`;
-
-    const { stdout } = await exec(psCommand);
-    const trimmed = (stdout || "").trim();
-
-    if (!trimmed) {
-      // Nenhum processo encontrado
-      return [];
-    }
-
-    let parsed: any;
-    try {
-      parsed = JSON.parse(trimmed);
-    } catch (err) {
-      throw new Error(
-        `Failed to parse PowerShell output as JSON. Raw output: "${trimmed}"`
-      );
-    }
-
-    const arr = Array.isArray(parsed) ? parsed : [parsed];
-
-    const result = arr
-      .filter((entry: any) => entry && entry.Id)
-      .map((entry: any) => ({
-        pid: Number(entry.Id),
-        name: entry.ProcessName ?? processName,
-        path: entry.Path ?? "",
-      }));
-
-    if (result.length === 0) {
-      // Nenhum processo válido encontrado
-      return [];
-    }
-
-    return result;
-  } catch (err: any) {
-    // Se algum erro do exec ou PowerShell ocorrer
-    throw new Error(
-      `Failed to get process "${processName}": ${err?.message ?? err}`
-    );
-  }
-}
-
-export async function maximizeRoblox(_: IpcMainInvokeEvent): Promise<void> {
+  target: { pid: number; } | { pname: string; }
+): Promise<void> {
   if (process.platform !== "win32") return;
 
-  try {
-    const processes = await getProcess(_, "RobloxPlayerBeta");
+  const command =
+    "pid" in target
+      ? `taskkill /PID ${target.pid} /F`
+      : `taskkill /IM "${target.pname}" /F`;
 
-    if (processes.length === 0) return;
-    const proc = processes[0];
-    const command = `powershell -NoProfile -Command "$p = Get-Process -Id ${proc.pid}; Add-Type -MemberDefinition '[DllImport(\\"user32.dll\\")] public static extern bool ShowWindow(IntPtr h, int n);' -Name W -Namespace X; [X.W]::ShowWindow($p.MainWindowHandle, 3)"`;
+  try {
     await exec(command);
   } catch {
     // ignore errors
   }
 }
-
-
-export async function killProcess(_: IpcMainInvokeEvent, pid: number): Promise<void> {
-  if (process.platform !== "win32") return;
-  try {
-    await exec(`taskkill /PID ${pid} /F`);
-  } catch {
-    // ignore errors
-  }
-}
-
-// export async function isRobloxOpen(_: IpcMainInvokeEvent): Promise<boolean> {
-//   if (process.platform !== "win32") {
-//     throw new Error("Unsupported platform: only Windows is supported");
-//   }
-
-//   const proc = await getRobloxProcess();
-//   return proc !== null;
-// }
-
-// export async function closeRoblox(_: IpcMainInvokeEvent,): Promise<void> {
-//   if (process.platform !== "win32") {
-//     throw new Error("Unsupported platform: only Windows is supported");
-//   }
-
-//   try {
-//     // graceful stop
-//     const ps = "powershell -NoProfile -Command \"Stop-Process -Name RobloxPlayerBeta -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 200; if (Get-Process -Name RobloxPlayerBeta -ErrorAction SilentlyContinue) { Stop-Process -Name RobloxPlayerBeta -Force -ErrorAction SilentlyContinue }\"";
-//     await exec(ps);
-//   } catch {
-//     try {
-//       await exec("taskkill /IM RobloxPlayerBeta.exe /F");
-//     } catch {
-//       // swallow silently
-//     }
-//   }
-// }
 
 export async function openUri(
   _: IpcMainInvokeEvent,
@@ -156,7 +136,6 @@ export async function fetchRobloxCsrf(_: IpcMainInvokeEvent, token: string): Pro
     return { status: -1, csrf: null };
   }
 }
-
 
 export async function resolveRobloxShareLink(_: IpcMainInvokeEvent, token: string, csrf: string, shareCode: string): Promise<{ status: number; data: any | null; }> {
   try {

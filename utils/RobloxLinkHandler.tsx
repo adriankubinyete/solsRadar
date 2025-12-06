@@ -103,8 +103,8 @@ export class RobloxLinkHandler {
 
         // cria um sublogger específico para esta execução
         const log = this.sublogger("safelyJoin");
-        log.debug("Starting join process");
-        log.trace(`Mode: ${mode}`, link);
+        // log.debug("Starting join process");
+        // log.trace(`Mode: ${mode}`, link);
 
         try {
             if (mode === "before") {
@@ -121,10 +121,10 @@ export class RobloxLinkHandler {
                 log.debug("Link marked safe before joining.");
             }
 
-            log.debug("Attempting to join the server...");
+            // log.debug("Attempting to join the server...");
             await this.executeJoin(link);
             joined = true;
-            log.info("Successfully joined server link.");
+            // log.info("Successfully joined server link.");
 
             if (mode === "after") {
                 log.debug("Performing safety verification after join...");
@@ -140,7 +140,7 @@ export class RobloxLinkHandler {
                 log.debug("Link marked safe after join.");
             }
 
-            log.info(`Completed join. V.Mode=${mode}, Joined=${joined}, Verified=${verified}, Safe=${safe}`);
+            // log.info(`Completed join. V.Mode=${mode}, Joined=${joined}, Verified=${verified}, Safe=${safe}`);
             return { joined, verified, safe, message };
 
         } catch (err) {
@@ -195,7 +195,7 @@ export class RobloxLinkHandler {
     async executeJoin(link: ServerLink) {
         const log = this.sublogger("executeJoin");
 
-        const shouldClose = this.settings.store.closeGameBeforeJoin ?? true;
+        const shouldClose = settings.store.joinCloseGameBefore ?? true;
         const Native = VencordNative.pluginHelpers.SolsRadar as {
             openUri: (uri: string) => Promise<void>;
         };
@@ -207,7 +207,7 @@ export class RobloxLinkHandler {
 
         let uri: string | null = null;
 
-        log.debug(`Preparing Roblox URI for link type: ${link.type}`);
+        // log.trace(`Preparing Roblox URI for link type: ${link.type}`);
 
         switch (link.type) {
             case "public":
@@ -242,8 +242,9 @@ export class RobloxLinkHandler {
 
         try {
             if (shouldClose) {
-                log.debug("Closing Roblox before joining...");
-                await this.closeRoblox();
+                log.info("Closing roblox...");
+                const closeData = await this.closeRoblox();
+                log.trace(JSON.stringify(closeData));
             }
 
             log.info(`Launching Roblox with URI: ${uri}`);
@@ -257,19 +258,33 @@ export class RobloxLinkHandler {
         }
     }
 
-
     async closeRoblox(): Promise<RobloxCloseResult> {
+        const log = this.sublogger("closeRoblox");
         const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
-            getProcess: (processName: string) => Promise<{ pid: number; name: string; path?: string; }[]>;
-            killProcess: (pid: number) => Promise<void>;
+            killProcess: (
+                target: { pid: number; } | { pname: string; }
+            ) => Promise<void>;
         };
+
         try {
-            const processes = await Native.getProcess("RobloxPlayerBeta");
-            if (processes.length === 0) return { ok: true, message: "No Roblox process found.", closedCount: 0 };
-            await Promise.all(processes.map(p => Native.killProcess(p.pid)));
-            return { ok: true, message: `Closed ${processes.length} Roblox processes.`, closedCount: processes.length };
+            const t0 = performance.now();
+
+            await Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
+
+            const elapsed = (performance.now() - t0).toFixed(1);
+
+            log.trace(`[SolsRadar] Requested kill of RobloxPlayerBeta.exe in ${elapsed}ms.`);
+
+            return {
+                ok: true,
+                message: "Requested Roblox termination via process name.",
+            };
+
         } catch (err: any) {
-            return { ok: false, message: `Failed to close Roblox processes: ${err?.message ?? err}` };
+            return {
+                ok: false,
+                message: `Failed to close Roblox processes: ${err?.message ?? err}`
+            };
         }
     }
 

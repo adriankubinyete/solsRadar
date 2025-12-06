@@ -455,9 +455,11 @@ function handleBait(ctx) {
 async function handleJoin(ctx) {
     const { ro, link, match, author, channel, guild, avatarUrl, messageJumpUrl, log } = ctx;
 
-    log.debug("Executing join");
+    log.info("Executing join sequence...");
 
+    const t0 = performance.now();
     const joinData = await ro.safelyJoin(link);
+    log.info(`Join Sequence took ${Math.round(performance.now() - t0)}ms\n${JSON.stringify(joinData)}`);
 
     recentJoinStore.add({
         title: `${match.def.name} sniped!`,

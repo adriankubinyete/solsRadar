@@ -16,7 +16,7 @@ import TriggerListUI from "./TriggerList";
 
 const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
     maximizeRoblox: () => Promise<void>;
-    getProcess: (processName: string) => Promise<{ pid: number; name: string; path?: string; }[]>;
+    getProcess: (target: { type: "tasklist" | "wmic"; processName: string; }) => Promise<Array<{ pid: number; name: string; path: string; }>>;
 };
 
 export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
@@ -69,7 +69,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
 
                 <Section title="Triggers" persistKey="triggers" defaultOpen>
                     <SectionMessage>
-                        Right-click a trigger to quickly enable or disable it. Left-click to open the configuration page. A trigger must be active for Join or Notify to work.<br/>
+                        Right-click a trigger to quickly enable or disable it. Left-click to open the configuration page. A trigger must be active for Join or Notify to work.<br />
                     </SectionMessage>
                     <TriggerListUI />
                 </ Section>
@@ -116,7 +116,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Line />
                     <BaseButton onClick={addFakeJoin}>➕ Add Fake Join</BaseButton>
                     <BaseButton onClick={async () => {
-                        const process = await Native.getProcess("RobloxPlayerBeta");
+                        const process = await Native.getProcess({ type: "tasklist", processName: "RobloxPlayerBeta.exe" });
                         if (!process) {
                             showToast("Roblox not running", Toasts.Type.FAILURE);
                             return;
