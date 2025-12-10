@@ -101,6 +101,21 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Setting setting="uiShowTagsInInactiveTriggers" customTitle="🟦 Show Trigger Tags in Inactive Triggers" />
                 </Section>
 
+                <Section title="Biome Detection Options" persistKey="biome" defaultOpen>
+                    <SectionMessage>
+                        Biome detection settings to validate biomes/weather after joining a server. You need to configure the monitored account in the plugin's settings for this to work!
+                    </SectionMessage>
+                    <Setting setting="biomeDetectorEnabled" customTitle="🟦 Biome Detector Enabled" />
+                    <Setting setting="biomeDetectorPoolingRateMs" customTitle="🟦 Detection Refresh Rate" />
+                    <Note>
+                        You cannot set it under 250ms because it's not really necessary, you'll only stress your machine. Recommended to keep as 1000ms
+                    </Note>
+                    <Setting setting="biomeDetectorLoggingLevel" customTitle="🟦 Detector Logging Level" />
+                    <Note>
+                        VERY spammy in the console.
+                    </Note>
+                </Section>
+
                 <Section title="Other Options" persistKey="other" defaultOpen>
                     <Setting setting="monitorNavigateToChannelsOnStartup" customTitle="🟦 Load Channels on Startup" />
                     <Setting setting="monitorGreedyMode" customTitle="🟦 Greedy Mode" />

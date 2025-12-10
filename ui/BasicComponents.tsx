@@ -295,15 +295,36 @@ export function Setting<K extends keyof typeof settings.def>({
             break;
         }
 
-        case OptionType.NUMBER:
+        case OptionType.NUMBER: {
+            const hasMin = typeof meta.min === "number";
+            const hasMax = typeof meta.max === "number";
+
             content = (
                 <>
                     <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
+
                     <CheckedTextInput
                         value={value !== undefined ? String(value) : ""}
-                        onChange={v => settings.store[setting] = Number(Number(v)) as any}
-                        validate={v => (isNaN(Number(v)) ? "Invalid number" : true)}
+                        onChange={v => {
+                            const num = Number(v);
+                            settings.store[setting] = num as any;
+                        }}
+
+                        validate={v => {
+                            const num = Number(v);
+                            if (isNaN(num)) return "Invalid number";
+
+                            if (hasMin && num < meta.min!) {
+                                return `Value must be ≥ ${meta.min}`;
+                            }
+                            if (hasMax && num > meta.max!) {
+                                return `Value must be ≤ ${meta.max}`;
+                            }
+
+                            return true;
+                        }}
                     />
+
                     {meta.description && (
                         <div style={{ marginTop: 6, color: "#ccc", fontSize: 12 }}>
                             {meta.description}
@@ -312,6 +333,7 @@ export function Setting<K extends keyof typeof settings.def>({
                 </>
             );
             break;
+        }
 
         case OptionType.SELECT: {
             const options = meta.options?.map(o => ({ value: o.value, label: o.label })) ?? [];

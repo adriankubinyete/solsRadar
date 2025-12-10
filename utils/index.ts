@@ -12,6 +12,8 @@ import { settings } from "../settings";
 export const cl = classNameFactory("vc-joiner-");
 
 export interface SettingMeta {
+    min?: number;
+    max?: number;
     key: string;
     type?: any;
     description?: string;
@@ -32,6 +34,8 @@ export function getSettingMeta<K extends keyof typeof settings.def>(key: K): Set
         description: def.description,
         default: def.default,
         options: def.options ?? undefined,
+        ...(def.min !== undefined ? { min: def.min } : {}),
+        ...(def.max !== undefined ? { max: def.max } : {}),
     };
 }
 

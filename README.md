@@ -37,12 +37,13 @@ Navigate to Vencord's root folder and run `pnpm build` then `pnpm inject`.
 - <https://blog.csdn.net/gitblog_01053/article/details/151450995>
 - [maxstellar/maxstellar-Biome-Macro](https://github.com/maxstellar/maxstellar-Biome-Macro) (most biome icons source)
 - [vexthecoder/OysterDetector](https://github.com/vexthecoder/OysterDetector) (merchant icons source)
+- [cresqnt-sys/MultiScope](https://github.com/cresqnt-sys/MultiScope/blob/94f1f06114a3e7cbff64e5fd0bf31ced99b0af79/LICENSE) (biome detection logic adaptation) *(from commit [94f1f06](https://github.com/cresqnt-sys/MultiScope/tree/94f1f06114a3e7cbff64e5fd0bf31ced99b0af79), licensed under GPL3 - check [this](https://stackoverflow.com/questions/5419923/can-gpl-be-re-licensed) post)*
 
 # License
 
 This plugin (solsRadar) is licensed under the AGPL-3.0-or-later.
 
-Although individual source files carry the **Vencord-required header** `SPDX-License-Identifier: GPL-3.0-or-later`, **the plugin as a whole is distributed under the `AGPL-3.0-or-later` license** because it includes logic adapted from AGPL-licensed sources.
+Although individual source files carry the **Vencord-required header** `SPDX-License-Identifier: GPL-3.0-or-later`, **the plugin as a whole is distributed under the `AGPL-3.0-or-later` license** because it (may) includes logic adapted from AGPL-licensed sources.
 
 ---
 

@@ -4,17 +4,22 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-// settings.tsx
-/*
- * Vencord, a Discord client mod
- * Copyright (c) 2025 Vendicated and contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
+// @useful: get unique biomes from logs:
+// grep -h -oP '"largeImage"\s*:\s*\{[^}]*"hoverText"\s*:\s*"\K[^"]+' *.log | sort | uniq
 
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
 import { createLogger } from "./CustomLogger";
+import { BiomeDetector } from "./Detector";
+
+function debounce<T extends (...args: any[]) => void>(fn: T, wait: number) {
+    let timeout: any;
+    return (...args: Parameters<T>) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn(...args), wait);
+    };
+}
 
 // @TODO: maybe add keywords here too so user can change it?
 // @TODO (farther away): maybe add a way to add custom triggers????
@@ -26,11 +31,7 @@ export const DEFAULT_TRIGGER_SETTING: TriggerSetting = {
     joinCooldown: 0,
 };
 
-export interface TriggerTypes {
-
-}
-
-const TriggerTypes = {
+export const TriggerTypes = {
     RARE_BIOME: "rare_biome",
     EVENT_BIOME: "event_biome",
     NORMAL_BIOME: "normal_biome",
@@ -43,7 +44,7 @@ export type TriggerType = typeof TriggerTypes[keyof typeof TriggerTypes];
 
 export interface TriggerDefinition {
     type: TriggerType;
-    name: string;
+    name: string; // note: for biome detection, this has to match the RPC's hoverText entry!
     keywords: string[];
     iconUrl: string;
 }
@@ -134,7 +135,7 @@ export const TriggerDefs = {
     SANDSTORM: {
         // 1/3000 per second
         type: TriggerTypes.NORMAL_BIOME,
-        name: "Sandstorm",
+        name: "Sand Storm",
         keywords: ["sand", "sand storm", "sandstorm"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/SAND%20STORM.png",
     },
@@ -211,12 +212,14 @@ export const settings = definePluginSettings({
             { label: "No action", value: "none" },
             { label: "Toggle AutoJoin", value: "toggleJoin" },
             { label: "Toggle AutoJoin and Notifications", value: "toggleJoinAndNotifications" },
-        ]
+        ],
+        hidden: true
     },
     uiShowTagsInInactiveTriggers: {
         type: OptionType.BOOLEAN,
         description: "Show trigger tags even on inactive triggers on the trigger list.",
-        default: true
+        default: true,
+        hidden: true
     },
 
     /*
@@ -225,7 +228,8 @@ export const settings = definePluginSettings({
     monitorChannelList: {
         type: OptionType.STRING,
         description: "Comma-separated channel IDs that will be monitored for private server links.",
-        default: ""
+        default: "",
+        hidden: true
     },
     monitorNavigateToChannelsOnStartup: {
         type: OptionType.BOOLEAN,
@@ -235,27 +239,32 @@ export const settings = definePluginSettings({
     monitorBlockedUserList: {
         type: OptionType.STRING,
         description: "Comma-separated user IDs that will be ignored when monitoring for private server links.",
-        default: ""
+        default: "",
+        hidden: true
     },
     monitorBlockUnsafeServerMessageAuthors: {
         type: OptionType.BOOLEAN,
         description: "Automatically put users who sends server links which leads to non-allowed places into the monitorBlockedUserList. This will only work if you are verifying links.",
-        default: false
+        default: false,
+        hidden: true
     },
     monitorGreedyMode: {
         type: OptionType.BOOLEAN,
         description: "Ignore monitorChannelList and simply monitor all possible channels. Not recommended.",
-        default: false
+        default: false,
+        hidden: true
     },
     monitorGreedyExceptionList: {
         type: OptionType.STRING,
         description: "Comma-separated channel IDs to ignore when using greedy mode.",
-        default: ""
+        default: "",
+        hidden: true
     },
     monitorInterpretEmbeds: {
         type: OptionType.BOOLEAN,
         description: "Append embed descriptions to the message content when searching for valid trigger messages.",
-        default: true
+        default: true,
+        hidden: true
     },
 
     /*
@@ -275,22 +284,26 @@ export const settings = definePluginSettings({
             { label: "No verification", value: "none" },
             { label: "Verify before joining (may slow your join time)", value: "before" },
             { label: "Verify after joining (riskier but won't slow your join time)", value: "after" },
-        ]
+        ],
+        hidden: true
     },
     verifyAllowedPlaceIds: {
         type: OptionType.STRING,
         description: "Comma-separated list of allowed place IDs. If empty, all place IDs are allowed.",
-        default: "15532962292"
+        default: "15532962292",
+        hidden: true
     },
     verifyBlockedPlaceIds: {
         type: OptionType.STRING,
         description: "Comma-separated list of blocked place IDs. If empty, no place IDs are blocked.",
-        default: ""
+        default: "",
+        hidden: true
     },
     verifyAfterJoinFailFallbackDelayMs: {
         type: OptionType.NUMBER,
         description: "If the place ID verification after joining fails, wait this many milliseconds before executing the safety action.",
-        default: 5000
+        default: 5000,
+        hidden: true
     },
     verifyAfterJoinFailFallbackAction: {
         type: OptionType.SELECT,
@@ -299,7 +312,77 @@ export const settings = definePluginSettings({
         options: [
             { label: "Join Sol's RNG public server", value: "joinSols" },
             { label: "Quit game", value: "quit" },
-        ]
+        ],
+        hidden: true
+    },
+
+    /*
+    * Autojoin
+    */
+    biomeDetectorEnabled: {
+        type: OptionType.BOOLEAN,
+        description: "Enable the biome detector for biome validation.",
+        default: false,
+        onChange: (value: boolean) => {
+            if (value) {
+                BiomeDetector.setAccounts(settings.store.biomeDetectorAccounts.split(","));
+                BiomeDetector.start(settings.store.biomeDetectorPoolingRateMs);
+            } else {
+                BiomeDetector.stop();
+                BiomeDetector.removeAllListeners();
+            }
+        }
+    },
+    biomeDetectorPoolingRateMs: {
+        type: OptionType.NUMBER,
+        description: "How often to 'refresh' biome detection, in milliseconds.",
+        default: 1000,
+        /**
+         * i am so sorry for what im about to do :husk:
+         */
+        min: 250,
+        max: 9999,
+        onChange: (() =>
+            debounce((value: number) => {
+                // console.log(`[SolsRadar] test debouncedChangeRate: ${value}`);
+                // NOTE: handle this elsewhere, not my job!!!!!
+                // if (value < 250) {
+                //     value = 250;
+                //     settings.store.biomeDetectorPoolingRateMs = 250;
+                //     showToast("Do NOT set it under 250ms", Toasts.Type.FAILURE);
+                // }
+
+                if (settings.store.biomeDetectorEnabled) {
+                    BiomeDetector.stop();
+                    BiomeDetector.start(value);
+                }
+            }, 500)
+        )(),
+        hidden: true
+    },
+    biomeDetectorAccounts: {
+        type: OptionType.STRING,
+        description: "Comma-separated list of Roblox accounts to monitor. If empty, biome detection is disabled.",
+        default: "",
+        /**
+         * NOTE: I actually have made this work with runtime changes (see below),
+         * but I dont want user messing with this so I'll just set restartNeeded on this
+         */
+        restartNeeded: true,
+        // onChange: (() => {
+        //     const fn = debounce((value: string) => {
+        //         console.log(`[SolsRadar] test debouncedUpdateAccounts: ${value}`);
+        //         const accounts = value.split(",").map(v => v.trim()).filter(Boolean);
+        //         if (settings.store.biomeDetectorEnabled) {
+        //             BiomeDetector.stop();
+        //             BiomeDetector.setAccounts(accounts);
+        //             BiomeDetector.start(settings.store.biomeDetectorPoolingRateMs);
+        //         } else {
+        //             BiomeDetector.setAccounts(accounts);
+        //         }
+        //     }, 500);
+        //     return fn;
+        // })()
     },
 
     /*
@@ -310,18 +393,36 @@ export const settings = definePluginSettings({
         description: "Console logging level",
         default: "info",
         options: [
+            { label: "Verbose", value: "verbose" },
             { label: "Trace", value: "trace" },
             { label: "Debug", value: "debug" },
             { label: "Performance", value: "perf" },
             { label: "Info", value: "info" },
             { label: "Warn", value: "warn" },
             { label: "Error", value: "error" },
-        ]
+        ],
+        hidden: true
+    },
+    biomeDetectorLoggingLevel: {
+        type: OptionType.SELECT,
+        description: "Biome detector logging level",
+        default: "info",
+        options: [
+            { label: "Verbose", value: "verbose" },
+            { label: "Trace", value: "trace" },
+            { label: "Debug", value: "debug" },
+            { label: "Performance", value: "perf" },
+            { label: "Info", value: "info" },
+            { label: "Warn", value: "warn" },
+            { label: "Error", value: "error" },
+        ],
+        hidden: true
     },
     _dev_verification_fail_fallback_delay_ms: {
         type: OptionType.NUMBER,
         description: "If verification after joining fails, wait this many milliseconds before executing the safety action.",
-        default: 5000
+        default: 5000,
+        hidden: true
     },
     _triggers: {
         type: OptionType.CUSTOM,

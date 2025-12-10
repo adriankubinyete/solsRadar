@@ -11,25 +11,18 @@ import type { Message } from "@vencord/discord-types";
 import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter } from "@webpack/common";
 import { PropsWithChildren } from "react";
 
-import { createLogger } from "./CustomLogger";
-import { initTriggers, settings, TriggerDefs } from "./settings";
+import { createLogger, LogLevel } from "./CustomLogger";
+import { BiomeDetectedEvent, BiomeDetector, DetectorEvents } from "./Detector";
+import { initTriggers, settings, TriggerDefs, TriggerTypes } from "./settings";
 import { TitlebarButton } from "./TitlebarButton";
 import { ChannelTypes, jumpToMessage, sendNotification } from "./utils/index";
 import { recentJoinStore } from "./utils/RecentJoinStore";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
 
 const PLUGIN_NAME = "SolsRadar";
-const baselogger = createLogger(PLUGIN_NAME);
+const baselogger = createLogger(PLUGIN_NAME, () => (settings.store.loggingLevel as LogLevel) ?? "info");
 
 const CHANNEL_TYPES_TO_SKIP = [ChannelTypes.DM, ChannelTypes.GROUP_DM] as const;
-const SOLS_PLACE_ID = "15532962292"; // Hardcoded no original, mantido
-const SOLS_JOIN_DATA = {
-    ok: true,
-    code: "",
-    link: "",
-    type: "public",
-    placeId: SOLS_PLACE_ID,
-} as const;
 
 export const joinCooldownEnds = new Map<number, number>();
 
@@ -175,11 +168,37 @@ export default definePlugin({
         initTriggers(log);
     },
 
-    start(): void {
+    async start(): Promise<void> {
         const log = baselogger.inherit("start");
 
         log.info("Syncing");
         this.sync();
+
+        if (settings.store.biomeDetectorEnabled) {
+            log.trace("Starting detector");
+            const accounts = settings.store.biomeDetectorAccounts.split(",");
+            if (accounts.length) {
+                await BiomeDetector.setAccounts(accounts);
+                BiomeDetector.start(settings.store.biomeDetectorPoolingRateMs);
+            } else {
+                log.info("No accounts configured for biome detector");
+            }
+        }
+
+        // detector.on(DetectorEvents.BIOME_DETECTED, (event: BiomeDetectedEvent) => {
+        //     const { username, biome } = event;
+        //     log.perf(`Detected biome for ${username}: ${biome}`);
+        // });
+
+        // detector.on(DetectorEvents.BIOME_CHANGED, (event: BiomeChangedEvent) => {
+        //     const { username, from, to } = event;
+        //     log.perf(`Detected biome change for ${username}: ${from} -> ${to}`);
+        // });
+
+        // detector.on(DetectorEvents.CLIENT_DISCONNECTED, (event: ClientDisconnectedEvent) => {
+        //     const { username } = event;
+        //     log.perf(`Detected client disconnect for ${username}`);
+        // });
 
         log.trace("Loading recent joins");
         recentJoinStore.load();
@@ -198,6 +217,10 @@ export default definePlugin({
 
         log.info("Saving recent joins");
         recentJoinStore.save();
+
+        log.info("Stopping detector");
+        BiomeDetector.stop();
+        BiomeDetector.removeAllListeners();
     },
 
     flux: {
@@ -281,7 +304,7 @@ export default definePlugin({
                 isBait = bait;
 
                 if (isBait) {
-                    handleBait(ctx);
+                    handleFakeLink(ctx);
                 }
 
                 if (wasJoined && !isBait) {
@@ -413,7 +436,7 @@ function buildNotification(ctx) {
     if (joinData.verified && joinData.safe) content += "\n✅ Link was verified";
 
     if (joinData.verified && joinData.safe === false) {
-        title = `⚠️ SoRa :: Bait link detected (${match.def.name})`;
+        title = `⚠️ SoRa :: Fake link detected (${match.def.name})`;
 
         if (joinData.joined) {
             title += " - click to go to message";
@@ -426,7 +449,7 @@ function buildNotification(ctx) {
     return { title, content, icon: match.def.iconUrl, onClick };
 }
 
-function handleBait(ctx) {
+function handleFakeLink(ctx) {
     const { author, ro, log } = ctx;
 
     if (settings.store.monitorBlockUnsafeServerMessageAuthors) {
@@ -474,6 +497,37 @@ async function handleJoin(ctx) {
     const hasResponse = joinData != null;
     const wasJoined = joinData?.joined === true;
     const isBait = hasResponse && joinData.verified === true && joinData.safe === false;
+
+    if ([TriggerTypes.RARE_BIOME, TriggerTypes.EVENT_BIOME, TriggerTypes.NORMAL_BIOME, TriggerTypes.WEATHER].includes(match.def.type) && wasJoined && !isBait) {
+        log.warn("Real Sol's Server detected. Initiating detection");
+
+        const t0 = performance.now();
+
+        // note: this is still slower than checking manually on roblox's f9 log
+        // but its useful for when we are afk
+        BiomeDetector.waitFor(DetectorEvents.BIOME_DETECTED, 30_000)
+            .then((result: BiomeDetectedEvent) => {
+                if (!result) {
+                    log.warn("Biome detection timed out.");
+                    sendNotification({ title: "Detector", content: "Biome detection timed out." });
+                    return;
+                }
+
+                log.info(`Biome detection took ${Math.round(performance.now() - t0)}ms`);
+
+                log.warn(`Biome detected: ${JSON.stringify(result)}`);
+
+                const EXPECTED_BIOME = match.def.name.toUpperCase();
+                const DETECTED_BIOME = result.biome.toUpperCase();
+
+                if (EXPECTED_BIOME === DETECTED_BIOME) {
+                    sendNotification({ title: `✅ SoRa :: Real (${DETECTED_BIOME})`, content: `Detection took ${Math.round(performance.now() - t0)}ms` });
+                } else {
+                    sendNotification({ title: "❌ SoRa :: Fake", content: `Expected: ${EXPECTED_BIOME}, Detected: ${DETECTED_BIOME}\nDetection took ${Math.round(performance.now() - t0)}ms` });
+                }
+
+            });
+    }
 
     return { joinData, wasJoined, isBait };
 }
