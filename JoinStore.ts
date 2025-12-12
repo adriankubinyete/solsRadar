@@ -59,25 +59,25 @@ export const TAG_CONFIGS: Record<JoinTag, JoinTagConfig> = {
         label: "Real",
         color: "#3ba55c",
         emoji: "✅",
-        priority: 50
+        priority: 60
     },
     "biome-verified-bait": {
         label: "Bait",
         color: "#f26522",
         emoji: "🎣",
-        priority: 50
+        priority: 60
     },
     "biome-verified-timeout": {
         label: "Biome check timeout",
         color: "#faa61a",
         emoji: "⚠️",
-        priority: 50
+        priority: 49
     },
     "biome-not-verified": {
         label: "Biome check disabled",
         color: "#faa61a",
         emoji: "⚠️",
-        priority: 50
+        priority: 49
     },
 
     "link-verified-safe": {

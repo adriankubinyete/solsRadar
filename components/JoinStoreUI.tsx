@@ -4,12 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Margins } from "@utils/margins";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, openModal } from "@utils/modal";
-import { NavigationRouter, React } from "@webpack/common";
+import { Forms, NavigationRouter, React } from "@webpack/common";
 
-import { JoinStore, JoinTag,RecentJoin, TAG_CONFIGS } from "../JoinStore";
-import { formatTimeAgo } from "../utils";
+import { Margins } from "../constants";
+import { JoinStore, JoinTag, RecentJoin, TAG_CONFIGS } from "../JoinStore";
+import { cl, formatTimeAgo } from "../utils";
 import {
     CBadge,
     CButton,
@@ -24,7 +24,7 @@ const AVATAR_FALLBACK = "https://discord.com/assets/881ed827548f38c6.svg";
 
 // ==================== MAIN COMPONENT ====================
 
-export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void }) {
+export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
     const [joins, setJoins] = React.useState<RecentJoin[]>(JoinStore.all);
     const [searchTerm, setSearchTerm] = React.useState("");
     const [filterTag, setFilterTag] = React.useState<string>("all");
@@ -85,6 +85,25 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void }) {
         // }
     };
 
+    const handleAddFakeJoin = () => {
+        const id = Math.random().toString(36).substring(2, 8);
+        JoinStore.add({
+            title: `Test Server ${id.toUpperCase()}`,
+            description: "Automatically generated test join",
+            iconUrl: "https://cdn.discordapp.com/icons/222078108977594368/a_f6959b1f2cb9.gif",
+            authorName: "TestUser",
+            authorAvatarUrl: "https://cdn.discordapp.com/embed/avatars/4.png",
+            messageJumpUrl: "https://discord.com/channels/0/0",
+            tags: Math.random() > 0.5
+                ? ["biome-verified-real", "link-verified-safe"]
+                : ["biome-verified-bait", "link-verified-unsafe"],
+            metadata: {
+                isTestData: true,
+                generatedAt: Date.now(),
+            },
+        });
+    };
+
     const handleCardClick = (join: RecentJoin) => {
         openModal(props => (
             <JoinDetailModal
@@ -104,11 +123,12 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void }) {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    flexWrap: "wrap",
                     gap: 8,
+                    flexWrap: "nowrap",
                 }}
             >
-                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {/* Left side — stats */}
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 1 }}>
                     <CBadge variant="primary">{joins.length} Total</CBadge>
                     <CBadge variant="success">
                         {joins.filter(j => j.tags.includes("link-verified-safe")).length} Verified
@@ -117,9 +137,16 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void }) {
                         {joins.filter(j => j.tags.includes("link-verified-unsafe")).length} Fake
                     </CBadge>
                 </div>
-                <CButton variant="danger" size="small" onClick={handleClearAll}>
-                    Clear All
-                </CButton>
+
+                {/* Right side — fixed button group */}
+                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                    <CButton variant="primary" size="small" onClick={handleAddFakeJoin}>
+                        Add Fake Join
+                    </CButton>
+                    <CButton variant="danger" size="small" onClick={handleClearAll}>
+                        Clear All
+                    </CButton>
+                </div>
             </div>
 
             {/* Filters */}
@@ -250,7 +277,7 @@ function JoinCard({ join, onClick }: JoinCardProps) {
 
                             const SUCCESS_TAGS = ["link-verified-safe", "biome-verified-real"];
                             const DANGER_TAGS = ["link-verified-unsafe", "failed"];
-                            const WARNING_TAGS = ["biome-verified-bait", "biome-verified-timeout" ];
+                            const WARNING_TAGS = ["biome-verified-bait", "biome-verified-timeout"];
 
                             const badgeVariant = SUCCESS_TAGS.includes(tag)
                                 ? "success"
@@ -314,7 +341,7 @@ function JoinCard({ join, onClick }: JoinCardProps) {
 
 // ==================== SERVER ICON ====================
 
-function ServerIcon({ iconUrl }: { iconUrl?: string }) {
+function ServerIcon({ iconUrl }: { iconUrl?: string; }) {
     const [imgSrc, setImgSrc] = React.useState(iconUrl || AVATAR_FALLBACK);
 
     return (
@@ -370,29 +397,43 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
 
     return (
         <ModalRoot {...rootProps}>
-            <ModalHeader>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <img
-                        src={join.iconUrl || AVATAR_FALLBACK}
-                        alt=""
-                        onError={e => {
-                            (e.currentTarget as HTMLImageElement).src = AVATAR_FALLBACK;
-                        }}
-                        style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 6,
-                        }}
-                    />
-                    <div style={{ flex: 1 }}>
-                        <h2 style={{ margin: 0, fontSize: 18 }}>{join.title}</h2>
-                    </div>
-                </div>
-                <ModalCloseButton onClick={onClose} />
-            </ModalHeader>
+            <ModalHeader className={cl("modal-header")}>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        width: "100%",
+                    }}
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <img
+                            src={join.iconUrl || AVATAR_FALLBACK}
+                            alt=""
+                            onError={e => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                    AVATAR_FALLBACK;
+                            }}
+                            style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 6,
+                            }}
+                        />
 
+                        <div style={{ flex: 1 }}>
+                            <Forms.FormTitle tag="h2" className={cl("modal-title")}>
+                                {join.title} (#id:{join.id})
+                            </Forms.FormTitle>
+                        </div>
+                    </div>
+
+                    <ModalCloseButton onClick={onClose} />
+                </div>
+            </ModalHeader>
+            <CDivider />
             <ModalContent>
-                <div className={Margins.bottom16} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: Margins.MEDIUM }}>
                     {/* Primary Status */}
                     <div>
                         <div
@@ -441,7 +482,7 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
 
                                 const SUCCESS_TAGS = ["link-verified-safe", "biome-verified-real"];
                                 const DANGER_TAGS = ["link-verified-unsafe", "failed"];
-                                const WARNING_TAGS = ["biome-verified-bait", "biome-verified-timeout" ];
+                                const WARNING_TAGS = ["biome-verified-bait", "biome-verified-timeout"];
 
                                 const badgeVariant = SUCCESS_TAGS.includes(tag)
                                     ? "success"
@@ -577,7 +618,7 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
 
 // ==================== DETAIL ROW ====================
 
-function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+function DetailRow({ label, value }: { label: string; value: React.ReactNode; }) {
     return (
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
             <span style={{ color: "#b9bbbe", fontSize: 13 }}>{label}:</span>

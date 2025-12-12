@@ -8,10 +8,9 @@ import { showNotification } from "@api/Notifications";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
 import { Forms, React, showToast, Toasts } from "@webpack/common";
 
-import { CButton } from "../components/BaseComponents";
+import { CButton, CDivider } from "../components/BaseComponents";
 import { JoinStoreUI } from "../components/JoinStoreUI";
 import { Margins } from "../constants";
-import { JoinStore } from "../JoinStore";
 import { cl } from "../utils";
 import { Line, Note, Section, SectionMessage, Setting } from "./BasicComponents";
 import TriggerListUI from "./TriggerList";
@@ -25,12 +24,22 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
     return (
         <ModalRoot {...rootProps}>
             <ModalHeader className={cl("modal-header")}>
-                <Forms.FormTitle tag="h2" className={cl("modal-title")}>
-                    SolsRadar Settings
-                </Forms.FormTitle>
-                <ModalCloseButton onClick={rootProps.onClose} />
-            </ModalHeader>
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        width: "100%",
+                    }}
+                >
+                    <Forms.FormTitle tag="h2" className={cl("modal-title")}>
+                        SolsRadar Settings
+                    </Forms.FormTitle>
 
+                    <ModalCloseButton onClick={rootProps.onClose} />
+                </div>
+            </ModalHeader>
+            <CDivider />
             <ModalContent className={cl("modal-content")}>
                 {/* <SectionTitle>Recent Joins</SectionTitle> */}
                 {/* <JoinedServerList joins={joins} onClose={rootProps.onClose} /> */}
@@ -109,27 +118,6 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Line />
                     <Setting setting="_dev_verification_fail_fallback_delay_ms" customTitle="Verification Fail Fallback Delay (ms)" />
                     <Line />
-                    <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={() => {
-                        const id = Math.random().toString(36).substring(2, 8);
-                        JoinStore.add({
-                            title: `Test Server ${id.toUpperCase()}`,
-                            description: "Automatically generated test join",
-                            iconUrl: "https://cdn.discordapp.com/icons/222078108977594368/a_f6959b1f2cb9.gif",
-                            authorName: "TestUser",
-                            authorAvatarUrl: "https://cdn.discordapp.com/embed/avatars/4.png",
-                            messageJumpUrl: "https://discord.com/channels/0/0",
-                            tags: Math.random() > 0.5
-                                ? ["biome-verified-real", "link-verified-safe"]
-                                : ["biome-verified-bait", "link-verified-unsafe"],
-                            metadata: {
-                                isTestData: true,
-                                generatedAt: Date.now(),
-                            },
-                        });
-                        showToast("Added fake join!", Toasts.Type.SUCCESS);
-                    }}>
-                        ➕ Add Fake Join
-                    </CButton>
                     <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={async () => {
                         const process = await Native.getProcess({ type: "tasklist", processName: "RobloxPlayerBeta.exe" });
                         if (!process) {
