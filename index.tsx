@@ -13,10 +13,10 @@ import { PropsWithChildren } from "react";
 
 import { createLogger, LogLevel } from "./CustomLogger";
 import { BiomeDetectedEvent, BiomeDetector, DetectorEvents } from "./Detector";
+import { JoinStore } from "./JoinStore";
 import { initTriggers, settings, TriggerDefs, TriggerTypes } from "./settings";
 import { TitlebarButton } from "./TitlebarButton";
 import { ChannelTypes, jumpToMessage, sendNotification } from "./utils/index";
-import { recentJoinStore } from "./utils/RecentJoinStore";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
 
 const PLUGIN_NAME = "SolsRadar";
@@ -174,6 +174,9 @@ export default definePlugin({
         log.info("Syncing");
         this.sync();
 
+        log.info("Loading recent joins");
+        JoinStore.load();
+
         if (settings.store.biomeDetectorEnabled) {
             log.trace("Starting detector");
             const accounts = settings.store.biomeDetectorAccounts.split(",");
@@ -201,7 +204,6 @@ export default definePlugin({
         // });
 
         log.trace("Loading recent joins");
-        recentJoinStore.load();
 
         if (settings.store.monitorNavigateToChannelsOnStartup) {
             log.trace("Force-loading monitored channels");
@@ -216,7 +218,7 @@ export default definePlugin({
         const log = baselogger.inherit("stop");
 
         log.info("Saving recent joins");
-        recentJoinStore.save();
+        JoinStore.save();
 
         log.info("Stopping detector");
         BiomeDetector.stop();
@@ -227,7 +229,7 @@ export default definePlugin({
         async WINDOW_UNLOAD() {
             const log = baselogger.inherit("WINDOW_UNLOAD");
             log.info("Saving recent joins");
-            recentJoinStore.save();
+            JoinStore.save();
         },
 
         async MESSAGE_CREATE({ message, optimistic }: { message: Message, optimistic: boolean; }) {
@@ -484,19 +486,35 @@ async function handleJoin(ctx) {
     const joinData = await ro.safelyJoin(link);
     log.info(`Join Sequence took ${Math.round(performance.now() - t0)}ms\n${JSON.stringify(joinData)}`);
 
-    recentJoinStore.add({
-        title: `${match.def.name} sniped!`,
+    const joinCardId = JoinStore.add({
+        title: match.def.name,
         description: `Sent in ${channel.name} (${guild.name})`,
-        iconUrl: match.def.iconUrl,
         authorName: author.username,
         authorAvatarUrl: avatarUrl,
+        authorId: author.id,
+        iconUrl: match.def.iconUrl,
         messageJumpUrl,
-        joinStatus: joinData
+        metadata: {
+            link,
+            match,
+        }
     });
 
     const hasResponse = joinData != null;
     const wasJoined = joinData?.joined === true;
     const isBait = hasResponse && joinData.verified === true && joinData.safe === false;
+
+    if (isBait) {
+        JoinStore.addTags(joinCardId, "link-verified-unsafe");
+    } else if (joinData.safe === true) {
+        JoinStore.addTags(joinCardId, "link-verified-safe");
+    } else {
+        JoinStore.addTags(joinCardId, "link-not-verified");
+    }
+
+    if (!settings.store.biomeDetectorEnabled || settings.store.biomeDetectorAccounts.split(",").length === 0) {
+        JoinStore.addTags(joinCardId, "biome-not-verified");
+    }
 
     if ([TriggerTypes.RARE_BIOME, TriggerTypes.EVENT_BIOME, TriggerTypes.NORMAL_BIOME, TriggerTypes.WEATHER].includes(match.def.type) && wasJoined && !isBait) {
         log.warn("Real Sol's Server detected. Initiating detection");
@@ -508,22 +526,35 @@ async function handleJoin(ctx) {
         BiomeDetector.waitFor(DetectorEvents.BIOME_DETECTED, 30_000)
             .then((result: BiomeDetectedEvent) => {
                 if (!result) {
+                    /**
+                     * This means either:
+                     * 1. we got queue'd (too slow)
+                     * 2. user closed the game while it was opening
+                     * 3. game simply not launched (??) or launched with a disconnected account
+                     * 4. roblox started to update LOL
+                     */
                     log.warn("Biome detection timed out.");
                     sendNotification({ title: "Detector", content: "Biome detection timed out." });
+                    JoinStore.addTags(joinCardId, "biome-verified-timeout");
                     return;
                 }
 
                 log.info(`Biome detection took ${Math.round(performance.now() - t0)}ms`);
-
                 log.warn(`Biome detected: ${JSON.stringify(result)}`);
 
                 const EXPECTED_BIOME = match.def.name.toUpperCase();
                 const DETECTED_BIOME = result.biome.toUpperCase();
 
                 if (EXPECTED_BIOME === DETECTED_BIOME) {
-                    sendNotification({ title: `✅ SoRa :: Real (${DETECTED_BIOME})`, content: `Detection took ${Math.round(performance.now() - t0)}ms` });
+                    sendNotification({ title: `✅ SoRa :: Real (${DETECTED_BIOME})`, content: `Detection took ${Math.round(performance.now() - t0)}ms since link sniped` });
+                    JoinStore.addTags(joinCardId, "biome-verified-real");
+                    // do something cool?
+                    // - update joinCard and set biomeBait to false?
                 } else {
-                    sendNotification({ title: "❌ SoRa :: Fake", content: `Expected: ${EXPECTED_BIOME}, Detected: ${DETECTED_BIOME}\nDetection took ${Math.round(performance.now() - t0)}ms` });
+                    sendNotification({ title: "❌ SoRa :: Fake", content: `Expected: ${EXPECTED_BIOME}, Detected: ${DETECTED_BIOME}\nDetection took ${Math.round(performance.now() - t0)}ms since link sniped` });
+                    JoinStore.addTags(joinCardId, "biome-verified-bait");
+                    // do something uncool?
+                    // - update joinCard and set biomeBait to true?
                 }
 
             });

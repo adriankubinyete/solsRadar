@@ -48,6 +48,6 @@ Although individual source files carry the **Vencord-required header** `SPDX-Lic
 ---
 
 ## Post-notes
-This project was severely vibe-coded with chatgpt and grok at like 3am in the morning. 
+This project was severely vibe-coded with claude, chatgpt and grok at like 3am in the morning. 
 
 Made with ❤️ to whoever finds it useful.

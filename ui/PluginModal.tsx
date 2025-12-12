@@ -8,10 +8,12 @@ import { showNotification } from "@api/Notifications";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
 import { Forms, React, showToast, Toasts } from "@webpack/common";
 
+import { CButton } from "../components/BaseComponents";
+import { JoinStoreUI } from "../components/JoinStoreUI";
+import { Margins } from "../constants";
+import { JoinStore } from "../JoinStore";
 import { cl } from "../utils";
-import { recentJoinStore } from "../utils/RecentJoinStore";
-import { BaseButton, Line, Note, Section, SectionMessage, SectionTitle, Setting } from "./BasicComponents";
-import { JoinedServerList } from "./JoinerServerList";
+import { Line, Note, Section, SectionMessage, Setting } from "./BasicComponents";
 import TriggerListUI from "./TriggerList";
 
 const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
@@ -20,35 +22,6 @@ const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
 };
 
 export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
-    const [joins, setJoins] = React.useState(recentJoinStore.all);
-
-    // Atualiza ao mudar o store (caso o store emita eventos no futuro)
-    // React.useEffect(() => {
-    //     const interval = setInterval(() => setJoins([...recentJoinStore.all]), 500);
-    //     return () => clearInterval(interval);
-    // }, []);
-
-    const addFakeJoin = () => {
-        const id = Math.random().toString(36).substring(2, 8);
-        const fakeJoin = {
-            id: Date.now(),
-            title: `Test Server ${id.toUpperCase()}`,
-            description: "Automatically generated test join",
-            iconUrl: "https://cdn.discordapp.com/icons/222078108977594368/a_f6959b1f2cb9.gif",
-            authorName: "TestUser",
-            authorAvatarUrl: "https://cdn.discordapp.com/embed/avatars/4.png",
-            timestamp: Date.now(),
-            joinStatus: {
-                verified: Math.random() > 0.5,
-                joined: Math.random() > 0.5,
-                safe: Math.random() > 0.5,
-            },
-            messageJumpUrl: "https://discord.com/channels/0/0",
-        };
-        recentJoinStore.all.unshift(fakeJoin);
-        setJoins([...recentJoinStore.all]);
-    };
-
     return (
         <ModalRoot {...rootProps}>
             <ModalHeader className={cl("modal-header")}>
@@ -59,8 +32,15 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
             </ModalHeader>
 
             <ModalContent className={cl("modal-content")}>
-                <SectionTitle>Recent Joins</SectionTitle>
-                <JoinedServerList joins={joins} onClose={rootProps.onClose} />
+                {/* <SectionTitle>Recent Joins</SectionTitle> */}
+                {/* <JoinedServerList joins={joins} onClose={rootProps.onClose} /> */}
+                <Section title="Recent Joins" persistKey="recentJoins" defaultOpen>
+                    <SectionMessage>
+                        View and manage your recent server joins. Click on any join to see detailed information.
+                    </SectionMessage>
+                    <JoinStoreUI onCloseAll={rootProps.onClose} />
+                </Section>
+
 
                 <Section title="Main Options" persistKey="mainOptions" defaultOpen>
                     <Setting setting="joinEnabled" customTitle="🎯 Automatic Join" />
@@ -129,8 +109,28 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <Line />
                     <Setting setting="_dev_verification_fail_fallback_delay_ms" customTitle="Verification Fail Fallback Delay (ms)" />
                     <Line />
-                    <BaseButton onClick={addFakeJoin}>➕ Add Fake Join</BaseButton>
-                    <BaseButton onClick={async () => {
+                    <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={() => {
+                        const id = Math.random().toString(36).substring(2, 8);
+                        JoinStore.add({
+                            title: `Test Server ${id.toUpperCase()}`,
+                            description: "Automatically generated test join",
+                            iconUrl: "https://cdn.discordapp.com/icons/222078108977594368/a_f6959b1f2cb9.gif",
+                            authorName: "TestUser",
+                            authorAvatarUrl: "https://cdn.discordapp.com/embed/avatars/4.png",
+                            messageJumpUrl: "https://discord.com/channels/0/0",
+                            tags: Math.random() > 0.5
+                                ? ["biome-verified-real", "link-verified-safe"]
+                                : ["biome-verified-bait", "link-verified-unsafe"],
+                            metadata: {
+                                isTestData: true,
+                                generatedAt: Date.now(),
+                            },
+                        });
+                        showToast("Added fake join!", Toasts.Type.SUCCESS);
+                    }}>
+                        ➕ Add Fake Join
+                    </CButton>
+                    <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={async () => {
                         const process = await Native.getProcess({ type: "tasklist", processName: "RobloxPlayerBeta.exe" });
                         if (!process) {
                             showToast("Roblox not running", Toasts.Type.FAILURE);
@@ -138,14 +138,18 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                         }
                         console.log("SolsRadar - Processes: ", process);
                         showToast(`Roblox PID: ${process[0].pid}`, Toasts.Type.SUCCESS);
-                    }}>🎯 Get Roblox PID</BaseButton>
+                    }}>
+                        🎯 Get Roblox PID
+                    </CButton>
 
-                    <BaseButton onClick={async () => {
+                    <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={async () => {
                         showNotification({
                             title: "SoRa :: Notification Test",
                             body: "This is a test notification from SolsRadar using Vencord's notification API!",
                         });
-                    }}>📩 Notification Test</BaseButton>
+                    }}>
+                        📩 Notification Test
+                    </CButton>
                 </Section>
 
             </ModalContent>
