@@ -464,6 +464,7 @@ export function CBadge({ children, variant = "secondary", size = "medium", style
 export type CCardProps = {
     children: React.ReactNode;
     onClick?: () => void;
+    onContextMenu?: () => void;
     variant?: "default" | "success" | "danger" | "warning";
     hoverable?: boolean;
     style?: React.CSSProperties;
@@ -472,6 +473,7 @@ export type CCardProps = {
 export function CCard({
     children,
     onClick,
+    onContextMenu,
     variant = "default",
     hoverable = false,
     style = {},
@@ -490,6 +492,7 @@ export function CCard({
     return (
         <div
             onClick={onClick}
+            onContextMenu={onContextMenu}
             onMouseEnter={() => hoverable && setIsHovered(true)}
             onMouseLeave={() => hoverable && setIsHovered(false)}
             style={{

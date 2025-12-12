@@ -45,7 +45,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                 {/* <JoinedServerList joins={joins} onClose={rootProps.onClose} /> */}
                 <Section title="Recent Joins" persistKey="recentJoins" defaultOpen>
                     <SectionMessage>
-                        View and manage your recent server joins. Click on any join to see detailed information.
+                        View and manage your recent server joins. Click on any join to see detailed information. Right click to jump to message (if it exists).
                     </SectionMessage>
                     <JoinStoreUI onCloseAll={rootProps.onClose} />
                 </Section>

@@ -93,7 +93,7 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
             iconUrl: "https://cdn.discordapp.com/icons/222078108977594368/a_f6959b1f2cb9.gif",
             authorName: "TestUser",
             authorAvatarUrl: "https://cdn.discordapp.com/embed/avatars/4.png",
-            messageJumpUrl: "https://discord.com/channels/0/0",
+            // messageJumpUrl: "https://discord.com/channels/0/0",
             tags: Math.random() > 0.5
                 ? ["biome-verified-real", "link-verified-safe"]
                 : ["biome-verified-bait", "link-verified-unsafe"],
@@ -113,6 +113,19 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
                 onCloseAll={onCloseAll}
             />
         ));
+    };
+
+    const handleCardContextMenu = (join: RecentJoin) => {
+        // console.log("Right-clicked join:", join);
+        if (!join.messageJumpUrl) return;
+        try {
+            const url = new URL(join.messageJumpUrl);
+            NavigationRouter.transitionTo(url.pathname);
+            if (onCloseAll) onCloseAll();
+        } catch (err) {
+            alert("Failed to navigate to message");
+            console.error(err);
+        }
     };
 
     return (
@@ -195,6 +208,7 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
                             key={join.id}
                             join={join}
                             onClick={() => handleCardClick(join)}
+                            onContextMenu={() => handleCardContextMenu(join)}
                         />
                     ))}
                 </div>
@@ -216,11 +230,20 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
 type JoinCardProps = {
     join: RecentJoin;
     onClick: () => void;
+    onContextMenu?: () => void;
 };
 
-function JoinCard({ join, onClick }: JoinCardProps) {
+function JoinCard({ join, onClick, onContextMenu }: JoinCardProps) {
     const primaryTag = JoinStore.getPrimaryTag(join);
     const primaryConfig = TAG_CONFIGS[primaryTag];
+
+    // @TODO:
+    // real biome : success
+    // fake biome : default
+    // unverified biome : default
+    // real link : default if no higher priority
+    // fake link : danger
+    // unverified link : warning
 
     const isUnsafe = join.tags.some(tag =>
         ["link-verified-unsafe", "failed", "biome-verified-bait"].includes(tag)
@@ -231,7 +254,7 @@ function JoinCard({ join, onClick }: JoinCardProps) {
     console.log("Icon For card id: ", join.id, join.iconUrl);
 
     return (
-        <CCard onClick={onClick} variant={variant} hoverable>
+        <CCard onClick={onClick} onContextMenu={onContextMenu} variant={variant} hoverable>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 {/* Server Icon */}
                 <ServerIcon iconUrl={join.iconUrl} />
@@ -444,20 +467,27 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
                                 fontWeight: 600,
                             }}
                         >
-                            Status
+                            Actions
                         </div>
+
+
                         <div
                             style={{
-                                fontSize: 20,
-                                fontWeight: 600,
-                                color: primaryConfig.color,
                                 display: "flex",
-                                alignItems: "center",
+                                flexDirection: "row",
                                 gap: 8,
+                                flexWrap: "wrap",
                             }}
                         >
-                            <span style={{ fontSize: 24 }}>{primaryConfig.emoji}</span>
-                            {primaryConfig.label}
+                            {join.messageJumpUrl && (
+                                <CButton style={{ flex: 1 }} variant="primary" onClick={handleJumpToMessage}>
+                                    Jump to Message
+                                </CButton>
+                            )}
+
+                            <CButton style={{ flex: 1 }} variant="danger" onClick={handleDeleteJoin}>
+                                Delete from History
+                            </CButton>
                         </div>
                     </div>
 
@@ -528,6 +558,15 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
                             {join.description && (
                                 <DetailRow label="Description" value={join.description} />
                             )}
+                            <DetailRow
+                                label="Time"
+                                value={`${formatTimeAgo(join.timestamp)} (${new Date(
+                                    join.timestamp
+                                ).toLocaleString()})`}
+                            />
+                            {join.serverId && (
+                                <DetailRow label="Server ID" value={join.serverId} />
+                            )}
                             {join.authorName && (
                                 <DetailRow
                                     label="Posted by"
@@ -550,15 +589,6 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
                                         </div>
                                     }
                                 />
-                            )}
-                            <DetailRow
-                                label="Time"
-                                value={`${formatTimeAgo(join.timestamp)} (${new Date(
-                                    join.timestamp
-                                ).toLocaleString()})`}
-                            />
-                            {join.serverId && (
-                                <DetailRow label="Server ID" value={join.serverId} />
                             )}
                         </div>
                     </div>
@@ -596,20 +626,6 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
                             </div>
                         </>
                     )}
-
-                    <CDivider />
-
-                    {/* Actions */}
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        {join.messageJumpUrl && (
-                            <CButton variant="primary" onClick={handleJumpToMessage} fullWidth>
-                                Jump to Message
-                            </CButton>
-                        )}
-                        <CButton variant="danger" onClick={handleDeleteJoin} fullWidth>
-                            Delete from History
-                        </CButton>
-                    </div>
                 </div>
             </ModalContent>
         </ModalRoot>
