@@ -4,9 +4,22 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { localStorage } from "@utils/localStorage";
 import { React } from "@webpack/common";
 
-import { INPUT_VARIANTS, SELECT_VARIANTS, useVariantState, VariantContainer } from "./Variants";
+import {
+    BorderRadius,
+    Colors,
+    ComponentSizes,
+    FontSizes,
+    FontWeights,
+    Margins,
+    Opacities,
+    Paddings,
+    Shadows,
+    Transitions,
+    ZIndex
+} from "./constants";
 
 // ==================== CBUTTON ====================
 
@@ -18,6 +31,7 @@ export type CButtonProps = {
     disabled?: boolean;
     fullWidth?: boolean;
     style?: React.CSSProperties;
+    className?: string;
 };
 
 export function CButton({
@@ -28,28 +42,24 @@ export function CButton({
     disabled = false,
     fullWidth = false,
     style = {},
+    className = "",
 }: CButtonProps) {
     const [isHovered, setIsHovered] = React.useState(false);
 
     const variantColors = {
-        primary: { bg: "#5865f2", hover: "#4752c4", text: "#fff" },
-        success: { bg: "#3ba55c", hover: "#2d7d46", text: "#fff" },
-        danger: { bg: "#ed4245", hover: "#c03537", text: "#fff" },
-        warning: { bg: "#faa61a", hover: "#e89112", text: "#fff" },
-        secondary: { bg: "rgba(255,255,255,0.08)", hover: "rgba(255,255,255,0.12)", text: "#fff" },
-    };
-
-    const sizeStyles = {
-        small: { padding: "6px 12px", fontSize: 12 },
-        medium: { padding: "10px 16px", fontSize: 14 },
-        large: { padding: "14px 20px", fontSize: 16 },
+        primary: { bg: Colors.PRIMARY, hover: Colors.PRIMARY_HOVER, text: Colors.REALLY_WHITE },
+        success: { bg: Colors.SUCCESS, hover: Colors.SUCCESS_HOVER, text: Colors.REALLY_WHITE },
+        danger: { bg: Colors.DANGER, hover: Colors.DANGER_HOVER, text: Colors.REALLY_WHITE },
+        warning: { bg: Colors.WARNING, hover: Colors.WARNING_HOVER, text: Colors.REALLY_WHITE },
+        secondary: { bg: Colors.BG_WHITE_8, hover: Colors.BG_WHITE_12, text: Colors.REALLY_WHITE },
     };
 
     const colors = variantColors[variant];
-    const sizes = sizeStyles[size];
+    const sizes = ComponentSizes[size.toUpperCase() as keyof typeof ComponentSizes];
 
     return (
         <button
+            className={className}
             onClick={onClick}
             disabled={disabled}
             onMouseEnter={() => setIsHovered(true)}
@@ -58,14 +68,17 @@ export function CButton({
                 background: isHovered && !disabled ? colors.hover : colors.bg,
                 color: colors.text,
                 border: "none",
-                borderRadius: 6,
+                borderRadius: BorderRadius.MEDIUM,
                 cursor: disabled ? "not-allowed" : "pointer",
-                fontWeight: 600,
-                transition: "all 0.2s ease",
-                opacity: disabled ? 0.5 : 1,
+                fontWeight: FontWeights.SEMIBOLD,
+                transition: Transitions.NORMAL,
+                opacity: disabled ? Opacities.DISABLED : Opacities.FULL,
                 width: fullWidth ? "100%" : "auto",
                 transform: isHovered && !disabled ? "translateY(-1px)" : "translateY(0)",
-                ...sizes,
+                boxSizing: "border-box",
+                height: sizes.height,
+                padding: sizes.padding,
+                fontSize: sizes.fontSize,
                 ...style,
             }}
         >
@@ -74,90 +87,107 @@ export function CButton({
     );
 }
 
-// ==================== CRADIO ====================
+// ==================== CINPUT ====================
 
-export type CRadioOption = {
-    label: string;
-    value: string;
-    description?: string;
-};
-
-export type CRadioProps = {
-    options: CRadioOption[];
+export type CInputProps = {
     value: string;
     onChange: (value: string) => void;
-    name?: string;
+    placeholder?: string;
+    type?: "text" | "number" | "password";
+    fullWidth?: boolean;
+    error?: string;
+    icon?: React.ReactNode;
+    style?: React.CSSProperties;
+    containerStyle?: React.CSSProperties;
+    className?: string;
+    onFocus?: () => void;
+    onBlur?: () => void;
+    size?: "small" | "medium" | "large";
 };
 
-export function CRadio({ options, value, onChange, name = "radio" }: CRadioProps) {
+export function CInput({
+    value,
+    onChange,
+    placeholder = "",
+    type = "text",
+    fullWidth = true,
+    error,
+    icon,
+    style = {},
+    containerStyle = {},
+    className = "",
+    onFocus,
+    onBlur,
+    size = "medium",
+}: CInputProps) {
+    const [isFocused, setIsFocused] = React.useState(false);
+
+    const sizes = ComponentSizes[size.toUpperCase() as keyof typeof ComponentSizes];
+
+    const handleFocus = () => {
+        setIsFocused(true);
+        onFocus?.();
+    };
+
+    const handleBlur = () => {
+        setIsFocused(false);
+        onBlur?.();
+    };
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-            {options.map(option => {
-                const isSelected = value === option.value;
-                return (
-                    <label
-                        key={option.value}
-                        style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: 12,
-                            padding: 12,
-                            width: "100%",
-                            background: isSelected
-                                ? "rgba(88, 101, 242, 0.1)"
-                                : "rgba(255,255,255,0.05)",
-                            border: isSelected
-                                ? "1px solid rgba(88, 101, 242, 0.4)"
-                                : "1px solid rgba(255,255,255,0.1)",
-                            borderRadius: 6,
-                            cursor: "pointer",
-                            transition: "all 0.2s ease",
-                        }}
-                        onMouseEnter={e => {
-                            if (!isSelected) {
-                                (e.currentTarget as HTMLElement).style.background =
-                                    "rgba(255,255,255,0.08)";
-                            }
-                        }}
-                        onMouseLeave={e => {
-                            if (!isSelected) {
-                                (e.currentTarget as HTMLElement).style.background =
-                                    "rgba(255,255,255,0.05)";
-                            }
-                        }}
-                    >
-                        <input
-                            type="radio"
-                            name={name}
-                            value={option.value}
-                            checked={isSelected}
-                            onChange={() => onChange(option.value)}
-                            style={{
-                                marginTop: 2,
-                                cursor: "pointer",
-                                accentColor: "#5865f2",
-                            }}
-                        />
-                        <div style={{ flex: 1 }}>
-                            <div
-                                style={{
-                                    fontWeight: 600,
-                                    color: "#fff",
-                                    fontSize: 14,
-                                    marginBottom: option.description ? 4 : 0,
-                                }}
-                            >
-                                {option.label}
-                            </div>
-                            {option.description && (
-                                <div style={{ fontSize: 12, color: "#b9bbbe" }}>
-                                    {option.description}
-                                </div>
-                            )}
-                        </div>
-                    </label>
-                );
-            })}
+        <div style={{ width: fullWidth ? "100%" : "auto", ...containerStyle }}>
+            <div
+                className={className}
+                style={{
+                    ...(style?.height === "100%" ? {} : { height: sizes.height }),
+                    background: Colors.BG_WHITE_5,
+                    borderRadius: BorderRadius.MEDIUM,
+                    border: error
+                        ? `1px solid ${Colors.ERROR}`
+                        : isFocused
+                            ? `1px solid ${Colors.PRIMARY}`
+                            : `1px solid ${Colors.BORDER_WHITE_10}`,
+                    transition: Transitions.NORMAL,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: Margins.MEDIUM,
+                    boxSizing: "border-box",
+                    ...style,
+                    // Aplica padding do size apenas se não foi sobrescrito no style
+                    padding: style?.padding !== undefined ? style.padding : sizes.padding,
+                }}
+            >
+                {icon && (
+                    <div style={{ color: Colors.SECONDARY, fontSize: sizes.fontSize, flexShrink: 0 }}>
+                        {icon}
+                    </div>
+                )}
+
+                <input
+                    type={type}
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    style={{
+                        flex: 1,
+                        background: "transparent",
+                        border: "none",
+                        color: Colors.REALLY_WHITE,
+                        fontSize: sizes.fontSize,
+                        outline: "none",
+                        width: "100%",
+                        height: "100%",
+                    }}
+                />
+            </div>
+
+            {error && (
+                <div style={{ color: Colors.ERROR, fontSize: FontSizes.MEDIUM, marginTop: Margins.SMALL }}>
+                    {error}
+                </div>
+            )}
         </div>
     );
 }
@@ -176,7 +206,9 @@ export type CSelectProps = {
     placeholder?: string;
     fullWidth?: boolean;
     style?: React.CSSProperties;
-    variant?: "default" | "sol";
+    containerStyle?: React.CSSProperties;
+    className?: string;
+    size?: "small" | "medium" | "large";
 };
 
 export function CSelect({
@@ -186,20 +218,17 @@ export function CSelect({
     placeholder = "Select...",
     fullWidth = true,
     style = {},
-    variant = "default",
+    containerStyle = {},
+    className = "",
+    size = "medium",
 }: CSelectProps) {
     const [isOpen, setIsOpen] = React.useState(false);
-    const [state, { setHovered, setFocused }] = useVariantState();
+    const [isHovered, setIsHovered] = React.useState(false);
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find(opt => opt.value === value);
+    const sizes = ComponentSizes[size.toUpperCase() as keyof typeof ComponentSizes];
 
-    // Atualiza o estado de focused baseado em isOpen
-    React.useEffect(() => {
-        setFocused(isOpen);
-    }, [isOpen]);
-
-    // Close on outside click
     React.useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -220,57 +249,59 @@ export function CSelect({
             style={{
                 position: "relative",
                 width: fullWidth ? "100%" : "auto",
-                ...style,
+                ...containerStyle,
             }}
         >
-            {/* Trigger */}
-            <VariantContainer
-                variant={variant}
-                variantConfigs={SELECT_VARIANTS}
-                state={state}
+            <div
+                className={className}
                 onClick={() => setIsOpen(!isOpen)}
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                style={{
+                    height: sizes.height,
+                    padding: sizes.padding,
+                    background: isHovered ? Colors.BG_WHITE_8 : Colors.BG_WHITE_5,
+                    border: `1px solid ${Colors.BORDER_WHITE_10}`,
+                    borderRadius: BorderRadius.MEDIUM,
+                    cursor: "pointer",
+                    transition: Transitions.NORMAL,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    boxSizing: "border-box",
+                    ...style,
+                }}
             >
-                <div
+                <span style={{ color: selectedOption ? Colors.REALLY_WHITE : Colors.SECONDARY, fontSize: sizes.fontSize }}>
+                    {selectedOption?.label || placeholder}
+                </span>
+                <span
                     style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
+                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: Transitions.NORMAL,
+                        fontSize: FontSizes.MEDIUM,
+                        marginLeft: Margins.MEDIUM,
                     }}
                 >
-                    <span style={{ color: selectedOption ? "#fff" : "#b9bbbe", fontSize: 14 }}>
-                        {selectedOption?.label || placeholder}
-                    </span>
-                    <span
-                        style={{
-                            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                            transition: "transform 0.2s ease",
-                            fontSize: 12,
-                            marginLeft: 8,
-                        }}
-                    >
-                        ▼
-                    </span>
-                </div>
-            </VariantContainer>
+                    ▼
+                </span>
+            </div>
 
-            {/* Dropdown */}
             {isOpen && (
                 <div
                     style={{
                         position: "absolute",
-                        top: "calc(100% + 4px)",
+                        top: `calc(100% + ${Margins.SMALL}px)`,
                         left: 0,
                         right: 0,
-                        background: "#2f3136",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: variant === "sol" ? 0 : 6,
+                        background: Colors.DISCORD_BG,
+                        border: `1px solid ${Colors.BORDER_WHITE_10}`,
+                        borderRadius: BorderRadius.MEDIUM,
                         overflow: "hidden",
-                        zIndex: 1000,
+                        zIndex: ZIndex.DROPDOWN,
                         maxHeight: 200,
                         overflowY: "auto",
-                        boxShadow: "0 8px 16px rgba(0,0,0,0.3)",
+                        boxShadow: Shadows.DROPDOWN,
                     }}
                 >
                     {options.map(option => {
@@ -283,31 +314,27 @@ export function CSelect({
                                     setIsOpen(false);
                                 }}
                                 style={{
-                                    padding: "10px 12px",
-                                    background: isSelected
-                                        ? "rgba(88, 101, 242, 0.2)"
-                                        : "transparent",
-                                    color: "#fff",
+                                    padding: `${Paddings.MEDIUM}px ${Paddings.LARGE}px`,
+                                    background: isSelected ? Colors.PRIMARY_BG_20 : "transparent",
+                                    color: Colors.REALLY_WHITE,
                                     cursor: "pointer",
-                                    fontSize: 14,
-                                    transition: "background 0.15s ease",
+                                    fontSize: sizes.fontSize,
+                                    transition: Transitions.FAST,
                                 }}
                                 onMouseEnter={e => {
                                     if (!isSelected) {
-                                        (e.currentTarget as HTMLElement).style.background =
-                                            "rgba(255,255,255,0.08)";
+                                        (e.currentTarget as HTMLElement).style.background = Colors.BG_WHITE_8;
                                     }
                                 }}
                                 onMouseLeave={e => {
                                     if (!isSelected) {
-                                        (e.currentTarget as HTMLElement).style.background =
-                                            "transparent";
+                                        (e.currentTarget as HTMLElement).style.background = "transparent";
                                     }
                                 }}
                             >
                                 {option.label}
                                 {isSelected && (
-                                    <span style={{ float: "right", color: "#5865f2" }}>✓</span>
+                                    <span style={{ float: "right", color: Colors.PRIMARY }}>✓</span>
                                 )}
                             </div>
                         );
@@ -318,82 +345,86 @@ export function CSelect({
     );
 }
 
-// ==================== CINPUT ====================
+// ==================== CRADIO ====================
 
-export type CInputProps = {
+export type CRadioOption = {
+    label: string;
     value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    type?: "text" | "number" | "password";
-    fullWidth?: boolean;
-    error?: string;
-    icon?: React.ReactNode;
-    style?: React.CSSProperties;
-    variant?: "default" | "slim" | "sol" | "glow";
+    description?: string;
 };
 
-export function CInput({
-    value,
-    onChange,
-    placeholder = "",
-    type = "text",
-    fullWidth = true,
-    error,
-    icon,
-    style = {},
-    variant = "default",
-}: CInputProps) {
-    const [state, { setFocused }] = useVariantState();
+export type CRadioProps = {
+    options: CRadioOption[];
+    value: string;
+    onChange: (value: string) => void;
+    name?: string;
+};
 
-    // Atualiza hasError no state
-    const finalState = { ...state, hasError: !!error };
-
+export function CRadio({ options, value, onChange, name = "radio" }: CRadioProps) {
     return (
-        <div style={{ width: fullWidth ? "100%" : "auto", ...style }}>
-            <VariantContainer
-                variant={variant}
-                variantConfigs={INPUT_VARIANTS}
-                state={finalState}
-            >
-                <div
-                    style={{
-                        height: 14,
-                        display: "flex",
-                        alignItems: "center",
-                        flexDirection: "row",
-                        gap: 8,
-                    }}
-                >
-                    {icon && (
-                        <div style={{ color: "#b9bbbe", fontSize: 14 }}>
-                            {icon}
-                        </div>
-                    )}
-
-                    <input
-                        type={type}
-                        value={value}
-                        onChange={e => onChange(e.target.value)}
-                        placeholder={placeholder}
-                        onFocus={() => setFocused(true)}
-                        onBlur={() => setFocused(false)}
+        <div style={{ display: "flex", flexDirection: "column", gap: Margins.MEDIUM, width: "100%" }}>
+            {options.map(option => {
+                const isSelected = value === option.value;
+                return (
+                    <label
+                        key={option.value}
                         style={{
-                            // flex: 1,
-                            background: "transparent",
-                            border: "none",
-                            color: "#fff",
-                            fontSize: 14,
-                            outline: "none",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: Paddings.LARGE,
+                            padding: Paddings.LARGE,
+                            width: "100%",
+                            background: isSelected ? Colors.PRIMARY_BG_10 : Colors.BG_WHITE_5,
+                            border: isSelected
+                                ? `1px solid ${Colors.PRIMARY_BORDER_40}`
+                                : `1px solid ${Colors.BORDER_WHITE_10}`,
+                            borderRadius: BorderRadius.MEDIUM,
+                            cursor: "pointer",
+                            transition: Transitions.NORMAL,
                         }}
-                    />
-                </div>
-            </VariantContainer>
-
-            {error && (
-                <div style={{ color: "#ed4245", fontSize: 12, marginTop: 4 }}>
-                    {error}
-                </div>
-            )}
+                        onMouseEnter={e => {
+                            if (!isSelected) {
+                                (e.currentTarget as HTMLElement).style.background = Colors.BG_WHITE_8;
+                            }
+                        }}
+                        onMouseLeave={e => {
+                            if (!isSelected) {
+                                (e.currentTarget as HTMLElement).style.background = Colors.BG_WHITE_5;
+                            }
+                        }}
+                    >
+                        <input
+                            type="radio"
+                            name={name}
+                            value={option.value}
+                            checked={isSelected}
+                            onChange={() => onChange(option.value)}
+                            style={{
+                                marginTop: Margins.TINY,
+                                cursor: "pointer",
+                                accentColor: Colors.PRIMARY,
+                            }}
+                        />
+                        <div style={{ flex: 1 }}>
+                            <div
+                                style={{
+                                    fontWeight: FontWeights.SEMIBOLD,
+                                    color: Colors.REALLY_WHITE,
+                                    fontSize: FontSizes.NORMAL,
+                                    marginBottom: option.description ? Margins.SMALL : 0,
+                                }}
+                            >
+                                {option.label}
+                            </div>
+                            {option.description && (
+                                <div style={{ fontSize: FontSizes.MEDIUM, color: Colors.SECONDARY }}>
+                                    {option.description}
+                                </div>
+                            )}
+                        </div>
+                    </label>
+                );
+            })}
         </div>
     );
 }
@@ -409,16 +440,16 @@ export type CBadgeProps = {
 
 export function CBadge({ children, variant = "secondary", size = "medium", style = {} }: CBadgeProps) {
     const variantColors = {
-        primary: { bg: "rgba(88, 101, 242, 0.2)", border: "rgba(88, 101, 242, 0.4)", text: "#5865f2" },
-        success: { bg: "rgba(59, 165, 92, 0.2)", border: "rgba(59, 165, 92, 0.4)", text: "#3ba55c" },
-        danger: { bg: "rgba(237, 66, 69, 0.2)", border: "rgba(237, 66, 69, 0.4)", text: "#ed4245" },
-        warning: { bg: "rgba(250, 166, 26, 0.2)", border: "rgba(250, 166, 26, 0.4)", text: "#faa61a" },
-        secondary: { bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)", text: "#b9bbbe" },
+        primary: { bg: Colors.PRIMARY_BG_20, border: Colors.PRIMARY_BORDER_40, text: Colors.PRIMARY },
+        success: { bg: Colors.SUCCESS_BG_20, border: Colors.SUCCESS_BORDER_40, text: Colors.SUCCESS },
+        danger: { bg: Colors.DANGER_BG_20, border: Colors.DANGER_BORDER_40, text: Colors.DANGER },
+        warning: { bg: Colors.WARNING_BG_20, border: Colors.WARNING_BORDER_40, text: Colors.WARNING },
+        secondary: { bg: Colors.BG_WHITE_5, border: Colors.BORDER_WHITE_10, text: Colors.SECONDARY },
     };
 
     const sizeStyles = {
-        small: { padding: "2px 6px", fontSize: 11 },
-        medium: { padding: "4px 8px", fontSize: 12 },
+        small: { padding: `${Paddings.TINY}px ${Paddings.SMALL}px`, fontSize: FontSizes.SMALL },
+        medium: { padding: `${Margins.SMALL}px ${Margins.MEDIUM}px`, fontSize: FontSizes.MEDIUM },
     };
 
     const colors = variantColors[variant];
@@ -432,8 +463,8 @@ export function CBadge({ children, variant = "secondary", size = "medium", style
                 background: colors.bg,
                 border: `1px solid ${colors.border}`,
                 color: colors.text,
-                borderRadius: 4,
-                fontWeight: 600,
+                borderRadius: BorderRadius.SMALL,
+                fontWeight: FontWeights.SEMIBOLD,
                 whiteSpace: "nowrap",
                 ...sizes,
                 ...style,
@@ -466,10 +497,10 @@ export function CCard({
     const [isHovered, setIsHovered] = React.useState(false);
 
     const variantColors = {
-        default: { bg: "rgba(255,255,255,0.05)", border: "rgba(255,255,255,0.1)" },
-        success: { bg: "rgba(59, 165, 92, 0.1)", border: "rgba(59, 165, 92, 0.3)" },
-        danger: { bg: "rgba(237, 66, 69, 0.1)", border: "rgba(237, 66, 69, 0.3)" },
-        warning: { bg: "rgba(250, 166, 26, 0.1)", border: "rgba(250, 166, 26, 0.3)" },
+        default: { bg: Colors.BG_WHITE_5, border: Colors.BORDER_WHITE_10 },
+        success: { bg: Colors.SUCCESS_BG_10, border: Colors.SUCCESS_BORDER_30 },
+        danger: { bg: Colors.DANGER_BG_10, border: Colors.DANGER_BORDER_30 },
+        warning: { bg: Colors.WARNING_BG_10, border: Colors.WARNING_BORDER_30 },
     };
 
     const colors = variantColors[variant];
@@ -483,10 +514,10 @@ export function CCard({
             style={{
                 background: colors.bg,
                 border: `1px solid ${colors.border}`,
-                borderRadius: 8,
-                padding: 12,
+                borderRadius: BorderRadius.LARGE,
+                padding: Paddings.LARGE,
                 cursor: onClick || hoverable ? "pointer" : "default",
-                transition: "all 0.2s ease",
+                transition: Transitions.NORMAL,
                 transform: isHovered && hoverable ? "translateY(-2px)" : "translateY(0)",
                 ...style,
             }}
@@ -497,17 +528,275 @@ export function CCard({
 }
 
 // ==================== CDIVIDER ====================
-
-export function CDivider({ style = {} }: { style?: React.CSSProperties; }) {
+export function CDivider({
+    style = {},
+    spacing = "SMALL",
+}: {
+    style?: React.CSSProperties;
+    spacing?: keyof typeof Paddings;
+}) {
     return (
         <div
             style={{
                 height: 1,
-                background: "rgba(255,255,255,0.1)",
-                margin: "12px 0",
+                background: Colors.BORDER_WHITE_10,
+                margin: `${Paddings[spacing]}px 0`,
                 ...style,
             }}
         />
+    );
+}
+
+// ==================== CSECTION ====================
+
+export type CSectionProps = {
+    title: React.ReactNode;
+    defaultOpen?: boolean;
+    persistKey?: string;
+    children: React.ReactNode;
+    spacing?: keyof typeof Paddings;
+    style?: React.CSSProperties;
+};
+
+export function CSection({
+    title,
+    defaultOpen = false,
+    persistKey,
+    children,
+    spacing = "XXLARGE",
+    style = {},
+}: CSectionProps) {
+    const storageKey = persistKey ? `section.${persistKey}` : null;
+
+    const [open, setOpen] = React.useState(() => {
+        if (!storageKey) return defaultOpen;
+
+        const saved = localStorage.getItem(storageKey);
+        if (saved === "open") return true;
+        if (saved === "closed") return false;
+
+        return defaultOpen;
+    });
+
+    const [isHovered, setIsHovered] = React.useState(false);
+
+    const toggle = () => {
+        setOpen(o => {
+            const newState = !o;
+            if (storageKey) {
+                localStorage.setItem(storageKey, newState ? "open" : "closed");
+            }
+            return newState;
+        });
+    };
+
+    return (
+        <div style={{ width: "100%", margin: `${Paddings[spacing]}px 0`, ...style }}>
+            {/* Header */}
+            <div
+                onClick={toggle}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    cursor: "pointer",
+                    userSelect: "none",
+                    opacity: isHovered ? Opacities.FULL : Opacities.HOVER,
+                    transition: Transitions.FAST,
+                }}
+            >
+                <CDivider
+                    spacing="TINY"
+                    style={{
+                        flex: 1,
+                        margin: 0,
+                        marginRight: Paddings.LARGE,
+                        background: Colors.BORDER_WHITE_15,
+                    }}
+                />
+
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: Margins.SMALL,
+                        color: Colors.SECONDARY,
+                        fontWeight: FontWeights.MEDIUM,
+                        whiteSpace: "nowrap",
+                        fontSize: FontSizes.LARGE,
+                    }}
+                >
+                    {/* Seta animada */}
+                    <span
+                        style={{
+                            display: "inline-block",
+                            transition: Transitions.NORMAL,
+                            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                            fontSize: FontSizes.MEDIUM,
+                            opacity: 0.7,
+                        }}
+                    >
+                        ▶
+                    </span>
+
+                    {title}
+                </div>
+
+                <CDivider
+                    spacing="TINY"
+                    style={{
+                        flex: 1,
+                        margin: 0,
+                        marginLeft: Paddings.LARGE,
+                        background: Colors.BORDER_WHITE_15,
+                    }}
+                />
+            </div>
+
+            {/* Conteúdo animado */}
+            <div
+                style={{
+                    maxHeight: open ? "2000px" : "0px",
+                    overflow: "hidden",
+                    opacity: open ? Opacities.FULL : 0,
+                    transform: open ? "translateY(0px)" : "translateY(-4px)",
+                    transitionProperty: "max-height, opacity, transform, padding",
+                    transitionDuration: "0.35s",
+                    transitionTimingFunction: "ease",
+                    paddingTop: open ? Paddings.MEDIUM : 0,
+                }}
+            >
+                {children}
+            </div>
+        </div>
+    );
+}
+
+// ==================== CSECTIONMESSAGE ====================
+
+export type CSectionMessageProps = {
+    children: React.ReactNode;
+    variant?: "default" | "warning" | "success" | "danger";
+    style?: React.CSSProperties;
+};
+
+export function CSectionMessage({
+    children,
+    variant = "default",
+    style = {},
+}: CSectionMessageProps) {
+    if (variant === "default") {
+        return (
+            <div
+                style={{
+                    color: Colors.WHITE,
+                    fontSize: FontSizes.NORMAL,
+                    lineHeight: 1.5,
+                    marginBottom: Margins.LARGE,
+                    ...style,
+                }}
+            >
+                {children}
+            </div>
+        );
+    }
+
+    const variantStyles = {
+        warning: {
+            bg: Colors.WARNING_BG_10,
+            border: Colors.WARNING_BORDER_30,
+            color: Colors.WARNING,
+        },
+        success: {
+            bg: Colors.SUCCESS_BG_10,
+            border: Colors.SUCCESS_BORDER_30,
+            color: Colors.SUCCESS,
+        },
+        danger: {
+            bg: Colors.DANGER_BG_10,
+            border: Colors.DANGER_BORDER_30,
+            color: Colors.DANGER,
+        },
+    };
+
+    const styles = variantStyles[variant];
+
+    return (
+        <div
+            style={{
+                padding: Paddings.LARGE,
+                background: styles.bg,
+                border: `1px solid ${styles.border}`,
+                borderRadius: BorderRadius.MEDIUM,
+                marginBottom: Margins.LARGE,
+                color: Colors.WHITE,
+                fontSize: FontSizes.NORMAL,
+                lineHeight: 1.5,
+                ...style,
+            }}
+        >
+            {children}
+        </div>
+    );
+}
+
+// ==================== CSECTIONNOTE ====================
+
+export type CSectionNoteProps = {
+    children: React.ReactNode;
+    variant?: "default" | "warning" | "tip";
+    style?: React.CSSProperties;
+};
+
+export function CSectionNote({
+    children,
+    variant = "default",
+    style = {},
+}: CSectionNoteProps) {
+    const variantStyles = {
+        default: {
+            color: Colors.SECONDARY,
+            borderColor: Colors.BORDER_WHITE_15,
+        },
+        warning: {
+            color: Colors.WARNING,
+            borderColor: Colors.WARNING_BORDER_30,
+        },
+        tip: {
+            color: Colors.PRIMARY,
+            borderColor: Colors.PRIMARY_BORDER_30,
+        },
+    };
+
+    const styles = variantStyles[variant];
+
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: Margins.MEDIUM,
+                paddingLeft: Paddings.LARGE,
+                marginTop: Margins.SMALL,
+                marginBottom: Margins.MEDIUM,
+                borderLeft: `3px solid ${styles.borderColor}`,
+                ...style,
+            }}
+        >
+            <div
+                style={{
+                    flex: 1,
+                    color: styles.color,
+                    fontSize: FontSizes.MEDIUM,
+                    lineHeight: 1.5,
+                    opacity: 0.9,
+                }}
+            >
+                {children}
+            </div>
+        </div>
     );
 }
 
@@ -529,20 +818,20 @@ export function CEmptyState({ icon, title, description, action, style = {} }: CE
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "40px 20px",
+                padding: `${Paddings.XLARGE * 2}px ${Paddings.XXLARGE}px`,
                 textAlign: "center",
                 width: "100%",
                 ...style,
             }}
         >
             {icon && (
-                <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.5 }}>{icon}</div>
+                <div style={{ fontSize: FontSizes.XXLARGE, marginBottom: Paddings.LARGE, opacity: Opacities.ICON }}>{icon}</div>
             )}
-            <div style={{ fontSize: 16, fontWeight: 600, color: "#fff", marginBottom: 8 }}>
+            <div style={{ fontSize: FontSizes.LARGE, fontWeight: FontWeights.SEMIBOLD, color: Colors.REALLY_WHITE, marginBottom: Margins.MEDIUM }}>
                 {title}
             </div>
             {description && (
-                <div style={{ fontSize: 14, color: "#b9bbbe", marginBottom: 16 }}>
+                <div style={{ fontSize: FontSizes.NORMAL, color: Colors.SECONDARY, marginBottom: Paddings.XLARGE }}>
                     {description}
                 </div>
             )}

@@ -15,10 +15,9 @@ import {
     CCard,
     CDivider,
     CEmptyState,
-    CInput,
-    CSelect,
 } from "./BaseComponents";
 import { Margins } from "./constants";
+import { StyledInput, StyledSelect } from "./StyledComponents";
 
 const AVATAR_FALLBACK = "https://discord.com/assets/881ed827548f38c6.svg";
 
@@ -130,37 +129,29 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Header with stats */}
-            <div
-                style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 8,
-                    flexWrap: "nowrap",
-                }}
-            >
-                {/* Left side — stats */}
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 1 }}>
-                    <CBadge variant="primary">{joins.length} Total</CBadge>
-                    <CBadge variant="success">
-                        {joins.filter(j => j.tags.includes("link-verified-safe")).length} Verified
-                    </CBadge>
-                    <CBadge variant="danger">
-                        {joins.filter(j => j.tags.includes("link-verified-unsafe")).length} Fake
-                    </CBadge>
-                </div>
 
-                {/* Right side — fixed button group */}
-                <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                    <CButton variant="primary" size="small" onClick={handleAddFakeJoin}>
-                        Add Fake Join
-                    </CButton>
-                    <CButton variant="danger" size="small" onClick={handleClearAll}>
-                        Clear All
-                    </CButton>
-                </div>
+            {/* Badges
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <CBadge style={{ flex: 1, justifyContent: "center" }} variant="primary">{joins.length} Total</CBadge>
+                <CBadge style={{ flex: 1, justifyContent: "center" }} variant="success">
+                    {joins.filter(j => j.tags.includes("biome-verified-real")).length} Real
+                </CBadge>
+                <CBadge style={{ flex: 1, justifyContent: "center" }} variant="danger">
+                    {joins.filter(j => j.tags.includes("biome-verified-bait")).length} Bait
+                </CBadge>
+            </div> */}
+
+            {/* Action Buttons*/}
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                <CButton style={{ flex: 1 }} variant="primary" size="small" onClick={handleAddFakeJoin}>
+                    Add Fake Join
+                </CButton>
+                <CButton style={{ flex: 1 }} variant="danger" size="small" onClick={handleClearAll}>
+                    Clear All
+                </CButton>
             </div>
+
+            <CDivider />
 
             {/* Filters */}
             <div
@@ -172,28 +163,27 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
                 }}
             >
                 {/* Search */}
-                <div style={{ flex: 3, minWidth: 200 }}>
-                    <CInput
+                <div style={{ flex: 2 }}>
+                    <StyledInput
+                        size="small"
                         value={searchTerm}
                         onChange={setSearchTerm}
                         placeholder="Search by title, author..."
                         fullWidth
                         icon="🔍"
-                        variant="default"
                     />
                 </div>
 
                 {/* Tag select */}
-                <div style={{ flex: 2, minWidth: 0 }}>
-                    <CSelect
+                <div style={{ flex: 1 }}>
+                    <StyledSelect
+                        size="small"
                         options={tagOptions}
                         value={filterTag}
                         onChange={setFilterTag}
                     />
                 </div>
             </div>
-
-            <CDivider />
 
             {/* Join list */}
             {filteredJoins.length === 0 ? (

@@ -8,11 +8,11 @@ import { showNotification } from "@api/Notifications";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
 import { Forms, React, showToast, Toasts } from "@webpack/common";
 
-import { CButton, CDivider } from "../components/BaseComponents";
+import { CButton, CDivider, CSection, CSectionMessage, CSectionNote } from "../components/BaseComponents";
 import { Margins } from "../components/constants";
 import { JoinStoreUI } from "../components/JoinStoreUI";
 import { cl } from "../utils";
-import { Note, Section, SectionMessage, Setting } from "./BasicComponents";
+import { Setting } from "./BasicComponents";
 import TriggerListUI from "./TriggerList";
 
 const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
@@ -41,79 +41,75 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
             </ModalHeader>
             <CDivider />
             <ModalContent className={cl("modal-content")}>
-                {/* <SectionTitle>Recent Joins</SectionTitle> */}
-                {/* <JoinedServerList joins={joins} onClose={rootProps.onClose} /> */}
-                <Section title="Recent Joins" persistKey="recentJoins" defaultOpen>
-                    <SectionMessage>
+
+                <CSection title="Recent Joins" persistKey="recentJoins" defaultOpen>
+                    <CSectionMessage>
                         View and manage your recent server joins. Click on any join to see detailed information. Right click to jump to message (if it exists).
-                    </SectionMessage>
+                    </CSectionMessage>
                     <JoinStoreUI onCloseAll={rootProps.onClose} />
-                </Section>
+                </CSection>
 
 
-                <Section title="Main Options" persistKey="mainOptions" defaultOpen>
+                <CSection title="Main Options" persistKey="mainOptions" defaultOpen>
                     <Setting setting="joinEnabled" customTitle="🎯 Automatic Join" />
                     <Setting setting="notifyEnabled" customTitle="📩 Notifications" />
-                </Section>
+                </CSection>
 
-                <Section title="Triggers" persistKey="triggers" defaultOpen>
-                    <SectionMessage>
+                <CSection title="Triggers" persistKey="triggers" defaultOpen>
+                    <CSectionMessage>
                         Right-click a trigger to quickly enable or disable it. Left-click to open the configuration page. A trigger must be active for Join or Notify to work.<br />
-                    </SectionMessage>
+                    </CSectionMessage>
                     <TriggerListUI />
-                </ Section>
+                </CSection>
 
-                <Section title="Join Options" persistKey="joinOptions" defaultOpen>
+                <CSection title="Join Options" persistKey="joinOptions" defaultOpen>
                     <Setting setting="joinCloseGameBefore" customTitle="🟦 Close game before joining" />
-                    <Note>
+                    <CSectionNote>
                         This makes your join about 1 second slower, but ✨hopefully✨ prevents the game from simply not launching at all. If you want faster joins, disable this and close your game manually before every join.
-                    </Note>
+                    </CSectionNote>
 
-                </Section>
+                </CSection>
 
-                <Section title="Link Verification Options" persistKey="verify" defaultOpen>
-                    <SectionMessage>
-                        ⚠️⚠️⚠️⚠️<br />All configurations listed here will only work if you have set a Roblosecurity token to resolve links. To configure a Roblosecurity token, navigate to the plugin's settings page.
-                    </SectionMessage>
+                <CSection title="Link Verification Options" persistKey="verify" defaultOpen>
+                    <CSectionMessage variant="warning">
+                        <br />All configurations listed here will only work if you have set a Roblosecurity token to resolve links. To configure a Roblosecurity token, navigate to the plugin's settings page.
+                    </CSectionMessage>
                     <CDivider />
                     <Setting setting="verifyMode" customTitle="🟦 Server Link Verification Mode" />
                     <Setting setting="verifyAfterJoinFailFallbackAction" customTitle="🟦 Verification Fail Action" />
                     <Setting setting="verifyAllowedPlaceIds" customTitle="✅ Allowed Place IDs" />
                     <Setting setting="verifyBlockedPlaceIds" customTitle="🚫 Blocked Place IDs" />
-                </Section>
+                </CSection>
 
-                <Section title="UI Options" persistKey="ui" defaultOpen>
+                <CSection title="UI Options" persistKey="ui" defaultOpen>
                     <Setting
                         setting="uiShortcutAction"
                         customTitle="🟦 Chat Bar Button Shortcut Action"
                     />
                     <Setting setting="uiShowTagsInInactiveTriggers" customTitle="🟦 Show Trigger Tags in Inactive Triggers" />
-                </Section>
+                </CSection>
 
-                <Section title="Biome Detection Options" persistKey="biome" defaultOpen>
-                    <SectionMessage>
+                <CSection title="Biome Detection Options" persistKey="biome" defaultOpen>
+                    <CSectionMessage>
                         Biome detection settings to validate biomes/weather after joining a server. You need to configure the monitored account in the plugin's settings for this to work!
-                    </SectionMessage>
+                    </CSectionMessage>
                     <Setting setting="biomeDetectorEnabled" customTitle="🟦 Biome Detector Enabled" />
                     <Setting setting="biomeDetectorPoolingRateMs" customTitle="🟦 Detection Refresh Rate" />
-                    <Note>
+                    <CSectionNote variant="warning">
                         You cannot set it under 250ms because it's not really necessary, you'll only stress your machine. Recommended to keep as 1000ms
-                    </Note>
+                    </CSectionNote>
                     <Setting setting="biomeDetectorLoggingLevel" customTitle="🟦 Detector Logging Level" />
-                    <Note>
-                        VERY spammy in the console.
-                    </Note>
-                </Section>
+                </CSection>
 
-                <Section title="Other Options" persistKey="other" defaultOpen>
+                <CSection title="Other Options" persistKey="other" defaultOpen>
                     <Setting setting="monitorNavigateToChannelsOnStartup" customTitle="🟦 Load Channels on Startup" />
                     <Setting setting="monitorGreedyMode" customTitle="🟦 Greedy Mode" />
                     <Setting setting="monitorGreedyExceptionList" customTitle="🟦 Greedy Mode Exception List" />
                     <Setting setting="monitorInterpretEmbeds" customTitle="🟦 Interpret Embed Descriptions" />
                     <Setting setting="monitorBlockedUserList" customTitle="🟦 Ignored Users" />
-                </Section>
+                </CSection>
 
-                <Section title="Developer Options" persistKey="dev" defaultOpen>
+                <CSection title="Developer Options" persistKey="dev" defaultOpen>
                     <Setting setting="loggingLevel" customTitle="Console Logging Level" />
                     <CDivider />
                     <Setting setting="_dev_verification_fail_fallback_delay_ms" customTitle="Verification Fail Fallback Delay (ms)" />
@@ -138,7 +134,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     }}>
                         📩 Notification Test
                     </CButton>
-                </Section>
+                </CSection>
 
             </ModalContent>
         </ModalRoot>
