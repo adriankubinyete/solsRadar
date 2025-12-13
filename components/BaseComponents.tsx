@@ -6,6 +6,8 @@
 
 import { React } from "@webpack/common";
 
+import { INPUT_VARIANTS, SELECT_VARIANTS, useVariantState, VariantContainer } from "./Variants";
+
 // ==================== CBUTTON ====================
 
 export type CButtonProps = {
@@ -174,6 +176,7 @@ export type CSelectProps = {
     placeholder?: string;
     fullWidth?: boolean;
     style?: React.CSSProperties;
+    variant?: "default" | "sol";
 };
 
 export function CSelect({
@@ -183,12 +186,18 @@ export function CSelect({
     placeholder = "Select...",
     fullWidth = true,
     style = {},
+    variant = "default",
 }: CSelectProps) {
     const [isOpen, setIsOpen] = React.useState(false);
-    const [isHovered, setIsHovered] = React.useState(false);
+    const [state, { setHovered, setFocused }] = useVariantState();
     const containerRef = React.useRef<HTMLDivElement>(null);
 
     const selectedOption = options.find(opt => opt.value === value);
+
+    // Atualiza o estado de focused baseado em isOpen
+    React.useEffect(() => {
+        setFocused(isOpen);
+    }, [isOpen]);
 
     // Close on outside click
     React.useEffect(() => {
@@ -215,38 +224,36 @@ export function CSelect({
             }}
         >
             {/* Trigger */}
-            <div
+            <VariantContainer
+                variant={variant}
+                variantConfigs={SELECT_VARIANTS}
+                state={state}
                 onClick={() => setIsOpen(!isOpen)}
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    background: isHovered
-                        ? "rgba(255,255,255,0.08)"
-                        : "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    minWidth: 200,
-                }}
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
             >
-                <span style={{ color: selectedOption ? "#fff" : "#b9bbbe", fontSize: 14 }}>
-                    {selectedOption?.label || placeholder}
-                </span>
-                <span
+                <div
                     style={{
-                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                        transition: "transform 0.2s ease",
-                        fontSize: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
                     }}
                 >
-                    ▼
-                </span>
-            </div>
+                    <span style={{ color: selectedOption ? "#fff" : "#b9bbbe", fontSize: 14 }}>
+                        {selectedOption?.label || placeholder}
+                    </span>
+                    <span
+                        style={{
+                            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                            transition: "transform 0.2s ease",
+                            fontSize: 12,
+                            marginLeft: 8,
+                        }}
+                    >
+                        ▼
+                    </span>
+                </div>
+            </VariantContainer>
 
             {/* Dropdown */}
             {isOpen && (
@@ -258,7 +265,7 @@ export function CSelect({
                         right: 0,
                         background: "#2f3136",
                         border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 6,
+                        borderRadius: variant === "sol" ? 0 : 6,
                         overflow: "hidden",
                         zIndex: 1000,
                         maxHeight: 200,
@@ -322,7 +329,7 @@ export type CInputProps = {
     error?: string;
     icon?: React.ReactNode;
     style?: React.CSSProperties;
-    variant?: "default" | "slim";
+    variant?: "default" | "slim" | "sol" | "glow";
 };
 
 export function CInput({
@@ -336,73 +343,51 @@ export function CInput({
     style = {},
     variant = "default",
 }: CInputProps) {
-    const [isFocused, setIsFocused] = React.useState(false);
+    const [state, { setFocused }] = useVariantState();
 
-    const variants = {
-        default: {
-            container: {
-                padding: "10px 12px",
-                background: "rgba(255,255,255,0.05)",
-                borderRadius: 6,
-                border: error
-                    ? "1px solid #ed4245"
-                    : isFocused
-                    ? "1px solid #5865f2"
-                    : "1px solid rgba(255,255,255,0.1)",
-            },
-        },
-
-        slim: {
-            container: {
-                padding: "6px 0px",
-                background: "transparent",
-                border: "none",
-                borderBottom: error
-                    ? "1px solid #ed4245"
-                    : isFocused
-                    ? "1px solid #5865f2"
-                    : "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 0,
-            },
-        },
-    };
-
-    const activeVariant = variants[variant];
+    // Atualiza hasError no state
+    const finalState = { ...state, hasError: !!error };
 
     return (
         <div style={{ width: fullWidth ? "100%" : "auto", ...style }}>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    transition: "all 0.2s ease",
-                    ...activeVariant.container,
-                }}
+            <VariantContainer
+                variant={variant}
+                variantConfigs={INPUT_VARIANTS}
+                state={finalState}
             >
-                {icon && (
-                    <div style={{ color: "#b9bbbe", fontSize: 16 }}>
-                        {icon}
-                    </div>
-                )}
-
-                <input
-                    type={type}
-                    value={value}
-                    onChange={e => onChange(e.target.value)}
-                    placeholder={placeholder}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
+                <div
                     style={{
-                        flex: 1,
-                        background: "transparent",
-                        border: "none",
-                        color: "#fff",
-                        fontSize: 14,
-                        outline: "none",
+                        height: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        flexDirection: "row",
+                        gap: 8,
                     }}
-                />
-            </div>
+                >
+                    {icon && (
+                        <div style={{ color: "#b9bbbe", fontSize: 14 }}>
+                            {icon}
+                        </div>
+                    )}
+
+                    <input
+                        type={type}
+                        value={value}
+                        onChange={e => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        onFocus={() => setFocused(true)}
+                        onBlur={() => setFocused(false)}
+                        style={{
+                            // flex: 1,
+                            background: "transparent",
+                            border: "none",
+                            color: "#fff",
+                            fontSize: 14,
+                            outline: "none",
+                        }}
+                    />
+                </div>
+            </VariantContainer>
 
             {error && (
                 <div style={{ color: "#ed4245", fontSize: 12, marginTop: 4 }}>

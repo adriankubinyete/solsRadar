@@ -9,10 +9,10 @@ import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } fr
 import { Forms, React, showToast, Toasts } from "@webpack/common";
 
 import { CButton, CDivider } from "../components/BaseComponents";
+import { Margins } from "../components/constants";
 import { JoinStoreUI } from "../components/JoinStoreUI";
-import { Margins } from "../constants";
 import { cl } from "../utils";
-import { Line, Note, Section, SectionMessage, Setting } from "./BasicComponents";
+import { Note, Section, SectionMessage, Setting } from "./BasicComponents";
 import TriggerListUI from "./TriggerList";
 
 const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
@@ -75,7 +75,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                     <SectionMessage>
                         ⚠️⚠️⚠️⚠️<br />All configurations listed here will only work if you have set a Roblosecurity token to resolve links. To configure a Roblosecurity token, navigate to the plugin's settings page.
                     </SectionMessage>
-                    <Line />
+                    <CDivider />
                     <Setting setting="verifyMode" customTitle="🟦 Server Link Verification Mode" />
                     <Setting setting="verifyAfterJoinFailFallbackAction" customTitle="🟦 Verification Fail Action" />
                     <Setting setting="verifyAllowedPlaceIds" customTitle="✅ Allowed Place IDs" />
@@ -115,9 +115,9 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
 
                 <Section title="Developer Options" persistKey="dev" defaultOpen>
                     <Setting setting="loggingLevel" customTitle="Console Logging Level" />
-                    <Line />
+                    <CDivider />
                     <Setting setting="_dev_verification_fail_fallback_delay_ms" customTitle="Verification Fail Fallback Delay (ms)" />
-                    <Line />
+                    <CDivider />
                     <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={async () => {
                         const process = await Native.getProcess({ type: "tasklist", processName: "RobloxPlayerBeta.exe" });
                         if (!process) {

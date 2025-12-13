@@ -7,7 +7,6 @@
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { Forms, NavigationRouter, React } from "@webpack/common";
 
-import { Margins } from "../constants";
 import { JoinStore, JoinTag, RecentJoin, TAG_CONFIGS } from "../JoinStore";
 import { cl, formatTimeAgo } from "../utils";
 import {
@@ -19,6 +18,7 @@ import {
     CInput,
     CSelect,
 } from "./BaseComponents";
+import { Margins } from "./constants";
 
 const AVATAR_FALLBACK = "https://discord.com/assets/881ed827548f38c6.svg";
 
@@ -167,25 +167,30 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
                 style={{
                     display: "flex",
                     gap: 8,
-                    flexWrap: "wrap",
                     alignItems: "center",
+                    flexWrap: "wrap",
                 }}
             >
-                <div style={{ flex: 1, minWidth: 200 }}>
+                {/* Search */}
+                <div style={{ flex: 3, minWidth: 200 }}>
                     <CInput
                         value={searchTerm}
                         onChange={setSearchTerm}
                         placeholder="Search by title, author..."
                         fullWidth
                         icon="🔍"
-                        variant="slim"
+                        variant="default"
                     />
                 </div>
-                <CSelect
-                    options={tagOptions}
-                    value={filterTag}
-                    onChange={setFilterTag}
-                />
+
+                {/* Tag select */}
+                <div style={{ flex: 2, minWidth: 0 }}>
+                    <CSelect
+                        options={tagOptions}
+                        value={filterTag}
+                        onChange={setFilterTag}
+                    />
+                </div>
             </div>
 
             <CDivider />
