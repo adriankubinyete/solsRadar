@@ -680,12 +680,14 @@ export type CSectionMessageProps = {
     children: React.ReactNode;
     variant?: "default" | "warning" | "success" | "danger";
     style?: React.CSSProperties;
+    iconless?: boolean;
 };
 
 export function CSectionMessage({
     children,
     variant = "default",
     style = {},
+    iconless = false,
 }: CSectionMessageProps) {
     if (variant === "default") {
         return (
@@ -722,6 +724,7 @@ export function CSectionMessage({
     };
 
     const styles = variantStyles[variant];
+    const variantIcon = variant === "warning" ? "⚠️" : variant === "success" ? "✅" : "❌";
 
     return (
         <div
@@ -737,6 +740,23 @@ export function CSectionMessage({
                 ...style,
             }}
         >
+            {!iconless && (
+                <>
+                    <div
+                        style={{
+                            width: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginBottom: Paddings.SMALL,
+                        }}
+                    >
+                        {variantIcon}
+                    </div>
+
+                    <CDivider spacing="MEDIUM" />
+                </>
+            )}
             {children}
         </div>
     );

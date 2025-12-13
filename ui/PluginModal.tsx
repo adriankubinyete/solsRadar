@@ -72,13 +72,16 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
 
                 <CSection title="Link Verification Options" persistKey="verify" defaultOpen>
                     <CSectionMessage variant="warning">
-                        <br />All configurations listed here will only work if you have set a Roblosecurity token to resolve links. To configure a Roblosecurity token, navigate to the plugin's settings page.
+                        All configurations listed here will only work if you have set a Roblosecurity token to resolve links. To configure a Roblosecurity token, navigate to the plugin's settings page.
                     </CSectionMessage>
-                    <CDivider />
                     <Setting setting="verifyMode" customTitle="🟦 Server Link Verification Mode" />
                     <Setting setting="verifyAfterJoinFailFallbackAction" customTitle="🟦 Verification Fail Action" />
-                    <Setting setting="verifyAllowedPlaceIds" customTitle="✅ Allowed Place IDs" />
-                    <Setting setting="verifyBlockedPlaceIds" customTitle="🚫 Blocked Place IDs" />
+                    <CSectionMessage variant="success" iconless={true}>
+                        <Setting setting="verifyAllowedPlaceIds" customTitle="✅ Allowed Place IDs" />
+                    </CSectionMessage>
+                    <CSectionMessage variant="danger" iconless={true}>
+                        <Setting setting="verifyBlockedPlaceIds" customTitle="🚫 Blocked Place IDs" />
+                    </CSectionMessage>
                 </CSection>
 
                 <CSection title="UI Options" persistKey="ui" defaultOpen>
