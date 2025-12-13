@@ -622,7 +622,7 @@ export function CSection({
                         display: "flex",
                         alignItems: "center",
                         gap: Margins.SMALL,
-                        color: Colors.SECONDARY,
+                        color: Colors.WHITE,
                         fontWeight: FontWeights.MEDIUM,
                         whiteSpace: "nowrap",
                         fontSize: FontSizes.LARGE,
@@ -693,7 +693,7 @@ export function CSectionMessage({
         return (
             <div
                 style={{
-                    color: Colors.WHITE,
+                    color: Colors.SECONDARY,
                     fontSize: FontSizes.NORMAL,
                     lineHeight: 1.5,
                     marginBottom: Margins.LARGE,
@@ -734,7 +734,7 @@ export function CSectionMessage({
                 border: `1px solid ${styles.border}`,
                 borderRadius: BorderRadius.MEDIUM,
                 marginBottom: Margins.LARGE,
-                color: Colors.WHITE,
+                color: Colors.SECONDARY,
                 fontSize: FontSizes.NORMAL,
                 lineHeight: 1.5,
                 ...style,
