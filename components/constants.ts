@@ -97,6 +97,7 @@ const Margins = {
 } as const;
 
 const Paddings = {
+    NONE: 0,
     TINY: 2,
     SMALL: 6,
     MEDIUM: 10,

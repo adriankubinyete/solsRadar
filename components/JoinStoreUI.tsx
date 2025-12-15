@@ -16,7 +16,7 @@ import {
     CDivider,
     CEmptyState,
 } from "./BaseComponents";
-import { Margins } from "./constants";
+import { Margins, Paddings } from "./constants";
 import { StyledInput, StyledSelect } from "./StyledComponents";
 
 const AVATAR_FALLBACK = "https://discord.com/assets/881ed827548f38c6.svg";
@@ -37,9 +37,9 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
     // Filter options
     const tagOptions = [
         { label: "All Joins", value: "all" },
-        { label: "✅ Real", value: "biome-verified-real" },
-        { label: "🎣 Bait", value: "biome-verified-bait" },
-        { label: "⚠️ Timeout", value: "biome-verified-timeout" },
+        { label: "✅ Real biomes", value: "biome-verified-real" },
+        { label: "❌ Fake biomes", value: "biome-verified-bait" },
+        { label: "⚠️ Biome timeout", value: "biome-verified-timeout" },
         { label: "❌ Failed", value: "failed" },
     ];
 
@@ -244,13 +244,13 @@ function JoinCard({ join, onClick, onContextMenu }: JoinCardProps) {
         ["link-verified-unsafe", "failed", "biome-verified-bait"].includes(tag)
     );
 
-    const variant = isUnsafe ? "danger" : join.tags.includes("link-verified-safe") ? "success" : "default";
+    const variant = isUnsafe ? "danger" : join.tags.includes("biome-verified-real") ? "success" : "default";
 
     console.log("Icon For card id: ", join.id, join.iconUrl);
 
     return (
-        <CCard onClick={onClick} onContextMenu={onContextMenu} variant={variant} hoverable>
-            <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+        <CCard style={{ cursor: "pointer", padding: 0 }} onClick={onClick} onContextMenu={onContextMenu} variant={variant} hoverable>
+            <div style={{ padding: Paddings.MEDIUM, display: "flex", gap: 12, alignItems: "flex-start" }}>
                 {/* Server Icon */}
                 <ServerIcon iconUrl={join.iconUrl} />
 
@@ -288,14 +288,14 @@ function JoinCard({ join, onClick, onContextMenu }: JoinCardProps) {
                     )}
 
                     {/* Tags */}
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                    {/* <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
                         {join.tags.slice(0, 3).map(tag => {
                             const config = TAG_CONFIGS[tag];
                             if (!config) return null;
 
                             const SUCCESS_TAGS = ["link-verified-safe", "biome-verified-real"];
-                            const DANGER_TAGS = ["link-verified-unsafe", "failed"];
-                            const WARNING_TAGS = ["biome-verified-bait", "biome-verified-timeout"];
+                            const DANGER_TAGS = ["link-verified-unsafe", "biome-verified-bait","failed"];
+                            const WARNING_TAGS = ["biome-verified-timeout"];
 
                             const badgeVariant = SUCCESS_TAGS.includes(tag)
                                 ? "success"
@@ -316,7 +316,7 @@ function JoinCard({ join, onClick, onContextMenu }: JoinCardProps) {
                                 +{join.tags.length - 3}
                             </CBadge>
                         )}
-                    </div>
+                    </div> */}
 
                     {/* Footer */}
                     <div
@@ -352,6 +352,38 @@ function JoinCard({ join, onClick, onContextMenu }: JoinCardProps) {
 
                 {/* Arrow indicator */}
                 <div style={{ color: "#999", fontSize: 18, flexShrink: 0 }}>→</div>
+            </div>
+            <CDivider spacing="NONE" />
+            <div style={{ display: "flex", flexDirection: "column", padding: Paddings.SMALL }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {join.tags.slice(0, 3).map(tag => {
+                        const config = TAG_CONFIGS[tag];
+                        if (!config) return null;
+
+                        const SUCCESS_TAGS = ["link-verified-safe", "biome-verified-real"];
+                        const DANGER_TAGS = ["link-verified-unsafe", "biome-verified-bait", "failed"];
+                        const WARNING_TAGS = ["biome-verified-timeout"];
+
+                        const badgeVariant = SUCCESS_TAGS.includes(tag)
+                            ? "success"
+                            : DANGER_TAGS.includes(tag)
+                                ? "danger"
+                                : WARNING_TAGS.includes(tag)
+                                    ? "warning"
+                                    : "secondary";
+
+                        return (
+                            <CBadge key={tag} variant={badgeVariant} size="small">
+                                {config.emoji} {config.label}
+                            </CBadge>
+                        );
+                    })}
+                    {join.tags.length > 3 && (
+                        <CBadge variant="secondary" size="small">
+                            +{join.tags.length - 3}
+                        </CBadge>
+                    )}
+                </div>
             </div>
         </CCard>
     );

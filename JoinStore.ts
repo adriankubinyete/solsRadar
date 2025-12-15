@@ -56,15 +56,15 @@ export type JoinTagConfig = {
 export const TAG_CONFIGS: Record<JoinTag, JoinTagConfig> = {
 
     "biome-verified-real": {
-        label: "Real",
+        label: "Biome",
         color: "#3ba55c",
         emoji: "✅",
         priority: 60
     },
     "biome-verified-bait": {
-        label: "Bait",
-        color: "#f26522",
-        emoji: "🎣",
+        label: "Biome",
+        color: "#ed4245",
+        emoji: "❌",
         priority: 60
     },
     "biome-verified-timeout": {
@@ -87,7 +87,7 @@ export const TAG_CONFIGS: Record<JoinTag, JoinTagConfig> = {
         priority: 50
     },
     "link-verified-unsafe": {
-        label: "Not Sol's RNG",
+        label: "Sol's RNG",
         color: "#ed4245",
         emoji: "❌",
         priority: 50
