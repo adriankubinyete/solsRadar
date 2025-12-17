@@ -4,11 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { copyToClipboard } from "@utils/clipboard";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { Forms, NavigationRouter, React } from "@webpack/common";
 
 import { JoinStore, JoinTag, RecentJoin, TAG_CONFIGS } from "../JoinStore";
-import { cl, formatTimeAgo } from "../utils";
+import { cl, formatTimeAgo, showToast } from "../utils";
 import {
     CBadge,
     CButton,
@@ -445,6 +446,11 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
         onClose();
     };
 
+    const handleCopyJoinLink = () => {
+        copyToClipboard(join?.metadata?.link?.link);
+        showToast("Link copied to clipboard!", "success");
+    };
+
     return (
         <ModalRoot {...rootProps}>
             <ModalHeader className={cl("modal-header")}>
@@ -516,6 +522,21 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
                                 Delete from History
                             </CButton>
                         </div>
+                        {join.metadata?.link?.link && (
+                            <div
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    gap: 8,
+                                    flexWrap: "wrap",
+                                    marginTop: 8,
+                                }}
+                            >
+                                <CButton style={{ flex: 1 }} variant="primary" onClick={handleCopyJoinLink}>
+                                    Copy Server Link
+                                </CButton>
+                            </div>
+                        )}
                     </div>
 
                     <CDivider />
@@ -644,6 +665,7 @@ function JoinDetailModal({ join, rootProps, onClose, onCloseAll }: JoinDetailMod
                                         fontFamily: "monospace",
                                         color: "#b9bbbe",
                                         overflowX: "auto",
+                                        userSelect: "text",
                                     }}
                                 >
                                     <pre style={{ margin: 0 }}>
