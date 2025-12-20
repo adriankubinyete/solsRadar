@@ -97,6 +97,12 @@ export const TriggerDefs = {
     //     keywords: ["grave", "graveyard", "grave yard"],
     //     iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png",
     // },
+    AURORA: {
+        type: TriggerTypes.EVENT_BIOME,
+        name: "Aurora",
+        keywords: ["aurora"],
+        iconUrl: "https://maxstellar.github.io/biome_thumb/AURORA.png",
+    },
     NULL: {
         // 1/10100 per second
         type: TriggerTypes.NORMAL_BIOME,

@@ -84,7 +84,7 @@ export class RobloxLinkHandler {
         if (!hasShare && !hasPrivate) return { ok: false, reason: "message-has-no-match" };
 
         if (hasShare && shareMatch) {
-            return { ok: true, type: "share", link: shareMatch[0], code: shareMatch[1] };
+            return { ok: true, type: "share", link: shareMatch[0] + "&type=Server", code: shareMatch[1] };
         }
 
         if (hasPrivate && privateMatch) {

@@ -12,7 +12,7 @@ import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter } from 
 import { PropsWithChildren } from "react";
 
 import { createLogger, LogLevel } from "./CustomLogger";
-import { BiomeDetectedEvent, BiomeDetector, DetectorEvents } from "./Detector";
+import { BiomeDetectedEvent, BiomeDetector, ClientDisconnectedEvent, DetectorEvents } from "./Detector";
 import { JoinStore } from "./JoinStore";
 import { initTriggers, settings, TriggerDefs, TriggerTypes } from "./settings";
 import { TitlebarButton } from "./TitlebarButton";
@@ -198,10 +198,10 @@ export default definePlugin({
         //     log.perf(`Detected biome change for ${username}: ${from} -> ${to}`);
         // });
 
-        // detector.on(DetectorEvents.CLIENT_DISCONNECTED, (event: ClientDisconnectedEvent) => {
-        //     const { username } = event;
-        //     log.perf(`Detected client disconnect for ${username}`);
-        // });
+        BiomeDetector.on(DetectorEvents.CLIENT_DISCONNECTED, (event: ClientDisconnectedEvent) => {
+            const { username } = event;
+            log.perf(`Detected client disconnect for ${username}`);
+        });
 
         log.trace("Loading recent joins");
 
