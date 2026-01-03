@@ -100,7 +100,7 @@ export const TriggerDefs = {
     AURORA: {
         type: TriggerTypes.EVENT_BIOME,
         name: "Aurora",
-        keywords: ["aurora"],
+        keywords: ["aurora", "globe"],
         iconUrl: "https://maxstellar.github.io/biome_thumb/AURORA.png",
     },
     NULL: {
