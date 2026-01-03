@@ -101,7 +101,7 @@ export const TriggerDefs = {
         type: TriggerTypes.EVENT_BIOME,
         name: "Aurora",
         keywords: ["aurora", "globe"],
-        iconUrl: "https://maxstellar.github.io/biome_thumb/AURORA.png",
+        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/main/assets/aurora.png",
     },
     NULL: {
         // 1/10100 per second
