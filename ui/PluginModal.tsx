@@ -6,11 +6,12 @@
 
 import { showNotification } from "@api/Notifications";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot } from "@utils/modal";
-import { Forms, React, showToast, Toasts } from "@webpack/common";
+import { ChannelRouter, Forms, NavigationRouter, React, showToast, Toasts } from "@webpack/common";
 
 import { CButton, CDivider, CSection, CSectionMessage, CSectionNote } from "../components/BaseComponents";
 import { Margins } from "../components/constants";
 import { JoinStoreUI } from "../components/JoinStoreUI";
+import { settings } from "../settings";
 import { cl } from "../utils";
 import { Setting } from "./BasicComponents";
 import TriggerListUI from "./TriggerList";
@@ -136,6 +137,16 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                         });
                     }}>
                         📩 Notification Test
+                    </CButton>
+                    <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={async () => {
+                        const monitoredChannels = new Set(settings.store.monitorChannelList.split(",").map(id => id.trim()).filter(Boolean));
+                        for (const channelId of monitoredChannels) {
+                            ChannelRouter.transitionToChannel(channelId);
+                            await new Promise(res => setTimeout(res, 100));
+                        }
+                        NavigationRouter.transitionToGuild("@me");
+                    }}>
+                        Force-navigate to monitored channels
                     </CButton>
                 </CSection>
 
