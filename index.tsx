@@ -478,7 +478,7 @@ function handleFakeLink(ctx) {
 }
 
 async function handleJoin(ctx) {
-    const { ro, link, match, author, channel, guild, avatarUrl, messageJumpUrl, log } = ctx;
+    const { message, ro, link, match, author, channel, guild, avatarUrl, messageJumpUrl, log } = ctx;
 
     log.info("Executing join sequence...");
 
@@ -495,6 +495,7 @@ async function handleJoin(ctx) {
         iconUrl: match.def.iconUrl,
         messageJumpUrl,
         metadata: {
+            originalMessageContent: message.content,
             link,
             match,
         }
