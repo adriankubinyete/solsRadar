@@ -100,7 +100,7 @@ export const TriggerDefs = {
     AURORA: {
         type: TriggerTypes.EVENT_BIOME,
         name: "Aurora",
-        keywords: ["aurora", "globe"],
+        keywords: ["aurora", "globe", "snowglobe"],
         iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/main/assets/aurora.png",
     },
     NULL: {
