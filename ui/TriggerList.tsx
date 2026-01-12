@@ -390,6 +390,7 @@ export function TriggerListUI() {
             {hasCooldown && (
                 <div
                     onClick={clearAllCooldowns}
+                    title={"Click to clear all cooldowns immediately."}
                     style={{
                         background: "rgba(244, 125, 77, 0.1)", // Laranja bem suave
                         border: "1px solid rgba(244, 125, 77, 0.3)",
@@ -409,7 +410,7 @@ export function TriggerListUI() {
                         e.currentTarget.style.background = "rgba(244, 125, 77, 0.1)";
                     }}
                 >
-                    ⚠️ Priorities ≤{highestPriority} are on join cooldown! ({remainingSeconds}s) ⚠️<br />Click to clear cooldowns!
+                    ⚠️ Priorities ≤{highestPriority} are on join cooldown! ({remainingSeconds}s) ⚠️
                 </div>
             )}
 
