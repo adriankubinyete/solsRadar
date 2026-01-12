@@ -692,7 +692,7 @@ function TriggerConfigModal({
                         label="Join Cooldown (seconds)"
                         value={conf.joinCooldown}
                         min={0}
-                        max={300}
+                        max={1800}
                         onChange={v => updateStore({ joinCooldown: v })}
                         description="After joining this trigger, ignore triggers with priority lower or equal until the cooldown ends. Higher-priority triggers can still bypass this."
                     />
