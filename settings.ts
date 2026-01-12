@@ -398,6 +398,11 @@ export const settings = definePluginSettings({
         //     return fn;
         // })()
     },
+    biomeDetectorStopRedundantJoins: {
+        type: OptionType.BOOLEAN,
+        description: "Prevents joining a match if the biome detector shows that you're already in that biome.",
+        default: true,
+    },
 
     /*
     * Developer options

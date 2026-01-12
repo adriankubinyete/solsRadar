@@ -98,6 +98,7 @@ export function PluginModal({ rootProps }: { rootProps: ModalProps; }) {
                         Biome detection settings to validate biomes/weather after joining a server. You need to configure the monitored account in the plugin's settings for this to work!
                     </CSectionMessage>
                     <Setting setting="biomeDetectorEnabled" customTitle="🟦 Biome Detector Enabled" />
+                    <Setting setting="biomeDetectorStopRedundantJoins" customTitle="🟦 Stop Redundant Joins" />
                     <Setting setting="biomeDetectorPoolingRateMs" customTitle="🟦 Detection Refresh Rate" />
                     <CSectionNote variant="warning">
                         You cannot set it under 250ms because it's not really necessary, you'll only stress your machine. Recommended to keep as 1000ms

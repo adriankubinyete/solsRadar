@@ -279,26 +279,31 @@ export default definePlugin({
 
             // snapshots the current config, because this will change as we go
 
-            const isAlreadyInBiome = settings.store.biomeDetectorEnabled && settings.store.biomeDetectorAccounts.split(",").length > 0 && isBiomeTriggerType(match.def.type) && BiomeDetector.isAnyAccountInBiome(match.def.name);
-            // log.debug(`settings.store.biomeDetectorEnabled: ${settings.store.biomeDetectorEnabled}`);
-            // log.debug(`settings.store.biomeDetectorAccounts.split(",").length > 0: ${settings.store.biomeDetectorAccounts.split(",").length > 0}`);
-            // log.debug(`isBiomeTriggerType(${match.def.type}): ${isBiomeTriggerType(match.def.type)}`);
-            // log.debug(`BiomeDetector.isAnyAccountInBiome(${match.def.name}): ${BiomeDetector.isAnyAccountInBiome(match.def.name)}`);
+            const isAlreadyInBiome = settings.store.biomeDetectorEnabled
+                && settings.store.biomeDetectorAccounts.split(",").length > 0
+                && isBiomeTriggerType(match.def.type)
+                && BiomeDetector.isAnyAccountInBiome(match.def.name);
 
             const BYPASS_KEYWORDS_REGEX = /(\bfresh\b|\bpopping\b)/i;
 
-            if (isAlreadyInBiome) {
+            const stopRedundantJoins = settings.store.biomeDetectorStopRedundantJoins;
+            let skipRedundantJoin = false;
+            if (isAlreadyInBiome && stopRedundantJoins) {
                 const hasBypass = BYPASS_KEYWORDS_REGEX.test(message.content);
                 if (!hasBypass) {
+                    skipRedundantJoin = true;
                     log.info(`Skipping join because we are already in ${match.def.name.toUpperCase()}`);
-                    return;
+                } else {
+                    // Bypass ativado: continua pro join mesmo já estando no bioma
+                    log.debug(`Bypassing "already in biome" check for ${match.def.name.toUpperCase()} due to keywords in message`);
                 }
-                // biome is fresher, lets join that (the message has stated "popping" or "fresh")
-                log.debug(`Bypassing "already in biome" check for ${match.def.name.toUpperCase()} due to keywords in message`);
             }
 
             const shouldNotify = settings.store.notifyEnabled && match.settings.notify;
-            const shouldJoin = settings.store.joinEnabled && match.settings.join && canJoinWithPriority(match.settings.priority);
+            const shouldJoin = settings.store.joinEnabled
+                && match.settings.join
+                && canJoinWithPriority(match.settings.priority)
+                && !skipRedundantJoin;
 
             // Build context
             const ctx = {
