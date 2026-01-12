@@ -40,6 +40,14 @@ export const TriggerTypes = {
     SPECIAL: "special",
 };
 
+export const isBiomeTriggerType = (type: string) => {
+    return [TriggerTypes.RARE_BIOME, TriggerTypes.EVENT_BIOME, TriggerTypes.NORMAL_BIOME, TriggerTypes.WEATHER].includes(type);
+};
+
+export const isMerchantTriggerType = (type: string) => {
+    return type === TriggerTypes.MERCHANT;
+};
+
 export type TriggerType = typeof TriggerTypes[keyof typeof TriggerTypes];
 
 export interface TriggerDefinition {

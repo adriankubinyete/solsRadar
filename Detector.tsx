@@ -388,7 +388,7 @@ export class BiomeDetectorClass extends FakeEmitter {
         }
     }
 
-    getCurrentBiome(): Array<{ username: string; biome: string | null; }> {
+    getCurrentBiomes(): Array<{ username: string; biome: string | null; }> {
         const now = Date.now();
         const staleThresholdMs = 60000;
 
@@ -410,6 +410,35 @@ export class BiomeDetectorClass extends FakeEmitter {
             const biome = isStale ? null : lastBiome;
             return { username, biome };
         }).filter(item => item.username.length > 0);
+    }
+
+    isAccountInBiome(username: string, biomeName: string): boolean {
+        if (!this.usernameToUserid[username]) {
+            this.logger.debug(`Username "${username}" not found in mappings, returning false.`);
+            return false;
+        }
+
+        const now = Date.now();
+        const staleThresholdMs = 60000;
+
+        const userid = this.usernameToUserid[username];
+        const lastBiome = this.lastKnownBiomes[userid];
+        if (lastBiome === undefined || lastBiome.toLowerCase() !== biomeName.toLowerCase()) {
+            return false;
+        }
+
+        // stale checking -- old biome data is useless
+        const lastUpdate = this.lastBiomeUpdateTimestamps[userid];
+        const isStale = lastUpdate ? (now - lastUpdate > staleThresholdMs) : true;
+        return !isStale;
+    }
+
+    isAnyAccountInBiome(biomeName: string): boolean {
+        return this.userids.some(userid => {
+            const username = this.useridToUsername[userid];
+            if (!username) return false;
+            return this.isAccountInBiome(username, biomeName);
+        });
     }
 
 }

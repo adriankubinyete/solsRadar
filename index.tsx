@@ -14,7 +14,7 @@ import { PropsWithChildren } from "react";
 import { createLogger, LogLevel } from "./CustomLogger";
 import { BiomeDetectedEvent, BiomeDetector, ClientDisconnectedEvent, DetectorEvents } from "./Detector";
 import { JoinStore } from "./JoinStore";
-import { initTriggers, settings, TriggerDefs, TriggerTypes } from "./settings";
+import { initTriggers, isBiomeTriggerType, settings, TriggerDefs, TriggerTypes } from "./settings";
 import { TitlebarButton } from "./TitlebarButton";
 import { ChannelTypes, jumpToMessage, sendNotification } from "./utils/index";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
@@ -278,6 +278,25 @@ export default definePlugin({
             // log.perf(`Matched trigger: ${JSON.stringify(match)}`);
 
             // snapshots the current config, because this will change as we go
+
+            const isAlreadyInBiome = settings.store.biomeDetectorEnabled && settings.store.biomeDetectorAccounts.split(",").length > 0 && isBiomeTriggerType(match.def.type) && BiomeDetector.isAnyAccountInBiome(match.def.name);
+            // log.debug(`settings.store.biomeDetectorEnabled: ${settings.store.biomeDetectorEnabled}`);
+            // log.debug(`settings.store.biomeDetectorAccounts.split(",").length > 0: ${settings.store.biomeDetectorAccounts.split(",").length > 0}`);
+            // log.debug(`isBiomeTriggerType(${match.def.type}): ${isBiomeTriggerType(match.def.type)}`);
+            // log.debug(`BiomeDetector.isAnyAccountInBiome(${match.def.name}): ${BiomeDetector.isAnyAccountInBiome(match.def.name)}`);
+
+            const BYPASS_KEYWORDS_REGEX = /(\bfresh\b|\bpopping\b)/i;
+
+            if (isAlreadyInBiome) {
+                const hasBypass = BYPASS_KEYWORDS_REGEX.test(message.content);
+                if (!hasBypass) {
+                    log.info(`Skipping join because we are already in ${match.def.name.toUpperCase()}`);
+                    return;
+                }
+                // biome is fresher, lets join that (the message has stated "popping" or "fresh")
+                log.debug(`Bypassing "already in biome" check for ${match.def.name.toUpperCase()} due to keywords in message`);
+            }
+
             const shouldNotify = settings.store.notifyEnabled && match.settings.notify;
             const shouldJoin = settings.store.joinEnabled && match.settings.join && canJoinWithPriority(match.settings.priority);
 
