@@ -345,6 +345,11 @@ export function TriggerListUI() {
     }, []); // Empty deps: Runs once on mount, self-schedules
 
     const hasCooldown = remainingSeconds > 0 && highestPriority > 0;
+    const clearAllCooldowns = React.useCallback(() => {
+        joinCooldownEnds.clear(); // Remove todos os cooldowns
+        setRemainingSeconds(0); // Reset UI imediatamente
+        setHighestPriority(0);
+    }, []);
 
     const getTriggerConfig = (key: string): TriggerSetting => {
         return reactive._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
@@ -384,6 +389,7 @@ export function TriggerListUI() {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {hasCooldown && (
                 <div
+                    onClick={clearAllCooldowns}
                     style={{
                         background: "rgba(244, 125, 77, 0.1)", // Laranja bem suave
                         border: "1px solid rgba(244, 125, 77, 0.3)",
@@ -393,9 +399,17 @@ export function TriggerListUI() {
                         fontSize: 12,
                         fontWeight: 500,
                         textAlign: "center",
+                        cursor: "pointer", // Indica que é clicável
+                        transition: "background 0.2s ease", // Hover suave
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.background = "rgba(244, 125, 77, 0.2)";
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.background = "rgba(244, 125, 77, 0.1)";
                     }}
                 >
-                    ⚠️ Priorities ≤{highestPriority} are on join cooldown! ({remainingSeconds}s) ⚠️
+                    ⚠️ Priorities ≤{highestPriority} are on join cooldown! ({remainingSeconds}s) ⚠️<br />Click to clear cooldowns!
                 </div>
             )}
 
