@@ -515,8 +515,10 @@ async function handleJoin(ctx) {
 
     if (!settings.store.biomeDetectorEnabled || settings.store.biomeDetectorAccounts.split(",").length === 0) {
         JoinStore.addTags(joinCardId, "biome-not-verified");
+        return { joinData, wasJoined, isBait }; // biome detection is disabled OR no accounts configured
     }
 
+    // biome detection below here
     if ([TriggerTypes.RARE_BIOME, TriggerTypes.EVENT_BIOME, TriggerTypes.NORMAL_BIOME, TriggerTypes.WEATHER].includes(match.def.type) && wasJoined && !isBait) {
         log.warn("Real Sol's Server detected. Initiating detection");
 
