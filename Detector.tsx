@@ -154,6 +154,7 @@ export class BiomeDetectorClass extends FakeEmitter {
     private userids: string[] = [];
     private useridLogMap: Record<string, string> = {};
     private lastKnownBiomes: Record<string, string | undefined> = {};
+    private lastBiomeUpdateTimestamps: Record<string, number> = {};
     private lastSeenRpcTimestamps: Record<string, string> = {};
     private useridToUsername: Record<string, string> = {};
     private usernameToUserid: Record<string, string> = {};
@@ -380,9 +381,35 @@ export class BiomeDetectorClass extends FakeEmitter {
             });
 
             this.lastKnownBiomes[userid] = biome;
+            this.lastBiomeUpdateTimestamps[userid] = Date.now();
         } else {
             this.logger.info(`Biome unchanged for ${username}: remains "${biome}"`);
+            this.lastBiomeUpdateTimestamps[userid] = Date.now();
         }
+    }
+
+    getCurrentBiome(): Array<{ username: string; biome: string | null; }> {
+        const now = Date.now();
+        const staleThresholdMs = 60000;
+
+        return this.userids.map(userid => {
+            const username = this.useridToUsername[userid];
+            if (!username) {
+                return { username: "", biome: null };
+            }
+
+            const lastBiome = this.lastKnownBiomes[userid];
+            if (lastBiome === undefined) {
+                return { username, biome: null };
+            }
+
+            // stale?
+            const lastUpdate = this.lastBiomeUpdateTimestamps[userid] || 0;
+            const isStale = lastUpdate ? (now - lastUpdate > staleThresholdMs) : true; // Se não tem timestamp, considera stale
+
+            const biome = isStale ? null : lastBiome;
+            return { username, biome };
+        }).filter(item => item.username.length > 0);
     }
 
 }
