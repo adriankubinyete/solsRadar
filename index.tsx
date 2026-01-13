@@ -550,14 +550,11 @@ async function handleJoin(ctx) {
     }
 
     // biome detection below here
+    BiomeDetector.clearScope(DETECTION_SCOPES.DETECTION); // clear the scope even if its not the correct trigger
     if ([TriggerTypes.RARE_BIOME, TriggerTypes.EVENT_BIOME, TriggerTypes.NORMAL_BIOME, TriggerTypes.WEATHER].includes(match.def.type) && wasJoined && !isBait) {
         log.warn("Real Sol's Server detected. Initiating detection");
 
         const t0 = performance.now();
-
-        // note: this is still slower than checking manually on roblox's f9 log
-        // but its useful for when we are afk
-        BiomeDetector.clearScope(DETECTION_SCOPES.DETECTION);
 
         const { promise } = BiomeDetector.waitFor(DetectorEvents.BIOME_DETECTED, 30_000, DETECTION_SCOPES.DETECTION);
         promise
