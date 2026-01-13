@@ -27,6 +27,7 @@ export const DEFAULT_TRIGGER_SETTING: TriggerSetting = {
     enabled: false,
     join: true,
     notify: true,
+    autoClearCooldown: false,
     priority: 0,
     joinCooldown: 0,
 };
@@ -61,6 +62,7 @@ export interface TriggerSetting {
     enabled: boolean;
     join: boolean;
     notify: boolean;
+    autoClearCooldown: boolean;
     priority: number;
     joinCooldown: number;
 }

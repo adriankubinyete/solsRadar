@@ -11,7 +11,7 @@ import { ModalCloseButton, ModalContent, ModalHeader, type ModalProps, ModalRoot
 import { Forms, React } from "@webpack/common";
 
 import { joinCooldownEnds } from "../index";
-import { DEFAULT_TRIGGER_SETTING, settings, TriggerDefs, TriggerSetting } from "../settings";
+import { DEFAULT_TRIGGER_SETTING, isBiomeTriggerType, settings, TriggerDefs, TriggerSetting } from "../settings";
 import { Section } from "./BasicComponents";
 
 type TriggerKey = keyof typeof TriggerDefs;
@@ -678,6 +678,13 @@ function TriggerConfigModal({
                         onChange={v => updateStore({ notify: v })}
                         description="Shows a notification when this trigger is detected."
                     />
+
+                    {settings.store.biomeDetectorEnabled && isBiomeTriggerType(TriggerDefs[triggerKey].type) && <TriggerToggle
+                        label="Auto Clear Cooldown"
+                        value={conf.autoClearCooldown}
+                        onChange={v => updateStore({ autoClearCooldown: v })}
+                        description="Requires Biome Detector to be enabled. Automatically clears join cooldowns for this trigger when the biome detector confirms you're no longer in the biome."
+                    />}
 
                     <TriggerNumberInput
                         label="Priority"

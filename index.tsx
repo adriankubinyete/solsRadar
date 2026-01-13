@@ -12,7 +12,7 @@ import { ChannelRouter, ChannelStore, GuildStore, Menu, NavigationRouter } from 
 import { PropsWithChildren } from "react";
 
 import { createLogger, LogLevel } from "./CustomLogger";
-import { BiomeDetectedEvent, BiomeDetector, ClientDisconnectedEvent, DetectorEvents } from "./Detector";
+import { BiomeDetectedEvent, BiomeDetector, CancelledError, ClientDisconnectedEvent, DetectorEvents } from "./Detector";
 import { JoinStore } from "./JoinStore";
 import { initTriggers, isBiomeTriggerType, settings, TriggerDefs, TriggerTypes } from "./settings";
 import { TitlebarButton } from "./TitlebarButton";
@@ -20,6 +20,11 @@ import { ChannelTypes, jumpToMessage, sendNotification } from "./utils/index";
 import { IJoinData, RobloxLinkHandler } from "./utils/RobloxLinkHandler";
 
 const PLUGIN_NAME = "SolsRadar";
+const DETECTION_SCOPES = {
+    PERMANENT: "biome-detector-permanent",
+    DETECTION: "biome-detector-temporary",
+};
+
 const baselogger = createLogger(PLUGIN_NAME, () => (settings.store.loggingLevel as LogLevel) ?? "info");
 
 const CHANNEL_TYPES_TO_SKIP = [ChannelTypes.DM, ChannelTypes.GROUP_DM] as const;
@@ -191,17 +196,17 @@ export default definePlugin({
         // detector.on(DetectorEvents.BIOME_DETECTED, (event: BiomeDetectedEvent) => {
         //     const { username, biome } = event;
         //     log.perf(`Detected biome for ${username}: ${biome}`);
-        // });
+        // }, DETECTION_SCOPES.PERMANENT);
 
         // detector.on(DetectorEvents.BIOME_CHANGED, (event: BiomeChangedEvent) => {
         //     const { username, from, to } = event;
         //     log.perf(`Detected biome change for ${username}: ${from} -> ${to}`);
-        // });
+        // }, DETECTION_SCOPES.PERMANENT);
 
         BiomeDetector.on(DetectorEvents.CLIENT_DISCONNECTED, (event: ClientDisconnectedEvent) => {
             const { username } = event;
             log.perf(`Detected client disconnect for ${username}`);
-        });
+        }, DETECTION_SCOPES.PERMANENT);
 
         log.trace("Loading recent joins");
 
@@ -525,6 +530,8 @@ async function handleJoin(ctx) {
         }
     });
 
+    log.debug(`Processing joinCardId ${joinCardId}`);
+
     const hasResponse = joinData != null;
     const wasJoined = joinData?.joined === true;
     const isBait = hasResponse && joinData.verified === true && joinData.safe === false;
@@ -550,7 +557,10 @@ async function handleJoin(ctx) {
 
         // note: this is still slower than checking manually on roblox's f9 log
         // but its useful for when we are afk
-        BiomeDetector.waitFor(DetectorEvents.BIOME_DETECTED, 30_000)
+        BiomeDetector.clearScope(DETECTION_SCOPES.DETECTION);
+
+        const { promise } = BiomeDetector.waitFor(DetectorEvents.BIOME_DETECTED, 30_000, DETECTION_SCOPES.DETECTION);
+        promise
             .then((result: BiomeDetectedEvent) => {
                 if (!result) {
                     /**
@@ -584,6 +594,13 @@ async function handleJoin(ctx) {
                     // - update joinCard and set biomeBait to true?
                 }
 
+            })
+            .catch(err => {
+                if (err instanceof CancelledError) {
+                    log.warn(`Biome detection cancelled for joinCardId ${joinCardId}`);
+                    return;
+                }
+                log.error(`Biome detection error for joinCardId ${joinCardId}:`, err);
             });
     }
 

@@ -21,31 +21,44 @@ import { PluginNative } from "@utils/types";
 import { createLogger, CustomLogger, LogLevel } from "./CustomLogger";
 import { settings } from "./settings";
 
+type ListenerEntry = {
+    fn: Function;
+    scope?: string;
+};
+
+export class CancelledError extends Error {
+    constructor(reason = "Cancelled") {
+        super(reason);
+        this.name = "CancelledError";
+    }
+}
+
 // A simple EventEmitter-like class
 export class FakeEmitter {
-    private _events: Record<string, Function[]> = {};
+    private _events: Record<string, ListenerEntry[]> = {};
+    private _cancellers: Record<string, Set<Function>> = {};
 
-    on(event: string, listener: Function) {
+    on(event: string, listener: Function, scope?: string) {
         if (!this._events[event]) this._events[event] = [];
-        this._events[event].push(listener);
+        this._events[event].push({ fn: listener, scope });
         return this;
     }
 
     off(event: string, listener: Function) {
         if (!this._events[event]) return this;
-        this._events[event] = this._events[event].filter(l => l !== listener);
+        this._events[event] = this._events[event].filter(l => l.fn !== listener);
         return this;
     }
 
     emit(event: string, ...args: any[]) {
         if (!this._events[event]) return false;
-        for (const listener of this._events[event]) {
-            listener(...args);
+        for (const { fn } of this._events[event]) {
+            fn(...args);
         }
         return true;
     }
 
-    once(event: string, listener: (...args: any[]) => void, timeout?: number) {
+    once(event: string, listener: (...args: any[]) => void, timeout?: number, scope?: string) {
         const onceListener = (...args: any[]) => {
             if (timer) clearTimeout(timer);
             this.off(event, onceListener);
@@ -58,34 +71,108 @@ export class FakeEmitter {
             }, timeout)
             : undefined;
 
-        return this.on(event, onceListener);
+        return this.on(event, onceListener, scope);
     }
 
-    waitFor(event: string, timeout?: number): Promise<any> {
-        return new Promise(resolve => {
-            let resolved = false;
+    waitFor(event: string, timeout?: number, scope?: string) {
+        let resolveFn!: (value: any) => void;
+        let rejectFn!: (reason?: any) => void;
 
-            // handler for the event
-            this.once(event, payload => {
+        let resolved = false;
+        let timer: any;
+
+        const promise = new Promise<any>((resolve, reject) => {
+            resolveFn = resolve;
+            rejectFn = reject;
+        });
+
+        const cleanup = () => {
+            this.off(event, listener);
+            if (timer) clearTimeout(timer);
+
+            if (scope) {
+                this._cancellers[scope]?.delete(cancel);
+                if (this._cancellers[scope]?.size === 0) {
+                    delete this._cancellers[scope];
+                }
+            }
+        };
+
+        const listener = (payload: any) => {
+            if (resolved) return;
+            resolved = true;
+            cleanup();
+            resolveFn(payload);
+        };
+
+        const cancel = (reason = "Cancelled") => {
+            if (resolved) return;
+            resolved = true;
+            cleanup();
+            rejectFn(new CancelledError(reason));
+        };
+
+        // registra cancelador no scope
+        if (scope) {
+            if (!this._cancellers[scope]) {
+                this._cancellers[scope] = new Set();
+            }
+            this._cancellers[scope].add(cancel);
+        }
+
+        // registra listener
+        this.on(event, listener, scope);
+
+        // timeout
+        if (timeout) {
+            timer = setTimeout(() => {
                 if (resolved) return;
                 resolved = true;
-                resolve(payload);
+                cleanup();
+                resolveFn(undefined);
             }, timeout);
+        }
 
-            // also resolve when timeout fires
-            if (timeout) {
-                setTimeout(() => {
-                    if (resolved) return;
-                    resolved = true;
-                    resolve(undefined);
-                }, timeout);
-            }
-        });
+        return { promise, cancel };
     }
 
 
     removeAllListeners() {
         this._events = {};
+    }
+
+    clearScope(scope: string) {
+        const cancellers = this._cancellers[scope];
+        if (!cancellers) return;
+
+        console.log(
+            `[FakeEmitter] clearScope("${scope}") → cancelling ${cancellers.size} promise(s)`
+        );
+
+        for (const cancel of cancellers) {
+            cancel(`Scope "${scope}" cleared`);
+        }
+
+        delete this._cancellers[scope];
+    }
+
+
+    _showScope(scope: string) {
+        const result: Record<string, Function[]> = {};
+        for (const event in this._events) {
+            result[event] = this._events[event].filter(
+                listener => listener.scope === scope
+            ).map(listener => listener.fn);
+        }
+        return result;
+    }
+
+    _showAll() {
+        const result: Record<string, Function[]> = {};
+        for (const event in this._events) {
+            result[event] = this._events[event].map(listener => listener.fn);
+        }
+        return result;
     }
 }
 
