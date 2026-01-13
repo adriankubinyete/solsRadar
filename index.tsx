@@ -289,7 +289,7 @@ export default definePlugin({
                 && isBiomeTriggerType(match.def.type)
                 && BiomeDetector.isAnyAccountInBiome(match.def.name);
 
-            const BYPASS_KEYWORDS_REGEX = /(\bfresh\b|\bpopping\b)/i;
+            const BYPASS_KEYWORDS_REGEX = /(\bfresh\b|\bpopping\b|\bstarted\b)/i;
 
             const stopRedundantJoins = settings.store.biomeDetectorStopRedundantJoins;
             let skipRedundantJoin = false;
@@ -568,6 +568,8 @@ async function handleJoin(ctx) {
                      * 4. roblox started to update LOL
                      */
                     log.warn("Biome detection timed out.");
+                    log.trace("Clearing join cooldowns due to detection time out");
+                    joinCooldownEnds.clear(); // clear all cooldowns on bait detection
                     sendNotification({ title: "Detector", content: "Biome detection timed out." });
                     JoinStore.addTags(joinCardId, "biome-verified-timeout");
                     return;
@@ -582,11 +584,37 @@ async function handleJoin(ctx) {
                 if (EXPECTED_BIOME === DETECTED_BIOME) {
                     sendNotification({ title: `✅ SoRa :: Real (${DETECTED_BIOME})`, content: `Detection took ${Math.round(performance.now() - t0)}ms since link sniped` });
                     JoinStore.addTags(joinCardId, "biome-verified-real");
+
+                    // the biome is real, lets wait until a biome change happens to automatically clear the joinCooldown
+                    const { promise } = BiomeDetector.waitFor(DetectorEvents.BIOME_CHANGED, 1800_000, DETECTION_SCOPES.DETECTION);
+                    promise
+                        .then(changeResult => {
+                            if (!changeResult) {
+                                log.error("Biome change detection timed out after 30 minutes."); // wow, this should not happen in a normal use-case
+                                return;
+                            }
+
+                            // log.info(`Biome change detection took ${Math.round(performance.now() - t0)}ms`);
+                            // log.warn(`Biome change detected: ${JSON.stringify(changeResult)}`);
+                            // log.warn(`Match info: ${JSON.stringify(match)}`);
+                            log.perf("It seems that our current biome ended. Clearing join cooldowns.");
+                            joinCooldownEnds.clear(); // clear all cooldowns on biome change
+                        })
+                        .catch(err => {
+                            if (err instanceof CancelledError) {
+                                log.trace(`The biome change event for joinCardId ${joinCardId} was cancelled, most likely due to a new join taking place.`);
+                                return;
+                            }
+                            log.error(`Biome CHANGE detection error for joinCardId ${joinCardId}:`, err);
+                        });
                     // do something cool?
                     // - update joinCard and set biomeBait to false?
                 } else {
                     sendNotification({ title: "❌ SoRa :: Fake", content: `Expected: ${EXPECTED_BIOME}, Detected: ${DETECTED_BIOME}\nDetection took ${Math.round(performance.now() - t0)}ms since link sniped` });
                     JoinStore.addTags(joinCardId, "biome-verified-bait");
+
+                    log.info("Clearing join cooldowns due to bait detection");
+                    joinCooldownEnds.clear(); // clear all cooldowns on bait detection
                     // do something uncool?
                     // - update joinCard and set biomeBait to true?
                 }
