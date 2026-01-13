@@ -138,6 +138,13 @@ export class FakeEmitter {
 
 
     removeAllListeners() {
+        for (const scope in this._cancellers) {
+            for (const cancel of this._cancellers[scope]) {
+                cancel("Emitter destroyed");
+            }
+        }
+
+        this._cancellers = {};
         this._events = {};
     }
 
