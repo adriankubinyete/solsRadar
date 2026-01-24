@@ -11,7 +11,7 @@ import { useRef } from "@webpack/common";
 import { settings } from "./settings";
 import { PluginModal } from "./ui/PluginModal";
 
-const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_TOP:", '.iconBadge,"top"');
+const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_TOP:", '"aria-haspopup":');
 
 export function SolsRadarIcon({
     enabled = false
