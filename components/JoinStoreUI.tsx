@@ -198,7 +198,7 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
                     }
                 />
             ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 400, overflowY: "auto" }}>
                     {filteredJoins.map(join => (
                         <JoinCard
                             key={join.id}
