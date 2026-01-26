@@ -92,7 +92,7 @@ export function CButton({
 
 export type CInputProps = {
     value: string;
-    onChange: (value: string) => void;
+    onChange: (e: any) => void;
     placeholder?: string;
     type?: "text" | "number" | "password";
     fullWidth?: boolean;
@@ -167,7 +167,7 @@ export function CInput({
                 <input
                     type={type}
                     value={value}
-                    onChange={e => onChange(e.target.value)}
+                    onChange={e => onChange(e)} // explicit
                     placeholder={placeholder}
                     onFocus={handleFocus}
                     onBlur={handleBlur}
