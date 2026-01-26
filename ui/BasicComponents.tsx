@@ -339,7 +339,7 @@ export function Setting<K extends keyof typeof settings.def>({
     return (
         <div
             className={className ?? ""}
-            style={{ ...(style || {}) }}>
+            style={{ ...style }}>
             {content}
         </div>
     );

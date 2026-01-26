@@ -99,7 +99,7 @@ function SettingsTabContent() {
                 </CSectionMessage>
                 <div style={{ display: "grid", gap: 8 }}>
                     <Setting id="verifyMode" overrideTitle="Server Link Verification Mode" />
-                    <Setting id="verifyAfterJoinFailFallbackAction" overrideTitle="Verification Fail Action" />
+                    <Setting id="verifyAfterJoinFailFallbackAction" overrideTitle="Verification Fail Action" style={{ marginTop: 4 }} />
                     <CSectionMessage variant="success" iconless={true}>
                         <Setting id="verifyAllowedPlaceIds" overrideTitle="Allowed Place IDs" />
                     </CSectionMessage>
@@ -136,7 +136,7 @@ function SettingsTabContent() {
                 <div style={{ display: "grid", gap: 8 }}>
                     <Setting id="biomeDetectorEnabled" overrideTitle="Biome Detector Enabled" />
                     <Setting id="biomeDetectorStopRedundantJoins" overrideTitle="Stop Redundant Joins" />
-                    <Setting id="biomeDetectorPoolingRateMs" overrideTitle="Detection Refresh Rate" />
+                    <Setting id="biomeDetectorPoolingRateMs" overrideTitle="Detection Refresh Rate" style={{ marginTop: 4 }} />
                     <CSectionNote variant="warning">
                         You cannot set it under 250ms because it's not really necessary, you'll only stress your machine.
                         Recommended to keep as 1000ms.
@@ -155,7 +155,7 @@ function SettingsTabContent() {
                 <div style={{ display: "grid", gap: 8 }}>
                     <Setting id="monitorNavigateToChannelsOnStartup" overrideTitle="Load Channels on Startup" />
                     <Setting id="monitorGreedyMode" overrideTitle="Greedy Mode" />
-                    <Setting id="monitorGreedyExceptionList" overrideTitle="Greedy Mode Exception List" />
+                    <Setting id="monitorGreedyExceptionList" overrideTitle="Greedy Mode Exception List" style={{ marginTop: 4 }} />
                     <Setting id="monitorInterpretEmbeds" overrideTitle="Interpret Embed Descriptions" />
                     <CSectionMessage variant="danger" iconless={true}>
                         <Setting id="monitorBlockedUserList" overrideTitle="Ignored Users" />
@@ -172,7 +172,7 @@ function SettingsTabContent() {
                 </Heading>
                 <div style={{ display: "grid", gap: 8 }}>
                     <Setting id="loggingLevel" overrideTitle="Console Logging Level" />
-                    <Setting id="_dev_verification_fail_fallback_delay_ms" overrideTitle="Verification Fail Fallback Delay (ms)" />
+                    <Setting id="_dev_verification_fail_fallback_delay_ms" overrideTitle="Verification Fail Fallback Delay (ms)" style={{ marginTop: 4 }} />
 
                     <div className={cl("flex", "flex-col", "gap-3", "mt-6")}>
                         <CButton style={{ width: "100%", marginBottom: Margins.MEDIUM }} onClick={async () => {
