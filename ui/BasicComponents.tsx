@@ -6,13 +6,13 @@
 
 import { CheckedTextInput } from "@components/CheckedTextInput";
 import { FormSwitch } from "@components/FormSwitch";
-import { Margins } from "@components/margins";
 import { localStorage } from "@utils/localStorage";
 import { OptionType } from "@utils/types";
-import { React, SearchableSelect } from "@webpack/common";
+import { React } from "@webpack/common";
 
+import { CSelect } from "../components/BaseComponents";
 import { settings } from "../settings";
-import { getSettingMeta } from "../utils";
+import { getSettingMeta, SettingMeta } from "../utils";
 
 export function Note({
     children,
@@ -176,154 +176,169 @@ export function Section({
     );
 }
 
+// TODO @adrian: nuke this shit from here PLEASEEEEEEEEE (move to BaseComponents and nuke this file)
+// also make input use CInput, the hover/focus color is
+// inconsistent between OptionType.Select and OptionType.Input
+
 type SettingProps<K extends keyof typeof settings.def> = {
-    setting: K;
-    customTitle?: string;
+    id: K;
+    overrideTitle?: string;
+    description?: string;
     className?: string;
     style?: React.CSSProperties;
 };
 
 export function Setting<K extends keyof typeof settings.def>({
-    setting,
-    customTitle,
+    id, // YOU CANNOT USE "key", ITS F****** RESERVED. (hit this twice, wow, stupid me)
+    overrideTitle,
+    description,
     className,
     style,
 }: SettingProps<K>) {
-    const meta = getSettingMeta(setting);
-    const reactive = settings.use([setting]);
-    const value = reactive[setting];
+    const settingKey = id; // confusion
+    console.log("Rendering setting:", settingKey);
+
+    let meta: SettingMeta | undefined;
+
+    try {
+        meta = getSettingMeta(settingKey);
+    } catch (error) {
+        console.error("Error getting setting meta:", error);
+        return (
+            <div style={{ color: "red" }}>
+                Error getting setting meta for {settingKey}
+            </div>
+        );
+    }
+
+    if (!meta) return null;
+
+    const reactive = settings.use([settingKey]);
+    const value = reactive[settingKey];
 
     const title =
-        customTitle ?? meta.key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
+        overrideTitle ?? meta.key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase());
 
     let content: React.ReactNode;
 
-    switch (meta.type) {
-        case OptionType.BOOLEAN:
-            content = (
-                <FormSwitch
-                    title={title}
-                    description={meta.description ?? ""}
-                    value={Boolean(value)}
-                    onChange={v => settings.store[setting] = Boolean(v) as any}
-                    hideBorder
-                />
-            );
-            break;
-
-        // case OptionType.STRING:
-        //     content = (
-        //         <>
-        //             <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
-        //             <CheckedTextInput
-        //                 value={value !== undefined ? String(value) : ""}
-        //                 onChange={v => settings.store[setting] = String(v) as never}
-        //                 validate={() => true}
-        //             />
-        //             {meta.description && (
-        //                 <div style={{ marginTop: 6, color: "#ccc", fontSize: 12 }}>
-        //                     {meta.description}
-        //                 </div>
-        //             )}
-        //         </>
-        //     );
-        //     break;
-        case OptionType.STRING: {
-            const state = settings.use([setting]);
-            const currentValue = state[setting] ?? "" as any;
-
-            content = (
-                <>
-                    <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
-                    <CheckedTextInput
-                        value={currentValue}
-                        onChange={v => (settings.store[setting] = String(v) as never)}
-                        validate={() => true}
+    try {
+        switch (meta.type) {
+            case OptionType.BOOLEAN:
+                content = (
+                    <FormSwitch
+                        title={title}
+                        value={Boolean(value)}
+                        onChange={v => settings.store[settingKey] = Boolean(v) as any}
+                        hideBorder
                     />
-                    {meta.description && (
-                        <div style={{ marginTop: 6, color: "#ccc", fontSize: 12 }}>
-                            {meta.description}
-                        </div>
-                    )}
-                </>
-            );
-            break;
+                );
+                break;
+
+            case OptionType.STRING: {
+                const state = settings.use([settingKey]);
+                const currentValue = state[settingKey] ?? "" as any;
+
+                content = (
+                    <>
+                        <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
+                        <CheckedTextInput
+                            value={currentValue}
+                            onChange={v => (settings.store[settingKey] = String(v) as never)}
+                            validate={() => true}
+                        />
+                        {description && (
+                            <div style={{ marginTop: 6, color: "#ccc", fontSize: 12 }}>
+                                {description}
+                            </div>
+                        )}
+                    </>
+                );
+                break;
+            }
+
+            case OptionType.NUMBER: {
+                const hasMin = typeof meta.min === "number";
+                const hasMax = typeof meta.max === "number";
+
+                content = (
+                    <>
+                        <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
+
+                        <CheckedTextInput
+                            value={value !== undefined ? String(value) : ""}
+                            onChange={v => {
+                                const num = Number(v);
+                                settings.store[settingKey] = num as any;
+                            }}
+
+                            validate={v => {
+                                const num = Number(v);
+                                if (isNaN(num)) return "Invalid number";
+
+                                if (hasMin && num < meta.min!) {
+                                    return `Value must be ≥ ${meta.min}`;
+                                }
+                                if (hasMax && num > meta.max!) {
+                                    return `Value must be ≤ ${meta.max}`;
+                                }
+
+                                return true;
+                            }}
+                        />
+
+                        {description && (
+                            <div style={{ marginTop: 6, color: "#ccc", fontSize: 12 }}>
+                                {description}
+                            </div>
+                        )}
+                    </>
+                );
+                break;
+            }
+
+            case OptionType.SELECT: {
+                const options = meta.options?.map(o => ({ value: o.value, label: o.label })) ?? [];
+                content = (
+                    <>
+                        <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
+                        {description && (
+                            <div style={{ marginBottom: 8, color: "#ccc", fontSize: 12 }}>
+                                {description}
+                            </div>
+                        )}
+                        <CSelect
+                            options={options.map(o => ({ label: o.label, value: o.value }))}
+                            value={options.find(o => o.value === value)}
+                            onChange={opt => {
+                                // @ts-ignore — instagram.com/p/DElkib9siLv/
+                                settings.store[settingKey] = opt.value;
+                            }}
+                            size="medium"
+                        />
+                    </>
+                );
+                break;
+            }
+
+            default:
+                content = (
+                    <div style={{ color: "red" }}>
+                        Unsupported setting type for {meta.key}: {meta.type}
+                    </div>
+                );
         }
-
-        case OptionType.NUMBER: {
-            const hasMin = typeof meta.min === "number";
-            const hasMax = typeof meta.max === "number";
-
-            content = (
-                <>
-                    <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
-
-                    <CheckedTextInput
-                        value={value !== undefined ? String(value) : ""}
-                        onChange={v => {
-                            const num = Number(v);
-                            settings.store[setting] = num as any;
-                        }}
-
-                        validate={v => {
-                            const num = Number(v);
-                            if (isNaN(num)) return "Invalid number";
-
-                            if (hasMin && num < meta.min!) {
-                                return `Value must be ≥ ${meta.min}`;
-                            }
-                            if (hasMax && num > meta.max!) {
-                                return `Value must be ≤ ${meta.max}`;
-                            }
-
-                            return true;
-                        }}
-                    />
-
-                    {meta.description && (
-                        <div style={{ marginTop: 6, color: "#ccc", fontSize: 12 }}>
-                            {meta.description}
-                        </div>
-                    )}
-                </>
-            );
-            break;
-        }
-
-        case OptionType.SELECT: {
-            const options = meta.options?.map(o => ({ value: o.value, label: o.label })) ?? [];
-            content = (
-                <>
-                    <div style={{ fontWeight: 500, color: "#ccc", marginBottom: 8 }}>{title}</div>
-                    {meta.description && (
-                        <div style={{ marginBottom: 8, color: "#ccc", fontSize: 12 }}>
-                            {meta.description}
-                        </div>
-                    )}
-                    <SearchableSelect
-                        options={options}
-                        value={options.find(o => o.value === value)}
-                        placeholder="Select an option"
-                        maxVisibleItems={5}
-                        closeOnSelect={true}
-                        onChange={v => settings.store[setting] = v}
-                    />
-                </>
-            );
-            break;
-        }
-
-        default:
-            content = (
-                <div style={{ color: "red" }}>
-                    Unsupported setting type for {meta.key}: {meta.type}
-                </div>
-            );
+    } catch (error) {
+        console.error("Error rendering setting:", error);
+        content = (
+            <div style={{ color: "red" }}>
+                Error rendering setting for {settingKey}
+            </div>
+        );
     }
 
     return (
         <div
-            className={className ?? Margins.bottom20}
+            className={className ?? ""}
             style={{ ...(style || {}) }}>
             {content}
         </div>

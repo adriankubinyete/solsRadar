@@ -16,18 +16,27 @@ import {
     CCard,
     CDivider,
     CEmptyState,
+    CInput,
+    CSelect,
 } from "./BaseComponents";
 import { Margins, Paddings } from "./constants";
-import { StyledInput, StyledSelect } from "./StyledComponents";
 
 const AVATAR_FALLBACK = "https://discord.com/assets/881ed827548f38c6.svg";
 
 // ==================== MAIN COMPONENT ====================
 
+type TagFilterOption = {
+    label: string;
+    value: string;
+};
+
 export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
     const [joins, setJoins] = React.useState<RecentJoin[]>(JoinStore.all);
     const [searchTerm, setSearchTerm] = React.useState("");
-    const [filterTag, setFilterTag] = React.useState<string>("all");
+    const [filterTag, setFilterTag] = React.useState<TagFilterOption>({
+        label: "All Joins",
+        value: "all"
+    });
 
     // Subscribe to store changes
     React.useEffect(() => {
@@ -35,33 +44,28 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
         return unsubscribe;
     }, []);
 
-    // Filter options
     const tagOptions = [
         { label: "All Joins", value: "all" },
-        { label: "✅ Real biomes", value: "biome-verified-real" },
-        { label: "❌ Fake biomes", value: "biome-verified-bait" },
-        { label: "⚠️ Biome timeout", value: "biome-verified-timeout" },
-        { label: "❌ Failed", value: "failed" },
+        { label: "Real biomes", value: "biome-verified-real" },
+        { label: "Fake biomes", value: "biome-verified-bait" },
+        { label: "Biome timeout", value: "biome-verified-timeout" },
+        { label: "Failed", value: "failed" },
     ];
 
-    // Apply filters
     const filteredJoins = React.useMemo(() => {
         let result = joins;
-
-        console.log("Applying filters...");
-        console.log(joins);
 
         if (!joins.length) return [];
 
         // Filter by tag
-        if (filterTag !== "all") {
-            if (filterTag === "pending") {
+        if (filterTag.value !== "all") {
+            if (filterTag.value === "pending") {
                 result = result.filter(j =>
                     j.tags.includes("unknown" as JoinTag) ||
                     j.tags.includes("not-verified" as JoinTag)
                 );
             } else {
-                result = result.filter(j => j.tags.includes(filterTag as JoinTag));
+                result = result.filter(j => j.tags.includes(filterTag.value as JoinTag));
             }
         }
 
@@ -76,7 +80,7 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
         }
 
         return result;
-    }, [joins, filterTag, searchTerm]);
+    }, [joins, filterTag.value, searchTerm]);
 
     const handleClearAll = () => {
         JoinStore.clear();
@@ -165,7 +169,7 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
             >
                 {/* Search */}
                 <div style={{ flex: 2 }}>
-                    <StyledInput
+                    <CInput
                         size="small"
                         value={searchTerm}
                         onChange={setSearchTerm}
@@ -177,7 +181,7 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
 
                 {/* Tag select */}
                 <div style={{ flex: 1 }}>
-                    <StyledSelect
+                    <CSelect
                         size="small"
                         options={tagOptions}
                         value={filterTag}
@@ -192,13 +196,13 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
                     icon="📭"
                     title="No joins found"
                     description={
-                        searchTerm || filterTag !== "all"
+                        searchTerm || filterTag?.value !== "all"
                             ? "Try adjusting your filters"
                             : "Joins will appear here when you snipe server links"
                     }
                 />
             ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 400, overflowY: "auto" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
                     {filteredJoins.map(join => (
                         <JoinCard
                             key={join.id}
@@ -214,7 +218,7 @@ export function JoinStoreUI({ onCloseAll }: { onCloseAll?: () => void; }) {
             {filteredJoins.length > 0 && (
                 <div style={{ fontSize: 12, color: "#b9bbbe", textAlign: "center" }}>
                     Showing {filteredJoins.length} of {joins.length} joins
-                    {(searchTerm || filterTag !== "all") && " (filtered)"}
+                    {(searchTerm || filterTag?.value !== "all") && " (filtered)"}
                 </div>
             )}
         </div>
