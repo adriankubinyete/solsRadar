@@ -239,6 +239,7 @@ export default definePlugin({
 
         async MESSAGE_CREATE({ message, optimistic }: { message: Message, optimistic: boolean; }) {
             if (optimistic) return;
+            const tMessageReceived = performance.now();
 
             const log = baselogger.inherit(`MESSAGE_CREATE:${message.id}`);
 
@@ -322,6 +323,7 @@ export default definePlugin({
                 log,
                 avatarUrl,
                 messageJumpUrl,
+                tMessageReceived,
                 joinData: null as IJoinData | null
             };
 
@@ -507,13 +509,19 @@ function handleFakeLink(ctx) {
 }
 
 async function handleJoin(ctx) {
-    const { message, ro, link, match, author, channel, guild, avatarUrl, messageJumpUrl, log } = ctx;
+    const { message, ro, link, match, author, channel, guild, avatarUrl, messageJumpUrl, log, tMessageReceived } = ctx;
 
     log.info("Executing join sequence...");
 
     const t0 = performance.now();
     const joinData = await ro.safelyJoin(link);
-    log.info(`Join Sequence took ${Math.round(performance.now() - t0)}ms\n${JSON.stringify(joinData)}`);
+    const t1 = performance.now();
+
+    const timeJoinSequence = t1 - t0;
+    const timeSinceMessage = t1 - tMessageReceived;
+    const efficiencyMs = timeSinceMessage - timeJoinSequence;
+
+    log.perf(`Join took ${timeJoinSequence.toFixed(1)}ms (since message: ${timeSinceMessage.toFixed(1)}ms / efficiency: ${efficiencyMs.toFixed(1)}ms)`);
 
     const joinCardId = JoinStore.add({
         title: match.def.name,
@@ -527,6 +535,15 @@ async function handleJoin(ctx) {
             originalMessageContent: message.content,
             link,
             match,
+
+            // clocks brutos (debug)
+            messageTimestamp: message.timestamp,
+            tMessageReceived,
+
+            // tempos consistentes
+            timeSinceMessageMs: timeSinceMessage.toFixed(1),
+            timeTakenJoiningMs: timeJoinSequence.toFixed(1),
+            efficiencyMs: (timeSinceMessage - timeJoinSequence).toFixed(1),
         }
     });
 
@@ -631,3 +648,4 @@ async function handleJoin(ctx) {
 
     return { joinData, wasJoined, isBait };
 }
+

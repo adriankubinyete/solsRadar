@@ -157,7 +157,7 @@ function SettingsTabContent() {
                             {shouldShowSetting("Close game before joining", gameLaunchSection.showAll) && <Setting id="joinCloseGameBefore" overrideTitle="Close game before joining" />}
                         </div>
                         <CSectionNote variant="tip">
-                            This makes your join about 1 second slower, but hopefully prevents the game from simply not launching at all.
+                            This makes your join about 200-400 milliseconds slower, but hopefully prevents the game from simply not launching at all.
                             If you want faster joins, disable this and close your game manually before every join.
                         </CSectionNote>
                     </div>
