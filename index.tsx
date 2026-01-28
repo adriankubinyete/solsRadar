@@ -268,8 +268,14 @@ export default definePlugin({
             if (settings.store.monitorInterpretEmbeds && message.embeds.length > 0) {
                 // log.debug(`Appending contents of ${message.embeds.length} embeds to message.content`);
                 for (const embed of message.embeds) {
-                    // log.perf("Embed:", embed);
-                    // @ts-ignore // typescript, theres no rawDescription, what are you talking about?
+                    log.verbose("Embed found:", embed);
+
+                    // for some reason theres no "raw" prefix here?
+                    // checking with messagedata cmd shows "rawDescription" and "rawTitle"
+                    // but the names here are different...? why?
+                    // @ts-ignore // yeah i know
+                    if (embed.title) content += ` ${embed.title}`;
+                    // @ts-ignore // yeah i know
                     if (embed.description) content += ` ${embed.description}`;
                 }
                 // log.trace("Final content for trigger matching:", content);
