@@ -278,7 +278,7 @@ export const settings = definePluginSettings({
     },
     monitorInterpretEmbeds: {
         type: OptionType.BOOLEAN,
-        description: "Append embed descriptions to the message content when searching for valid trigger messages.",
+        description: "Append embed descriptions and titles to the message content when searching for valid trigger messages.",
         default: true,
         hidden: true
     },

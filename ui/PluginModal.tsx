@@ -81,7 +81,7 @@ function SettingsTabContent() {
         },
         other: {
             title: "Other",
-            settings: ["Load Channels on Startup", "Greedy Mode", "Greedy Mode Exception List", "Interpret Embed Descriptions", "Ignored Users"]
+            settings: ["Load Channels on Startup", "Greedy Mode", "Greedy Mode Exception List", "Interpret Embeds", "Ignored Users"]
         },
         dev: {
             title: "Development Options",
@@ -250,7 +250,7 @@ function SettingsTabContent() {
                             {shouldShowSetting("Load Channels on Startup", otherSection.showAll) && <Setting id="monitorNavigateToChannelsOnStartup" overrideTitle="Load Channels on Startup" />}
                             {shouldShowSetting("Greedy Mode", otherSection.showAll) && <Setting id="monitorGreedyMode" overrideTitle="Greedy Mode" />}
                             {shouldShowSetting("Greedy Mode Exception List", otherSection.showAll) && <Setting id="monitorGreedyExceptionList" overrideTitle="Greedy Mode Exception List" style={{ marginTop: 4 }} />}
-                            {shouldShowSetting("Interpret Embed Descriptions", otherSection.showAll) && <Setting id="monitorInterpretEmbeds" overrideTitle="Interpret Embed Descriptions" />}
+                            {shouldShowSetting("Interpret Embeds", otherSection.showAll) && <Setting id="monitorInterpretEmbeds" overrideTitle="Interpret Embeds" />}
                             {shouldShowSetting("Ignored Users", otherSection.showAll) && (
                                 <CSectionMessage variant="danger" iconless={true}>
                                     <Setting id="monitorBlockedUserList" overrideTitle="Ignored Users" />

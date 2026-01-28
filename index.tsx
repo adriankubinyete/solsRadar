@@ -285,7 +285,7 @@ export default definePlugin({
             if (!link || !link.ok) return; // message does not have a roblox server link
 
             // does the message contain a trigger word that is enabled?
-            const match = getSingleTriggerMatch(message.content, log);
+            const match = getSingleTriggerMatch(content, log);
             if (!match) return; // multiple or no match
             // log.perf(`Matched trigger: ${JSON.stringify(match)}`);
 
