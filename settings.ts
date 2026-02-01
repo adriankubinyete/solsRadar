@@ -107,12 +107,12 @@ export const TriggerDefs = {
     //     keywords: ["grave", "graveyard", "grave yard"],
     //     iconUrl: "https://maxstellar.github.io/biome_thumb/GRAVEYARD.png",
     // },
-    AURORA: {
-        type: TriggerTypes.EVENT_BIOME,
-        name: "Aurora",
-        keywords: ["aurora", "globe", "snowglobe"],
-        iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/main/assets/aurora.png",
-    },
+    // AURORA: {
+    //     type: TriggerTypes.EVENT_BIOME,
+    //     name: "Aurora",
+    //     keywords: ["aurora", "globe", "snowglobe"],
+    //     iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/main/assets/aurora.png",
+    // },
     NULL: {
         // 1/10100 per second
         type: TriggerTypes.NORMAL_BIOME,
