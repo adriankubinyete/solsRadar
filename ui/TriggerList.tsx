@@ -10,6 +10,7 @@ import { CheckedTextInput } from "@components/CheckedTextInput";
 import { ModalCloseButton, ModalContent, ModalHeader, type ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { Forms, React } from "@webpack/common";
 
+import { CDivider, CInput, CSectionNote } from "../components/BaseComponents";
 import { joinCooldownEnds } from "../index";
 import { DEFAULT_TRIGGER_SETTING, isBiomeTriggerType, settings, TriggerDefs, TriggerSetting } from "../settings";
 import { Section } from "./BasicComponents";
@@ -18,68 +19,6 @@ type TriggerKey = keyof typeof TriggerDefs;
 type TriggerData = (typeof TriggerDefs)[TriggerKey];
 
 const FALLBACK_ICON = "https://discord.com/assets/881ed827548f38c6.svg";
-
-export function MinimalSearchInput({
-    value,
-    onChange,
-    placeholder = "Search..."
-}: {
-    value: string;
-    onChange: (newValue: string) => void;
-    placeholder?: string;
-}) {
-    return (
-        <div
-            style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 0",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                transition: "border-color 120ms ease",
-            }}
-        >
-            {/* SVG lupa estilo discord */}
-            <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ color: "#b9bbbe" }}
-            >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-
-            <input
-                type="text"
-                value={value}
-                placeholder={placeholder}
-                onChange={e => onChange(e.target.value)}
-                style={{
-                    background: "transparent",
-                    border: "none",
-                    color: "white",
-                    fontSize: 14,
-                    width: "100%",
-                    outline: "none",
-                }}
-                onFocus={e => {
-                    e.currentTarget.parentElement!.style.borderBottom =
-                        "1px solid rgba(88, 101, 242, 0.8)"; // Discord blurple
-                }}
-                onBlur={e => {
-                    e.currentTarget.parentElement!.style.borderBottom =
-                        "1px solid rgba(255, 255, 255, 0.1)";
-                }}
-            />
-        </div>
-    );
-}
 
 const FILTER_ALIASES: Record<string, string> = {
     p: "priority",
@@ -179,7 +118,6 @@ function matchesFilters(triggerConfig: TriggerSetting, filters: any[]) {
 
     return true;
 }
-
 
 export function TriggerToggle({
     label,
@@ -310,7 +248,7 @@ export function TriggerListUI() {
     const [highestPriority, setHighestPriority] = React.useState(0);
 
     // Search state
-    const [searchTerm, setSearchTerm] = React.useState("");
+    const [searchQuery, setSearchQuery] = React.useState("");
 
     React.useEffect(() => {
         const updateTimer = () => {
@@ -355,7 +293,7 @@ export function TriggerListUI() {
         return reactive._triggers?.[key] || { ...DEFAULT_TRIGGER_SETTING };
     };
 
-    const filters = parseFilterQuery(searchTerm);
+    const filters = parseFilterQuery(searchQuery);
     const filteredTriggers = triggers.filter(trigger => {
         const config = getTriggerConfig(trigger.key);
 
@@ -369,7 +307,7 @@ export function TriggerListUI() {
         // name search
         return trigger.key
             .toLowerCase()
-            .includes(searchTerm.toLowerCase());
+            .includes(searchQuery.toLowerCase());
     });
 
     const updateTrigger = (key: string, updates: Partial<TriggerSetting>) => {
@@ -386,63 +324,77 @@ export function TriggerListUI() {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {hasCooldown && (
-                <div
-                    onClick={clearAllCooldowns}
-                    title={"Click to clear all cooldowns immediately."}
-                    style={{
-                        background: "rgba(244, 125, 77, 0.1)", // Laranja bem suave
-                        border: "1px solid rgba(244, 125, 77, 0.3)",
-                        borderRadius: 4,
-                        padding: "6px 10px",
-                        color: "#f47d4d",
-                        fontSize: 12,
-                        fontWeight: 500,
-                        textAlign: "center",
-                        cursor: "pointer", // Indica que é clicável
-                        transition: "background 0.2s ease", // Hover suave
-                    }}
-                    onMouseEnter={e => {
-                        e.currentTarget.style.background = "rgba(244, 125, 77, 0.2)";
-                    }}
-                    onMouseLeave={e => {
-                        e.currentTarget.style.background = "rgba(244, 125, 77, 0.1)";
-                    }}
-                >
-                    ⚠️ Priorities ≤{highestPriority} are on join cooldown! ({remainingSeconds}s) ⚠️
-                </div>
-            )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
+            {/* Main Section (search and stuff) */}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+                {/* Search Input */}
+                <CInput
+                    placeholder="Search trigger..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    style={{ width: "100%" }}
+                    title="Search your trigger, or use a custom query like :e, :p>5, :j, :n"
+                />
 
-            {/* Search Input */}
-            <MinimalSearchInput
-                value={searchTerm}
-                onChange={setSearchTerm}
-                placeholder="Search triggers..."
-            />
+                <CSectionNote variant="tip" style={{ marginBottom: 0,marginTop: 8 }}>
+                    Right-click a trigger to quickly enable or disable it. Left-click to open the configuration page. A trigger must be active for Join or Notify to work.<br />
+                </CSectionNote>
+            </div>
 
-            {filteredTriggers.length === 0 && searchTerm ? (
-                <div style={{ textAlign: "center", color: "#b9bbbe", fontSize: 14, padding: "20px" }}>
-                    No triggers found matching "{searchTerm}"
-                </div>
-            ) : (
-                filteredTriggers.map(trigger => {
-                    const config = getTriggerConfig(trigger.key);
-                    return (
-                        <TriggerRow
-                            key={trigger.key}
-                            trigger={trigger}
-                            config={config}
-                            onToggleEnabled={() => toggleEnabled(trigger.key)}
-                        />
-                    );
-                })
-            )}
-            {searchTerm && filteredTriggers.length < triggers.length && (
-                <div style={{ textAlign: "center", color: "#b9bbbe", fontSize: 12 }}>
-                    Showing {filteredTriggers.length} of {triggers.length} triggers
-                </div>
-            )}
+            <CDivider spacing="NONE"/>
+
+            {/* Triggers */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "8px" }}>
+                {hasCooldown && (
+                    <div
+                        onClick={clearAllCooldowns}
+                        title={"Click to clear all cooldowns immediately."}
+                        style={{
+                            background: "rgba(244, 125, 77, 0.1)", // Laranja bem suave
+                            border: "1px solid rgba(244, 125, 77, 0.3)",
+                            borderRadius: 4,
+                            padding: "6px 10px",
+                            color: "#f47d4d",
+                            fontSize: 12,
+                            fontWeight: 500,
+                            textAlign: "center",
+                            cursor: "pointer", // Indica que é clicável
+                            transition: "background 0.2s ease", // Hover suave
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.background = "rgba(244, 125, 77, 0.2)";
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.background = "rgba(244, 125, 77, 0.1)";
+                        }}
+                    >
+                        ⚠️ Priorities ≤{highestPriority} are on join cooldown! ({remainingSeconds}s) ⚠️
+                    </div>
+                )}
+
+                {filteredTriggers.length === 0 && searchQuery ? (
+                    <div style={{ textAlign: "center", color: "#b9bbbe", fontSize: "1.2rem", padding: "20px", height: "100%" }}>
+                        No triggers found matching "{searchQuery}"
+                    </div>
+                ) : (
+                    filteredTriggers.map(trigger => {
+                        const config = getTriggerConfig(trigger.key);
+                        return (
+                            <TriggerRow
+                                key={trigger.key}
+                                trigger={trigger}
+                                config={config}
+                                onToggleEnabled={() => toggleEnabled(trigger.key)}
+                            />
+                        );
+                    })
+                )}
+                {searchQuery && filteredTriggers.length < triggers.length && (
+                    <div style={{ textAlign: "center", color: "#b9bbbe", fontSize: "0.8rem" }}>
+                        Showing {filteredTriggers.length} of {triggers.length} triggers
+                    </div>
+                )}
+            </div>
         </div>
     );
 }

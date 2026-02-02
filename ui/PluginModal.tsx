@@ -41,12 +41,7 @@ function JoinsTabContent({ onCloseAll }: { onCloseAll: () => void; }) {
 
 function TriggersTabContent() {
     return (
-        <div
-            className={cl("flex", "flex-col", "gap-4")}
-        >
-            <CSectionMessage>
-                Right-click a trigger to quickly enable or disable it. Left-click to open the configuration page. A trigger must be active for Join or Notify to work.<br />
-            </CSectionMessage>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
             <TriggerListUI />
         </div>
     );
