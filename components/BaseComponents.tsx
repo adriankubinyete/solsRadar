@@ -104,6 +104,7 @@ export type CInputProps = {
     onFocus?: () => void;
     onBlur?: () => void;
     size?: "small" | "medium" | "large";
+    title?: string;
 };
 
 export function CInput({
@@ -120,6 +121,7 @@ export function CInput({
     onFocus,
     onBlur,
     size = "medium",
+    title = "",
 }: CInputProps) {
     const [isFocused, setIsFocused] = React.useState(false);
 
@@ -181,6 +183,7 @@ export function CInput({
                         width: "100%",
                         height: "100%",
                     }}
+                    title={title}
                 />
             </div>
 
