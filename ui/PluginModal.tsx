@@ -28,9 +28,7 @@ const Native = (VencordNative.pluginHelpers.SolsRadar as unknown) as {
 
 function JoinsTabContent({ onCloseAll }: { onCloseAll: () => void; }) {
     return (
-        <div
-            className={cl("flex", "flex-col", "gap-4")}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem", width: "100%" }}>
             <CSectionMessage>
                 View and manage your recent server joins. Click on any join to see detailed information. Right click to jump to message (if it exists).
             </CSectionMessage>
