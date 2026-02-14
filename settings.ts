@@ -188,6 +188,12 @@ export const TriggerDefs = {
         keywords: ["jester", "oblivion"],
         iconUrl: "https://raw.githubusercontent.com/vexthecoder/OysterDetector/refs/heads/main/assets/jester.png",
     },
+    RIN: {
+        type: TriggerTypes.MERCHANT,
+        name: "Rin",
+        keywords: ["rin"],
+        iconUrl: "",
+    }
 } as const;
 
 
