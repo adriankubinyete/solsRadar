@@ -12,9 +12,9 @@ export const settings = definePluginSettings({
         type: OptionType.SELECT,
         description: "Where to place the menu button",
         options: [
-            { label: "Chat Bar", value: "chatbar" },
+            { label: "Chat Bar (default)", value: "chatbar", default: true },
             { label: "Title Bar", value: "titlebar" },
-            { label: "Hidden", value: "hide" }
+            { label: "Hidden (not recommended)", value: "hide" }
         ],
         restartNeeded: true
     },
@@ -24,17 +24,19 @@ export const settings = definePluginSettings({
         options: [
             { label: "Toggle global auto-join", value: "toggle_join" },
             { label: "Toggle global notifications", value: "toggle_notification" },
-            { label: "Toggle both", value: "toggle_both" },
+            { label: "Toggle both (default)", value: "toggle_both", default: true },
             { label: "Do nothing", value: "none" }
         ]
     },
     autoJoinEnabled: {
         type: OptionType.BOOLEAN,
         description: "Global auto-join state. Takes precedence over the trigger-specific setting.",
+        default: false,
     },
     notificationEnabled: {
         type: OptionType.BOOLEAN,
-        description: "Global notification state. Takes precedence over the trigger-specific setting."
+        description: "Global notification state. Takes precedence over the trigger-specific setting.",
+        default: false
 
     }
 });
