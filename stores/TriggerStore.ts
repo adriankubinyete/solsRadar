@@ -5,7 +5,10 @@
  */
 
 import { DataStore } from "@api/index";
+import { Logger } from "@utils/Logger";
 import { React } from "@webpack/common";
+
+const logger = new Logger("SolRadar.TriggerStore");
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -75,7 +78,7 @@ export const DEFAULT_BIOME: TriggerBiome = {
     detection_keyword: "",
 };
 
-export function makeDefaultTrigger(type: TriggerType = "CUSTOM"): Omit<Trigger, "id"> {
+export function makeDefaultTrigger(type: TriggerType = "BIOME"): Omit<Trigger, "id"> {
     const base: Omit<Trigger, "id"> = {
         type,
         name: "",
@@ -92,7 +95,7 @@ export function makeDefaultTrigger(type: TriggerType = "CUSTOM"): Omit<Trigger, 
         },
     };
 
-    if (type === "BIOME" || type === "RARE_BIOME") {
+    if (type === "BIOME" || type === "RARE_BIOME" || type === "WEATHER" || type === "CUSTOM") {
         base.biome = { ...DEFAULT_BIOME };
     }
 
@@ -113,11 +116,14 @@ function notify() {
 let _initialized = false;
 
 export async function initTriggerStore(): Promise<void> {
+    logger.info("Initializing TriggerStore...");
     if (_initialized) return;
     _initialized = true;
 
     const stored = await DataStore.get<Trigger[]>(DATASTORE_KEY);
+    logger.debug("Stored triggers:", stored);
     _triggers = stored ?? [];
+    logger.info(`Loaded ${_triggers.length} triggers from DataStore.`);
     notify();
 }
 
@@ -139,7 +145,9 @@ export function getActiveTriggers(): Trigger[] {
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
 async function persist() {
+    logger.debug("Persisting triggers...");
     await DataStore.set(DATASTORE_KEY, _triggers);
+    logger.info(`Persisted ${_triggers.length} triggers to DataStore.`);
 }
 
 export async function addTrigger(data: Omit<Trigger, "id">): Promise<Trigger> {
@@ -249,3 +257,5 @@ export function useTriggers(): Trigger[] {
 
     return triggers;
 }
+
+initTriggerStore();

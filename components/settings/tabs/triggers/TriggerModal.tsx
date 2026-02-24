@@ -43,7 +43,7 @@ const TRIGGER_TYPE_OPTIONS = [
     { label: "Custom", value: "CUSTOM" },
 ];
 
-const needsBiomeTab = (type: TriggerType) => type === "BIOME" || type === "RARE_BIOME";
+const needsBiomeTab = (type: TriggerType) => type === "BIOME" || type === "RARE_BIOME" || type === "WEATHER" || type === "CUSTOM";
 const arrToStr = (arr: string[]) => arr.join(", ");
 const strToArr = (str: string): string[] => str.split(",").map(s => s.trim()).filter(Boolean);
 
@@ -288,7 +288,7 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
 
             <section>
                 <Heading tag="h5">Name *</Heading>
-                <TextInput value={name} placeholder="e.g. Cyberspace" onChange={v => patch({ name: v })} />
+                <TextInput value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
             </section>
 
             <section style={{ marginTop: 8 }}>
@@ -307,7 +307,7 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
             <FormSwitch title="Enabled" value={state.enabled} onChange={v => patch({ state: { ...state, enabled: v } })} description="Whether this trigger is active." />
             <FormSwitch title="Auto-join" value={state.autojoin} onChange={v => patch({ state: { ...state, autojoin: v } })} description="Automatically join the match when triggered." />
             <FormSwitch title="Notify" value={state.notify} onChange={v => patch({ state: { ...state, notify: v } })} description="Show a notification when matched." />
-            <FormSwitch title="Join lock" value={state.joinlock} onChange={v => patch({ state: { ...state, joinlock: v } })} description="Prevent triggering again for a duration after a match." />
+            <FormSwitch title="Join lock" value={state.joinlock} onChange={v => patch({ state: { ...state, joinlock: v } })} description="Should prevent other triggers from happening while this one is active?" />
 
             {state.joinlock && (
                 <section style={{ marginTop: 8 }}>
@@ -338,21 +338,22 @@ function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions
                 Message must contain at least one of these. Separate with commas. Click away to confirm.
             </Paragraph>
 
-            <KeywordsInput
-                label="Keywords"
-                value={keywords.match.value}
-                onChange={v => patchMatch({ value: v })}
-                description="test keywordinput description"
-                placeholder="cyber, cyberspace, cyber space"
-            />
+            <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <KeywordsInput
+                    label="Keywords"
+                    value={keywords.match.value}
+                    onChange={v => patchMatch({ value: v })}
+                    placeholder="cyber, cyberspace, cyber space"
+                />
 
-            <FormSwitch
-                title="Strict match"
-                value={keywords.match.strict}
-                onChange={v => patchMatch({ strict: v })}
-                description="Must match the exact word boundary, not just a substring."
-                hideBorder={true}
-            />
+                <FormSwitch
+                    title="Strict match"
+                    value={keywords.match.strict}
+                    onChange={v => patchMatch({ strict: v })}
+                    description="Must match the exact word boundary, not just a substring."
+                    hideBorder={true}
+                />
+            </section>
 
             <Divider style={{ margin: "12px 0" }} />
 
@@ -361,20 +362,23 @@ function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions
                 Message must NOT contain any of these. Separate with commas. Click away to confirm.
             </Paragraph>
 
-            <KeywordsInput
-                label="Keywords"
-                value={keywords.exclude.value}
-                onChange={v => patchExclude({ value: v })}
-                placeholder="hunt, help"
-            />
 
-            <FormSwitch
-                title="Strict match"
-                value={keywords.exclude.strict}
-                onChange={v => patchExclude({ strict: v })}
-                description="Must match the exact word boundary, not just a substring."
-                hideBorder={true}
-            />
+            <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <KeywordsInput
+                    label="Keywords"
+                    value={keywords.exclude.value}
+                    onChange={v => patchExclude({ value: v })}
+                    placeholder="hunt, help"
+                />
+
+                <FormSwitch
+                    title="Strict match"
+                    value={keywords.exclude.strict}
+                    onChange={v => patchExclude({ strict: v })}
+                    description="Must match the exact word boundary, not just a substring."
+                    hideBorder={true}
+                />
+            </section>
 
             <Divider style={{ margin: "12px 0" }} />
 
@@ -416,19 +420,18 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
                 title="Enable biome detection"
                 value={biome.detection_enabled}
                 onChange={v => onChange({ ...biome, detection_enabled: v })}
-                description="Use F9 messages to verify the biome before joining."
             />
 
             {biome.detection_enabled && (
                 <section style={{ marginTop: 8 }}>
-                    <Heading tag="h5">Detection keyword</Heading>
+                    <Heading tag="h5">RPC Keyword</Heading>
                     <TextInput
                         value={biome.detection_keyword}
-                        placeholder="e.g. cyber"
+                        placeholder="e.g. GLITCHED"
                         onChange={v => onChange({ ...biome, detection_keyword: v })}
                     />
                     <Paragraph style={{ marginTop: 4 }}>
-                        The keyword that appears in the F9 message to confirm this biome.
+                        Keyword used to detect a biome from Roblox's client debug log. Should match the BloxstrapRPC "hoverText" field. If empty, biome detection will be disabled.
                     </Paragraph>
                 </section>
             )}
@@ -509,7 +512,7 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
                     justifyContent: "space-between",
                     width: "100%",
                 }}>
-                    <Heading tag="h2">{isEditing ? `Edit — ${trigger.name}` : "Add Trigger"}</Heading>
+                    <Heading tag="h5">{isEditing ? `Edit — ${trigger.name}` : "Add Trigger"}</Heading>
                     <ModalCloseButton onClick={modalProps.onClose} />
                 </div>
             </ModalHeader>
@@ -533,14 +536,10 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
             <ModalFooter separator>
                 {isEditing && (
                     /* FIX 1: dangerPrimary = botão vermelho real */
-                    <Button variant="dangerPrimary" onClick={handleDelete} style={{ marginRight: "4px" }}>
+                    <Button variant="dangerPrimary" onClick={handleDelete} style={{ marginLeft: "4px" }}>
                         Delete
                     </Button>
                 )}
-                {/* FIX 1: secondary = botão cinza real, não texto azul */}
-                <Button variant="secondary" onClick={modalProps.onClose}>
-                    Cancel
-                </Button>
                 <Button variant="primary" disabled={!isValid} onClick={handleSave} style={{ marginLeft: "4px" }}>
                     {isEditing ? "Save" : "Add"}
                 </Button>
