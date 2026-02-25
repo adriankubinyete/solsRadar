@@ -335,7 +335,7 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
 // ─── Tab: Conditions ──────────────────────────────────────────────────────────
 
 function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions; onChange: (c: TriggerConditions) => void; }) {
-    const { keywords, fromUser, inChannel } = conditions;
+    const { keywords, fromUser, inChannel, bypassChannelRestriction, bypassMatchAmbiguity } = conditions;
 
     const patchMatch = (p: Partial<typeof keywords.match>) => onChange({ ...conditions, keywords: { ...keywords, match: { ...keywords.match, ...p } } });
     const patchExclude = (p: Partial<typeof keywords.exclude>) => onChange({ ...conditions, keywords: { ...keywords, exclude: { ...keywords.exclude, ...p } } });
@@ -404,9 +404,25 @@ function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions
             <IdChipInput
                 kind="channel"
                 label="Filter by channel"
-                description="Only match messages in these channels. Leave empty to match any channel."
+                description="In addition to the main monitored channels setting, only match this trigger if the message was sent in these channels. Leave empty to match any channel."
                 ids={inChannel}
                 onChange={ids => onChange({ ...conditions, inChannel: ids })}
+            />
+
+            <Divider style={{ margin: "12px 0" }} />
+
+            <FormSwitch
+                title="Bypass channel restriction"
+                value={bypassChannelRestriction}
+                onChange={v => onChange({ ...conditions, bypassChannelRestriction: v })}
+                description="Ignore the main monitored channel setting, that restricts triggers to certain channels. Useful for important triggers you want to work everywhere. If you don't know what this does, you probably don't need it."
+            />
+
+            <FormSwitch
+                title="Bypass match ambiguity"
+                value={bypassMatchAmbiguity}
+                onChange={v => onChange({ ...conditions, bypassMatchAmbiguity: v })}
+                description="Ignores the ambiguity system and treats this trigger as always unambiguous. Useful for very specific triggers that would otherwise be blocked by the ambiguity system. If you don't understand what the match ambiguity system is, you probably don't need this."
             />
         </>
     );
@@ -545,11 +561,11 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
             <ModalFooter separator>
                 {isEditing && (
                     /* FIX 1: dangerPrimary = botão vermelho real */
-                    <Button variant="dangerPrimary" onClick={handleDelete} style={{ marginLeft: "4px" }}>
+                    <Button variant="dangerPrimary" onClick={handleDelete} style={{ marginLeft: "8px" }}>
                         Delete
                     </Button>
                 )}
-                <Button variant="primary" disabled={!isValid} onClick={handleSave} style={{ marginLeft: "4px" }}>
+                <Button variant="primary" disabled={!isValid} onClick={handleSave} style={{ marginLeft: "8px" }}>
                     {isEditing ? "Save" : "Add"}
                 </Button>
             </ModalFooter>

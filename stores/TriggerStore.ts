@@ -43,6 +43,8 @@ export interface TriggerConditions {
     };
     fromUser: string[]; // empty = ignore check
     inChannel: string[]; // empty = ignore check
+    bypassMatchAmbiguity: boolean;
+    bypassChannelRestriction: boolean;
 }
 
 export interface TriggerBiome {
@@ -81,6 +83,8 @@ export const DEFAULT_CONDITIONS: TriggerConditions = {
     },
     fromUser: [],
     inChannel: [],
+    bypassMatchAmbiguity: false,
+    bypassChannelRestriction: false,
 };
 
 export const DEFAULT_BIOME: TriggerBiome = {
@@ -102,6 +106,8 @@ export function makeDefaultTrigger(type: TriggerType = "BIOME"): Omit<Trigger, "
             },
             fromUser: [],
             inChannel: [],
+            bypassMatchAmbiguity: false,
+            bypassChannelRestriction: false,
         },
     };
 
@@ -134,6 +140,8 @@ function migrateTrigger(raw: any): Trigger {
             },
             fromUser: raw.conditions?.fromUser ?? [],
             inChannel: raw.conditions?.inChannel ?? [],
+            bypassMatchAmbiguity: raw.conditions?.bypassMatchAmbiguity ?? false,
+            bypassChannelRestriction: raw.conditions?.bypassChannelRestriction ?? false,
         },
         state: {
             enabled: raw.state?.enabled ?? DEFAULT_TRIGGER_STATE.enabled,

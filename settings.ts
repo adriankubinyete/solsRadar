@@ -37,5 +37,10 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Global notification state. Takes precedence over the trigger-specific setting.",
         default: false
+    },
+    flattenEmbeds: {
+        type: OptionType.BOOLEAN,
+        description: "Whether to merge embeds into the message content when checking for triggers. If you're monitoring a Macro server, you might want to enable this.",
+        default: true
     }
 });
