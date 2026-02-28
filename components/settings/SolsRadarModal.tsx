@@ -8,13 +8,14 @@ import { Heading } from "@components/Heading";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { React } from "@webpack/common";
 
+import { DeveloperTab } from "./tabs/developer";
 import { RecentJoinsTab } from "./tabs/recentJoins";
 import { SettingsTab } from "./tabs/settings";
 import { TriggersTab } from "./tabs/triggers";
 
 // ─── Definição das tabs ────────────────────────────────────────────────────────
 
-type TabId = "recentJoins" | "triggers" | "settings";
+type TabId = "recentJoins" | "triggers" | "settings" | "dev";
 
 interface Tab {
     id: TabId;
@@ -26,6 +27,7 @@ const TABS: Tab[] = [
     { id: "recentJoins", label: "Recent Joins", component: RecentJoinsTab },
     { id: "triggers", label: "Triggers", component: TriggersTab },
     { id: "settings", label: "Settings", component: SettingsTab },
+    { id: "dev", label: "Developer", component: DeveloperTab },
 ];
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────

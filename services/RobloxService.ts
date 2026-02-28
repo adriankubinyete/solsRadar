@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Logger } from "@utils/Logger";
+import type { RunningGame } from "@vencord/discord-types";
+import { RunningGameStore } from "@webpack/common";
+
+const logger = new Logger("SolRadar.RobloxService");
+
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export interface RobloxPrivateServerLink {
@@ -87,4 +93,36 @@ export function buildJoinUri(link: RobloxLink): string {
         return `roblox://navigation/share_links?code=${link.code}&type=Server`;
     }
     return `roblox://experiences/start?placeId=${link.placeId}&linkCode=${link.code}`;
+}
+
+// ─── Processo do Roblox via RunningGameStore ──────────────────────────────────
+// O Discord já rastreia processos em execução via RunningGameStore —
+// sem precisar de powershell, wmic ou chamadas nativas.
+
+const ROBLOX_EXE = "robloxplayerbeta.exe"; // exeName é sempre lowercase no store
+
+/**
+ * Returns the Roblox process from the RunningGameStore, or null if it's not running.
+ *
+ * !! This is unreliable: if Discord restarts and the Roblox process is still running,
+ * it will not be detected unless navigated to. Also, on close, the process takes
+ * a few seconds to disappear from the RunningGameStore.
+ *
+ * For that reason, this CANNOT be trusted for "closeGameIfNeeded": if this
+ * is not updated in time OR the Roblox process is not running, the join could fail.
+ *
+ * It could be used for quick checks, but shouldn't be used for anything important.
+ */
+export function getRobloxProcess(): RunningGame | null {
+    const games: RunningGame[] = RunningGameStore.getRunningGames() ?? [];
+    logger.debug("Running games:", games);
+    // @ts-ignore shut the #### up?
+    return games.find(g => g.exeName === ROBLOX_EXE) ?? null;
+}
+
+/**
+ * Retorna true se o Roblox estiver em execução no momento.
+ */
+export function isRobloxRunning(): boolean {
+    return getRobloxProcess() !== null;
 }

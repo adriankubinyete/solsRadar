@@ -98,7 +98,7 @@ function isMessageAllowed({ channel, trigger }: { channel: Channel; trigger: Tri
     }
 
     const whitelist = parseCsv(settings.store.monitoredChannels);
-    if (!whitelist.has(channel.id)) {
+    if (whitelist.size > 0 && !whitelist.has(channel.id)) {
         log.debug(`[${trigger.name}] Channel #${channel.name} is not monitored — skipping.`);
         return false;
     }
@@ -108,34 +108,128 @@ function isMessageAllowed({ channel, trigger }: { channel: Channel; trigger: Tri
 
 // ─── join ─────────────────────────────────────────────────────────────────────
 
+/** Métricas de performance do join, em ms. */
+export interface JoinMetrics {
+    /** Tempo desde o recebimento da mensagem até o openUri ser chamado. */
+    timeToJoinMs: number;
+    /** Tempo que o openUri levou para retornar. */
+    joinDurationMs: number;
+    /** timeToJoinMs - joinDurationMs: quanto tempo "perdemos" antes de chamar o join. */
+    overheadMs: number;
+}
+
+/** Resultado de uma tentativa de join. */
+export interface JoinResult {
+    joined: boolean;
+    metrics: JoinMetrics | null;
+    /** undefined = verificação desativada, true = seguro, false = bait */
+    linkSafe: boolean | undefined;
+}
+
 /**
- * Tenta fazer join no servidor Roblox associado ao link.
+ * Resolves a Roblox link and checks if it's safe to join based on allowed place ids.
+ * can be skipped based on trigger conditions.
+ * will be ignored if theres not a roblox token to resolve links with.
  *
- * Respeita:
- *  - settings.store.autoJoinEnabled (gate global)
- *  - trigger.state.autojoin (gate por trigger)
  */
-async function tryJoin(link: RobloxLink, trigger: Trigger, log: Logger): Promise<boolean> {
-    if (!settings.store.autoJoinEnabled) {
-        log.debug(`[${trigger.name}] Auto-join globally disabled — skipping join.`);
-        return false;
+async function verifyLink(link: RobloxLink, trigger: Trigger, log: Logger): Promise<boolean | undefined> {
+    if (trigger.conditions.bypassLinkVerification) return undefined;
+    const mode = settings.store.linkVerification as "disabled" | "before" | "after" | undefined ?? "disabled";
+    if (mode === "disabled") return undefined;
+    if (!settings.store.robloxToken) {
+        log.warn("Link verification is enabled but robloxToken is missing. Please configure a valid token or disable link verification.");
+        return undefined;
     }
 
-    if (!trigger.state.autojoin) {
-        log.debug(`[${trigger.name}] Auto-join disabled on this trigger — skipping join.`);
-        return false;
+    log.debug(`[${trigger.name}] Verifying link (mode=${mode})...`);
+    // TODO: implementar chamada real de verificação (ex: resolver sharelink e checar se o servidor existe)
+    // Por ora retorna undefined para não bloquear nada
+    return undefined;
+}
+
+/**
+ * Closes the Roblox process before joining, if the setting is enabled.
+ * This can help prevent failed joins, at the cost of slightly increased join time (~100-200ms).
+ */
+async function closeGameIfNeeded(trigger: Trigger, log: Logger): Promise<void> {
+    if (!settings.store.closeGameBeforeJoin) return;
+
+    try {
+        await Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
+        log.debug(`[${trigger.name}] Closed Roblox process.`);
+    } catch (err) {
+        log.warn(
+            `[${trigger.name}] Failed to close Roblox process: ${(err as Error).message}`
+        );
     }
+}
+
+/**
+ * Do the actual joining.
+ * tMessageReceived should be the performance.now() captured at the start of MESSAGE_CREATE.
+ */
+async function tryJoin(
+    link: RobloxLink,
+    trigger: Trigger,
+    log: Logger,
+    tMessageReceived: number
+): Promise<JoinResult> {
+    const noJoin: JoinResult = { joined: false, metrics: null, linkSafe: undefined };
+
+    if (!settings.store.autoJoinEnabled) {
+        log.debug(`[${trigger.name}] Auto-join globally disabled.`);
+        return noJoin;
+    }
+    if (!trigger.state.autojoin) {
+        log.debug(`[${trigger.name}] Auto-join disabled on this trigger.`);
+        return noJoin;
+    }
+
+    // Verificação BEFORE: bloqueia se bait
+    if ((settings.store.linkVerification as string) === "before") {
+        const safe = await verifyLink(link, trigger, log);
+        if (safe === false) {
+            log.warn(`[${trigger.name}] Link flagged as unsafe — aborting join.`);
+            return { joined: false, metrics: null, linkSafe: false };
+        }
+    }
+
+    await closeGameIfNeeded(trigger, log);
 
     const uri = buildJoinUri(link);
     log.info(`[${trigger.name}] Joining: ${uri}`);
 
+    const tJoinStart = performance.now();
     try {
         await Native.openUri(uri);
-        return true;
     } catch (err) {
         log.error(`[${trigger.name}] openUri failed: ${(err as Error).message}`);
-        return false;
+        return noJoin;
     }
+    const tJoinEnd = performance.now();
+
+    const joinDurationMs = tJoinEnd - tJoinStart;
+    const timeToJoinMs = tJoinEnd - tMessageReceived;
+    const overheadMs = timeToJoinMs - joinDurationMs;
+
+    const metrics: JoinMetrics = { timeToJoinMs, joinDurationMs, overheadMs };
+    log.info(
+        `[${trigger.name}] Join complete — ` +
+        `total: ${timeToJoinMs.toFixed(1)}ms | ` +
+        `openUri: ${joinDurationMs.toFixed(1)}ms | ` +
+        `overhead: ${overheadMs.toFixed(1)}ms`
+    );
+
+    let linkSafe: boolean | undefined = undefined;
+    if ((settings.store.linkVerification as string) === "after") {
+        verifyLink(link, trigger, log).then(safe => {
+            linkSafe = safe;
+            if (safe === false) log.warn(`[${trigger.name}] Post-join verification: link was BAIT.`);
+            else if (safe === true) log.info(`[${trigger.name}] Post-join verification: link is safe.`);
+        });
+    }
+
+    return { joined: true, metrics, linkSafe };
 }
 
 // ─── post-join ─────────────────────────────────────────────────────────────────
@@ -143,40 +237,31 @@ async function tryJoin(link: RobloxLink, trigger: Trigger, log: Logger): Promise
 function activateJoinLock(trigger: Trigger, log: Logger): void {
     if (!trigger.state.joinlock) return;
     // TODO: persistir timestamp do lock + duration
-    log.info(`[${trigger.name}] Join lock activated for ${trigger.state.joinlock_duration}s.`);
+    log.info(`[${trigger.name}] Join lock activated for ${trigger.state.joinlockDuration}s.`);
 }
 
 async function runBiomeDetection(trigger: Trigger, log: Logger): Promise<void> {
-    if (!trigger.biome?.detection_enabled) return;
-    // TODO: ler log do Roblox e verificar detection_keyword
+    if (!trigger.biome?.detectionEnabled) return;
+    // TODO: ler log do Roblox e verificar detectionKeyword
     log.debug(`[${trigger.name}] Biome detection pending.`);
 }
 
-/**
- * Envia notificação de match.
- *
- * Respeita:
- *  - settings.store.notificationEnabled (gate global)
- *  - trigger.state.notify (gate por trigger)
- */
 function tryNotify(trigger: Trigger, channel: Channel, guild: Guild, log: Logger): void {
     if (!settings.store.notificationEnabled) {
-        log.debug(`[${trigger.name}] Notifications globally disabled — skipping.`);
+        log.debug(`[${trigger.name}] Notifications globally disabled.`);
         return;
     }
-
     if (!trigger.state.notify) {
-        log.debug(`[${trigger.name}] Notifications disabled on this trigger — skipping.`);
+        log.debug(`[${trigger.name}] Notifications disabled on this trigger.`);
         return;
     }
-
     // TODO: mostrar toast / notificação do sistema
     log.info(`[${trigger.name}] Notify: matched in #${channel.name} @ ${guild.name}.`);
 }
 
 // ─── orchestration ─────────────────────────────────────────────────────────────
 
-async function handleMessage(message: Message, channel: Channel, guild: Guild): Promise<void> {
+async function handleMessage(message: Message, channel: Channel, guild: Guild, tMessageReceived: number): Promise<void> {
     const log = new Logger(`SolRadar:${message.id}`);
 
     flattenEmbeds(message);
@@ -184,21 +269,21 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild): 
     const link = extractLink(message);
     if (!link) return;
 
-    sanitizeContent(message); // remove links before matching so it doesnt affect keyword matching
+    sanitizeContent(message);
 
     const trigger = resolveTrigger({ message, channel, guild }, log);
     if (!trigger) return;
 
     log.info(`Match: "${trigger.name}" (p${trigger.state.priority}) — #${channel.name} @ ${guild.name}`);
 
-    if (!isMessageAllowed({ channel, trigger }, log)) return; // channel and guild restrictions
+    if (!isMessageAllowed({ channel, trigger }, log)) return;
 
-    const joined = await tryJoin(link, trigger, log);
-    tryNotify(trigger, channel, guild, log); // independent of join
+    const { joined, metrics } = await tryJoin(link, trigger, log, tMessageReceived);
+
+    tryNotify(trigger, channel, guild, log);
 
     if (!joined) return;
 
-    // post-join stuff not implemented yet
     // activateJoinLock(trigger, log);
     // await runBiomeDetection(trigger, log);
 }
@@ -243,6 +328,7 @@ export default definePlugin({
 
     flux: {
         async MESSAGE_CREATE({ message, optimistic }: { message: Message; optimistic: boolean; }) {
+            const tMessageReceived = performance.now();
             if (optimistic) return;
 
             const channel = ChannelStore.getChannel(message.channel_id);
@@ -252,7 +338,7 @@ export default definePlugin({
             const guild = GuildStore.getGuild(channel.guild_id!);
             if (!guild) return;
 
-            await handleMessage(message, channel, guild);
+            await handleMessage(message, channel, guild, tMessageReceived);
         }
     }
 });

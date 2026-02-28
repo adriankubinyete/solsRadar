@@ -58,6 +58,32 @@ export const settings = definePluginSettings({
         type: OptionType.STRING,
         description: "Comma-separated list of guild IDs that the plugin should ignore. Useful if you want to use the plugin but avoid monitoring a specific guild. Created because of Glitch Hunting servers with a no-snipers policy. Example: `123456789012345678, 987654321098765432`",
         default: "",
-        hidden: true
     },
+    closeGameBeforeJoin: {
+        type: OptionType.BOOLEAN,
+        description: "Close Roblox before attempting to join a server. Slightly increases join time (~100-200ms) but prevents joins from straight up failing.",
+        default: true,
+    },
+    linkVerification: {
+        type: OptionType.SELECT,
+        description: "When to verify links. Requires a robloxToken configured to work. If set to after, once a bad link is detected, the plugin will execute the onBadLink action.",
+        options: [
+            { label: "Disabled", value: "disabled", default: true },
+            { label: "Before Joining (slower, safer)", value: "before" },
+            { label: "After Joining", value: "after" },
+        ]
+    },
+    onBadLink: {
+        type: OptionType.SELECT,
+        description: "What to do when a bad link is detected. A bad link is a server link that fails verification (e.g. because it's expired or fake).",
+        options: [
+            { label: "Nothing (not recommended)", value: "nothing" },
+            { label: "Join a public server", value: "join_public", default: true },
+        ]
+    },
+    robloxToken: {
+        type: OptionType.STRING,
+        description: "This is NOT required for the plugin to work! Your .ROBLOSECURITY cookie value. Required for link verification. Keep this private and never share it with anyone. Highly recommended to make an alt account just to use it's token for this. The plugin only uses it to verify if a server link is valid by making a request to Roblox's API. It does NOT store or transmit the token in any other way.",
+        default: "",
+    }
 });

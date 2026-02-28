@@ -19,7 +19,7 @@ export interface TriggerState {
     autojoin: boolean;
     notify: boolean;
     joinlock: boolean;
-    joinlock_duration: number; // seconds
+    joinlockDuration: number; // seconds
     /**
      * Prioridade do trigger (1 = mais alta, números maiores = menos importante).
      * O join lock bloqueia novos joins, EXCETO de triggers com prioridade
@@ -45,12 +45,13 @@ export interface TriggerConditions {
     inChannel: string[]; // empty = ignore check
     bypassMatchAmbiguity: boolean;
     bypassChannelRestriction: boolean;
+    bypassLinkVerification: boolean;
 }
 
 export interface TriggerBiome {
-    detection_enabled: boolean;
-    detection_keyword: string;
-    skip_redundant_join: boolean;
+    detectionEnabled: boolean;
+    detectionKeyword: string;
+    skipRedundantJoin: boolean;
 }
 
 export interface Trigger {
@@ -58,7 +59,7 @@ export interface Trigger {
     type: TriggerType;
     name: string;
     description: string;
-    icon_url: string;
+    iconUrl: string;
     state: TriggerState;
     conditions: TriggerConditions;
     biome?: TriggerBiome;
@@ -73,7 +74,7 @@ export const DEFAULT_TRIGGER_STATE: TriggerState = {
     autojoin: true,
     notify: true,
     joinlock: false,
-    joinlock_duration: 0,
+    joinlockDuration: 0,
     priority: 10,
 };
 
@@ -86,12 +87,13 @@ export const DEFAULT_CONDITIONS: TriggerConditions = {
     inChannel: [],
     bypassMatchAmbiguity: false,
     bypassChannelRestriction: false,
+    bypassLinkVerification: false,
 };
 
 export const DEFAULT_BIOME: TriggerBiome = {
-    detection_enabled: true,
-    detection_keyword: "",
-    skip_redundant_join: true,
+    detectionEnabled: true,
+    detectionKeyword: "",
+    skipRedundantJoin: true,
 };
 
 export function makeDefaultTrigger(type: TriggerType = "BIOME"): Omit<Trigger, "id"> {
@@ -99,24 +101,15 @@ export function makeDefaultTrigger(type: TriggerType = "BIOME"): Omit<Trigger, "
         type,
         name: "",
         description: "",
-        icon_url: "",
+        iconUrl: "",
         state: { ...DEFAULT_TRIGGER_STATE },
-        conditions: {
-            keywords: {
-                match: { strict: false, value: [] },
-                exclude: { strict: false, value: [] },
-            },
-            fromUser: [],
-            inChannel: [],
-            bypassMatchAmbiguity: false,
-            bypassChannelRestriction: false,
-        },
+        conditions: { ...DEFAULT_CONDITIONS },
     };
 
     if (type !== "MERCHANT") {
         base.biome = {
             ...DEFAULT_BIOME,
-            detection_enabled: type !== "CUSTOM",
+            detectionEnabled: type !== "CUSTOM",
         };
     }
 
@@ -133,11 +126,11 @@ function migrateTrigger(raw: any): Trigger {
         type: raw.type ?? "CUSTOM",
         name: raw.name ?? "",
         description: raw.description ?? "",
-        icon_url: raw.icon_url ?? "",
+        iconUrl: raw.iconUrl ?? "",
         biome: {
-            detection_enabled: raw.biome?.detection_enabled ?? DEFAULT_BIOME.detection_enabled,
-            detection_keyword: raw.biome?.detection_keyword ?? DEFAULT_BIOME.detection_keyword,
-            skip_redundant_join: raw.biome?.skip_redundant_join ?? DEFAULT_BIOME.skip_redundant_join,
+            detectionEnabled: raw.biome?.detectionEnabled ?? DEFAULT_BIOME.detectionEnabled,
+            detectionKeyword: raw.biome?.detectionKeyword ?? DEFAULT_BIOME.detectionKeyword,
+            skipRedundantJoin: raw.biome?.skipRedundantJoin ?? DEFAULT_BIOME.skipRedundantJoin,
         },
         conditions: {
             keywords: {
@@ -148,13 +141,14 @@ function migrateTrigger(raw: any): Trigger {
             inChannel: raw.conditions?.inChannel ?? [],
             bypassMatchAmbiguity: raw.conditions?.bypassMatchAmbiguity ?? false,
             bypassChannelRestriction: raw.conditions?.bypassChannelRestriction ?? false,
+            bypassLinkVerification: raw.conditions?.bypassLinkVerification ?? false,
         },
         state: {
             enabled: raw.state?.enabled ?? DEFAULT_TRIGGER_STATE.enabled,
             autojoin: raw.state?.autojoin ?? DEFAULT_TRIGGER_STATE.autojoin,
             notify: raw.state?.notify ?? DEFAULT_TRIGGER_STATE.notify,
             joinlock: raw.state?.joinlock ?? DEFAULT_TRIGGER_STATE.joinlock,
-            joinlock_duration: raw.state?.joinlock_duration ?? DEFAULT_TRIGGER_STATE.joinlock_duration,
+            joinlockDuration: raw.state?.joinlockDuration ?? DEFAULT_TRIGGER_STATE.joinlockDuration,
             priority: raw.state?.priority ?? DEFAULT_TRIGGER_STATE.priority,
         },
     };

@@ -266,7 +266,7 @@ function IdChipInput({ kind, label, description, ids, onChange }: IdChipInputPro
 // ─── Tab: General ─────────────────────────────────────────────────────────────
 
 function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
-    const { name, description, icon_url, type, state } = draft;
+    const { name, description, iconUrl, type, state } = draft;
 
     return (
         <>
@@ -299,7 +299,7 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
 
             <section style={{ marginTop: 8 }}>
                 <Heading tag="h5">Icon URL</Heading>
-                <TextInput value={icon_url} placeholder="https://..." onChange={v => patch({ icon_url: v })} />
+                <TextInput value={iconUrl} placeholder="https://..." onChange={v => patch({ iconUrl: v })} />
             </section>
 
             <Divider style={{ margin: "12px 0" }} />
@@ -323,12 +323,12 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
                     <Heading tag="h5">Join lock duration (seconds)</Heading>
                     <TextInput
                         type="number"
-                        value={String(state.joinlock_duration)}
-                        onChange={v => patch({ state: { ...state, joinlock_duration: Number(v) } })}
+                        value={String(state.joinlockDuration)}
+                        onChange={v => patch({ state: { ...state, joinlockDuration: Number(v) } })}
                     />
                 </section>
             )}
-    </>
+        </>
     );
 }
 
@@ -427,18 +427,18 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
 
             <FormSwitch
                 title="Enable biome detection"
-                value={biome.detection_enabled}
-                onChange={v => onChange({ ...biome, detection_enabled: v })}
+                value={biome.detectionEnabled}
+                onChange={v => onChange({ ...biome, detectionEnabled: v })}
             />
 
-            {biome.detection_enabled && (
+            {biome.detectionEnabled && (
                 <>
                     <section style={{ marginTop: 8 }}>
                         <Heading tag="h5">RPC Keyword</Heading>
                         <TextInput
-                            value={biome.detection_keyword}
+                            value={biome.detectionKeyword}
                             placeholder="e.g. GLITCHED"
-                            onChange={v => onChange({ ...biome, detection_keyword: v })}
+                            onChange={v => onChange({ ...biome, detectionKeyword: v })}
                         />
                         <Paragraph style={{ marginTop: 4 }}>
                             Keyword used to detect a biome from Roblox's client debug log. Should match the BloxstrapRPC "hoverText" field. If empty, biome detection will be disabled.
@@ -447,8 +447,8 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
                     <Divider style={{ margin: "8px 0" }} />
                     <FormSwitch
                         title="Skip Redundant Join"
-                        value={biome.skip_redundant_join}
-                        onChange={v => onChange({ ...biome, skip_redundant_join: v })}
+                        value={biome.skipRedundantJoin}
+                        onChange={v => onChange({ ...biome, skipRedundantJoin: v })}
                         description="If enabled, check if the player is already in the detected biome before joining. If they are, skip the join (will still try to notify)."
                     />
                 </>
@@ -461,7 +461,7 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
 
 function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
     const { conditions } = draft;
-    const { bypassChannelRestriction, bypassMatchAmbiguity } = conditions;
+    const { bypassChannelRestriction, bypassMatchAmbiguity, bypassLinkVerification } = conditions;
 
     return (
         <>
@@ -480,7 +480,14 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
                 onChange={v => patch({ conditions: { ...conditions, bypassMatchAmbiguity: v } })}
                 description="Ignores the ambiguity system and treats this trigger as always unambiguous. Useful for very specific triggers that would otherwise be blocked by the ambiguity system. If you don't understand what the match ambiguity system is, you probably don't need this."
             />
-    </>
+
+            <FormSwitch
+                title="Bypass link verification"
+                value={bypassLinkVerification}
+                onChange={v => patch({ conditions: { ...conditions, bypassLinkVerification: v } })}
+                description="Ignores the PlaceID verification. If you don't know what this does, you probably don't need it."
+            />
+        </>
     );
 }
 
@@ -537,7 +544,7 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
         if (!isValid) return;
         if (isEditing) await updateTrigger(trigger.id, draft);
         else await addTrigger(draft);
-        showToast(isEditing ? "Trigger updated!" : "Trigger added!", Toasts.Type.SUCCESS);
+        showToast(isEditing ? `Trigger "${draft.name}" updated!` : "Trigger added!", Toasts.Type.SUCCESS);
         modalProps.onClose();
     };
 

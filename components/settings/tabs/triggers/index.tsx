@@ -88,6 +88,7 @@ const s = {
         gap: 12,
         padding: "10px 14px",
         borderRadius: 8,
+        cursor: "pointer",
         background: enabled
             ? "color-mix(in srgb, var(--green-360) 8%, var(--background-secondary))"
             : "var(--background-mod-subtle)",
@@ -160,6 +161,18 @@ const s = {
     }),
 
     cardActions: { display: "flex", gap: 6, alignItems: "center", flexShrink: 0 },
+    deleteBtn: (): React.CSSProperties => ({
+        background: "none",
+        border: "none",
+        padding: "4px 8px",
+        borderRadius: 4,
+        cursor: "pointer",
+        color: "var(--text-danger)",
+        fontSize: 13,
+        fontWeight: 600,
+        opacity: 0.7,
+        transition: "opacity 0.1s",
+    }),
 };
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
@@ -184,32 +197,36 @@ function TriggerCard({
     const initial = trigger.name.charAt(0).toUpperCase();
     const { enabled } = trigger.state;
 
-    return (
-        <div style={s.card(enabled)}>
+    // Clique esquerdo no body = editar
+    // Clique direito no body = toggle enable/disable
+    const handleCardClick = (e: React.MouseEvent) => {
+        openEditTriggerModal(trigger);
+    };
 
-            {/* Botões de ordem */}
-            <div style={s.orderButtons}>
-                <button
-                    style={s.orderBtn(isFirst)}
-                    disabled={isFirst}
-                    onClick={onMoveUp}
-                    title="Move up"
-                >
-                    ▲
-                </button>
-                <button
-                    style={s.orderBtn(isLast)}
-                    disabled={isLast}
-                    onClick={onMoveDown}
-                    title="Move down"
-                >
-                    ▼
-                </button>
+    const handleCardContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        toggleTrigger(trigger.id);
+    };
+
+    // Impede que cliques nos botões de ordem bublem para o card
+    const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
+
+    return (
+        <div
+            style={s.card(enabled)}
+            onClick={handleCardClick}
+            onContextMenu={handleCardContextMenu}
+            title="Left click to edit · Right click to toggle"
+        >
+            {/* Botões de ordem — isolados do clique do card */}
+            <div style={s.orderButtons} onClick={stopPropagation} onContextMenu={stopPropagation}>
+                <button style={s.orderBtn(isFirst)} disabled={isFirst} onClick={onMoveUp} title="Move up">▲</button>
+                <button style={s.orderBtn(isLast)} disabled={isLast} onClick={onMoveDown} title="Move down">▼</button>
             </div>
 
             {/* Ícone */}
-            {trigger.icon_url
-                ? <img src={trigger.icon_url} alt="" style={s.cardIcon} />
+            {trigger.iconUrl
+                ? <img src={trigger.iconUrl} alt="" style={s.cardIcon} />
                 : <div style={s.cardIconPlaceholder(color, enabled)}>{initial}</div>
             }
 
@@ -224,27 +241,18 @@ function TriggerCard({
                 </div>
             </div>
 
-            {/* Ações */}
-            <div style={s.cardActions}>
-                <Button
-                    size="small"
-                    variant={enabled ? "positive" : "secondary"}
-                    onClick={() => toggleTrigger(trigger.id)}
-                >
-                    {enabled ? "ON" : "OFF"}
-                </Button>
-                <Button
-                    size="small"
-                    variant={shiftHeld ? "dangerPrimary" : "secondary"}
-                    onClick={() => shiftHeld
-                        ? deleteTrigger(trigger.id)
-                        : openEditTriggerModal(trigger)
-                    }
-                >
-                    {shiftHeld ? "Delete" : "Edit"}
-                </Button>
-            </div>
-
+            {/* Delete (só aparece com shift) — isolado do clique do card */}
+            {shiftHeld && (
+                <div onClick={stopPropagation} onContextMenu={stopPropagation}>
+                    <button
+                        style={s.deleteBtn()}
+                        onClick={() => deleteTrigger(trigger.id)}
+                        title="Delete trigger"
+                    >
+                        Delete
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
