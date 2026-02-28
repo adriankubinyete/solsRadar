@@ -200,12 +200,24 @@ class JoinHistoryStore {
     }
 
     addFakes(count: number): void {
+        const choices: JoinTag[][] = [
+            ["link-not-verified", "biome-not-verified"],
+            ["link-not-verified", "biome-verified-bait"],
+            ["link-not-verified", "biome-verified-real"],
+            ["link-not-verified", "biome-verified-timeout"],
+            ["link-verified-safe", "biome-verified-real"],
+            ["link-verified-unsafe"],
+            ["unknown"],
+            ["failed"],
+            [] // this is a broken tag!
+        ];
+
         for (let i = 0; i < count; i++) {
             this.add({
                 triggerName: "Fake Join",
                 triggerType: "fake",
                 triggerPriority: 0,
-                tags: ["unknown"],
+                tags: choices[Math.floor(Math.random() * choices.length)],
                 metrics: { timeToJoinMs: 0, joinDurationMs: 0, overheadMs: 0 },
                 originalContent: "Fake message",
             });

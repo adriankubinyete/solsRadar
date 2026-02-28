@@ -4,10 +4,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Logger } from "@utils/Logger";
 import { React, useState } from "@webpack/common";
 
 import { JoinTag, TAG_CONFIGS } from "../../../../stores/JoinStore";
 import { Pill, PillVariant } from "../../../Pill";
+
+const logger = new Logger("SolRadar.RecentJoins.components");
 
 export const AVATAR_FALLBACK = "https://discord.com/assets/881ed827548f38c6.svg";
 
@@ -23,8 +26,13 @@ export function tagToPillVariant(tag: JoinTag): PillVariant {
     return "muted";
 }
 
-export function TagBadge({ tag, size = "normal" }: { tag: JoinTag; size?: "small" | "normal"; }) {
+export function TagBadge({ tag, size = "normal" }: { tag?: JoinTag; size?: "small" | "normal"; }) {
+    if (!tag || !TAG_CONFIGS[tag]) {
+        logger.warn("TagBadge received invalid tag:", tag);
+        return null;
+    }
     const config = TAG_CONFIGS[tag];
+
     return (
         <Pill
             variant={tagToPillVariant(tag)}
