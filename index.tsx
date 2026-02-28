@@ -64,10 +64,10 @@ function resolveTrigger({ message, channel, guild }: { message: Message; channel
     const { trigger, status, allMatched } = getMatchingTrigger(message, activeTriggers);
 
     if (status === "ambiguous") {
-        log.debug(
-            `Ambiguous — ${allMatched.length} triggers matched: ${allMatched.map(t => t.name).join(", ")} ` +
-            `(#${channel.name} @ ${guild.name})`
-        );
+        // log.debug(
+        //     `Ambiguous — ${allMatched.length} triggers matched: ${allMatched.map(t => t.name).join(", ")} ` +
+        //     `(#${channel.name} @ ${guild.name})`
+        // ); // spammy-ish because it reads every message and not just monitored chans
         return null;
     }
 

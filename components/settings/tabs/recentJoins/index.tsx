@@ -4,18 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { NavigationRouter, React, showToast, TextInput, Toasts, useState } from "@webpack/common";
 
 import { JoinEntry, JoinStore, JoinTag, useJoinHistory } from "../../../../stores/JoinStore";
+import { DANGER_TAGS, FallbackImage, formatTimeAgo, TagBadge } from "./components";
 import {
-    // AVATAR_FALLBACK,
-    Btn,
-    DANGER_TAGS,
-    FallbackImage,
-    formatTimeAgo,
     openJoinModal,
-    TagBadge,
 } from "./JoinModal";
 
 // ─── Card styling ─────────────────────────────────────────────────────────────
@@ -159,29 +155,28 @@ export function RecentJoinsTab() {
         <div style={{ display: "flex", flexDirection: "column", height: "100%", gap: 10 }}>
 
             {/* Filters */}
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                <div style={{ width: "100%", flex: 1 }}>
                     <TextInput
                         value={search}
                         onChange={setSearch}
                         placeholder="Search by trigger, author, channel..."
                     />
                 </div>
-                <div style={{ display: "flex", gap: 4 }}>
+                <div style={{ width: "100%", display: "flex", gap: 4 }}>
                     {FILTER_OPTIONS.map(opt => (
-                        <button
+                        <Button
+                            size="xs"
                             key={opt.value}
                             onClick={() => setFilter(opt.value)}
+                            variant={filter === opt.value ? "primary" : "secondary"}
                             style={{
-                                padding: "4px 10px", borderRadius: 4, border: "none",
-                                fontSize: 12, fontWeight: 600, cursor: "pointer",
-                                background: filter === opt.value ? "var(--brand-500)" : "var(--background-secondary)",
-                                color: filter === opt.value ? "#fff" : "var(--text-muted)",
+                                width: "100%",
                                 transition: "background 0.1s, color 0.1s",
                             }}
                         >
                             {opt.label}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </div>
@@ -221,13 +216,13 @@ export function RecentJoinsTab() {
                         : `${filtered.length} of ${entries.length}`}
                 </Paragraph>
                 <div style={{ display: "flex", gap: 4 }}>
-                    <Btn variant="primary" onClick={() => JoinStore.addFakes(1)} style={{ padding: "3px 10px", fontSize: 12 }}>
+                    <Button variant="primary" size="small" onClick={() => JoinStore.addFakes(1)} style={{ padding: "3px 10px", fontSize: 12 }}>
                         Add fake join
-                    </Btn>
+                    </Button>
                     {entries.length > 0 && (
-                        <Btn variant="danger" onClick={() => JoinStore.clear()} style={{ padding: "3px 10px", fontSize: 12 }}>
+                        <Button variant="dangerPrimary" size="small" onClick={() => JoinStore.clear()} style={{ padding: "3px 10px", fontSize: 12 }}>
                             Clear all
-                        </Btn>
+                        </Button>
                     )}
                 </div>
 

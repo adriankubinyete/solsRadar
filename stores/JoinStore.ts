@@ -27,22 +27,25 @@ export type JoinTag =
 
 export interface JoinTagConfig {
     label: string;
-    color: string;
-    emoji: string;
+    emoji?: string;
+    detail?: string;
     /** Maior = mais importante. Usado para eleger a tag primária no card. */
     priority: number;
 }
 
 export const TAG_CONFIGS: Record<JoinTag, JoinTagConfig> = {
-    "biome-verified-real": { label: "Real biome", color: "var(--green-360)", emoji: "✅", priority: 70 },
-    "biome-verified-bait": { label: "Fake biome", color: "var(--red-400)", emoji: "❌", priority: 70 },
-    "biome-verified-timeout": { label: "Biome timeout", color: "var(--yellow-300)", emoji: "⏱", priority: 50 },
-    "biome-not-verified": { label: "Biome unverified", color: "var(--text-muted)", emoji: "—", priority: 20 },
-    "link-verified-safe": { label: "Sol's RNG", color: "var(--green-360)", emoji: "✅", priority: 60 },
-    "link-verified-unsafe": { label: "Wrong game", color: "var(--red-400)", emoji: "❌", priority: 65 },
-    "link-not-verified": { label: "Link unverified", color: "var(--text-muted)", emoji: "—", priority: 20 },
-    "failed": { label: "Failed to join", color: "var(--red-400)", emoji: "❌", priority: 80 },
-    "unknown": { label: "Pending", color: "var(--text-muted)", emoji: "⋯", priority: 10 },
+    "biome-verified-real": { emoji: "✅", label: "Biome", detail: "Biome was verified", priority: 70, },
+    "biome-verified-bait": { emoji: "❌", label: "Biome", detail: "Biome was verified", priority: 70, },
+    "biome-verified-timeout": { emoji: "⚠️", label: "Biome", detail: "Biome check timed out", priority: 50, },
+    "biome-not-verified": { emoji: "⚠️", label: "Biome", detail: "Biome was not verified", priority: 20, },
+
+    "link-verified-safe": { emoji: "✅", label: "Link", detail: "Link was verified, is allowed", priority: 60, },
+    "link-verified-unsafe": { emoji: "❌", label: "Link", detail: "Link was verified, is not allowed", priority: 65, },
+    "link-not-verified": { emoji: "⚠️", label: "Link", detail: "Link was not verified", priority: 20, },
+
+    "failed": { emoji: "❌", label: "Join", detail: "Something went wrong trying to join this.", priority: 80, },
+
+    "unknown": { emoji: "❔", label: "Unknown", detail: "Placeholder tag. This should not appear.", priority: 10, },
 };
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
