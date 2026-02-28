@@ -16,6 +16,7 @@
  * GNU Affero General Public License version 3 (AGPL-3.0).
  */
 
+import { Logger } from "@utils/Logger";
 import { exec as execCb } from "child_process";
 import { IpcMainInvokeEvent } from "electron";
 import * as fs from "fs";
@@ -24,6 +25,8 @@ import * as path from "path";
 import { promisify } from "util";
 
 // import { LogEntry } from "./Detector";
+
+const logger = new Logger("SolRadar.Native");
 
 const exec = promisify(execCb);
 
@@ -36,7 +39,7 @@ export type ProcessInfo = {
 };
 
 export type ResolvedShareLink =
-    | { ok: true; placeId: string; serverId: string; }
+    | { ok: true; placeId: string; serverId: string; ownerId: string; isValid: boolean; }
     | { ok: false; status: number; error: string; };
 
 // ─── Roblox: abrir URI ────────────────────────────────────────────────────────
@@ -107,7 +110,7 @@ export async function resolveShareLink(
         }
 
         const data = await resolveRes.json().catch(() => null);
-        if (!data) {
+        if (!data || typeof data !== "object") {
             return { ok: false, status: resolveRes.status, error: "Invalid JSON in resolve response." };
         }
 
@@ -115,16 +118,25 @@ export async function resolveShareLink(
         const placeId: string | undefined =
             data?.privateServerInviteData?.placeId?.toString() ??
             data?.placeId?.toString();
+        logger.debug(`[${shareCode}] Place ID: ${placeId}`);
 
         const serverId: string | undefined =
             data?.privateServerInviteData?.instanceId ??
-            data?.instanceId;
+            data?.instanceId ??
+            data?.privateServerInviteData?.privateServerId;
+        logger.debug(`[${shareCode}] Server ID: ${serverId}`);
 
-        if (!placeId || !serverId) {
-            return { ok: false, status: resolveRes.status, error: `Unexpected response shape: ${JSON.stringify(data)}` };
+        const ownerId: string | undefined = data?.privateServerInviteData?.ownerUserId?.toString();
+        logger.debug(`[${shareCode}] Owner ID: ${ownerId}`);
+
+        const isValid: boolean | undefined = data?.privateServerInviteData?.status === "Valid";
+        logger.debug(`[${shareCode}] Valid: ${isValid}`);
+
+        if (!placeId || !serverId || !ownerId || !isValid) {
+            return { ok: false, status: resolveRes.status, error: `placeId: ${placeId}, serverId: ${serverId}, ownerId: ${ownerId}, isValid: ${isValid} | Unexpected response shape: ${JSON.stringify(data)}` };
         }
 
-        return { ok: true, placeId, serverId };
+        return { ok: true, placeId, serverId, ownerId, isValid };
 
     } catch (error) {
         return { ok: false, status: -1, error: (error as Error).message };

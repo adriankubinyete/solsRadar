@@ -5,10 +5,15 @@
  */
 
 import { Logger } from "@utils/Logger";
+import { PluginNative } from "@utils/types";
 import type { RunningGame } from "@vencord/discord-types";
 import { RunningGameStore } from "@webpack/common";
 
+import { settings } from "../settings";
+
 const logger = new Logger("SolRadar.RobloxService");
+
+const Native = VencordNative.pluginHelpers.SRadar as PluginNative<typeof import("../native")>;
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -125,4 +130,47 @@ export function getRobloxProcess(): RunningGame | null {
  */
 export function isRobloxRunning(): boolean {
     return getRobloxProcess() !== null;
+}
+
+export async function getPlaceId(link: RobloxLink): Promise<number | null> {
+    if (link.type === "private") {
+        return Number(link.placeId);
+    }
+
+    if (link.type === "share") {
+        const res = await Native.resolveShareLink(settings.store.robloxToken, link.code);
+        if (res.ok) return Number(res.placeId);
+        logger.warn("Failed to resolve share link:", res);
+    }
+
+    return null;
+}
+
+/**
+ * Closes the Roblox process before joining, if the setting is enabled.
+ * This can help prevent failed joins, at the cost of slightly increased join time (~100-200ms).
+ */
+export async function closeGameIfNeeded(): Promise<void> {
+    if (!settings.store.closeGameBeforeJoin) return;
+    await closeGame();
+}
+
+export async function closeGame(): Promise<boolean> {
+    try {
+        await Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
+        logger.debug("Closed Roblox process.");
+        return true;
+    } catch (err) {
+        logger.warn(`Failed to close Roblox process: ${(err as Error).message}`);
+        return false;
+    }
+}
+
+export async function joinPublicServer(placeId: number): Promise<void> {
+    await closeGameIfNeeded();
+    return await Native.openUri(`roblox://experiences/start?placeId=${placeId}`);
+}
+
+export async function joinSolsPublicServer(): Promise<void> {
+    return await joinPublicServer(15532962292);
 }

@@ -78,12 +78,18 @@ export const settings = definePluginSettings({
         description: "What to do when a bad link is detected. A bad link is a server link that fails verification (e.g. because it's expired or fake).",
         options: [
             { label: "Nothing (not recommended)", value: "nothing" },
-            { label: "Join a public server", value: "join_public", default: true },
+            { label: "Join a public server", value: "public", default: true },
+            { label: "Close Roblox", value: "close" },
         ]
     },
     robloxToken: {
         type: OptionType.STRING,
         description: "This is NOT required for the plugin to work! Your .ROBLOSECURITY cookie value. Required for link verification. Keep this private and never share it with anyone. Highly recommended to make an alt account just to use it's token for this. The plugin only uses it to verify if a server link is valid by making a request to Roblox's API. It does NOT store or transmit the token in any other way.",
+        default: "",
+    },
+    allowedPlaceIds: {
+        type: OptionType.STRING,
+        description: "Comma-separated list of place IDs that are allowed to be joined. If empty, all place IDs are allowed. Example: `123456789012345678, 987654321098765432`",
         default: "",
     }
 });

@@ -16,7 +16,7 @@ import { PropsWithChildren } from "react";
 import { SolsRadarChatBarButton } from "./components/buttons/SolsRadarChatBarButton";
 import { SolsRadarTitleBarButton } from "./components/buttons/SolsRadarTitleBarButton";
 import { SolsRadarIcon } from "./components/ui/SolsRadarIcon";
-import { buildJoinUri, extractServerLink, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
+import { buildJoinUri, closeGameIfNeeded, extractServerLink, getPlaceId, joinSolsPublicServer, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
 import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
 import { getActiveTriggers, Trigger } from "./stores/TriggerStore";
@@ -127,41 +127,53 @@ export interface JoinResult {
     linkSafe: boolean | undefined;
 }
 
+async function executeBadLinkAction(): Promise<void> {
+    switch (settings.store.onBadLink) {
+        case "nothing": return;
+        case "public": return await joinSolsPublicServer();
+        case "close": return await closeGameIfNeeded();
+    }
+}
+
 /**
  * Resolves a Roblox link and checks if it's safe to join based on allowed place ids.
  * can be skipped based on trigger conditions.
  * will be ignored if theres not a roblox token to resolve links with.
+ * true: link was checked, is allowed
+ * false: link was checked, is not allowed
  */
 async function verifyLink(link: RobloxLink, trigger: Trigger, log: Logger): Promise<boolean | undefined> {
-    if (trigger.conditions.bypassLinkVerification) return undefined;
+    if (trigger.conditions.bypassLinkVerification) {
+        log.debug(`[${trigger.name}] Link verification bypassed.`);
+        return undefined;
+    }
     const mode = settings.store.linkVerification as "disabled" | "before" | "after" | undefined ?? "disabled";
+    const action = settings.store.onBadLink as "nothing" | "public" | "close" | undefined ?? "public";
     if (mode === "disabled") return undefined;
     if (!settings.store.robloxToken) {
         log.warn("Link verification is enabled but robloxToken is missing. Please configure a valid token or disable link verification.");
-        return undefined;
+        showNotification({
+            title: "⚠️ SoRa :: Link verification warning",
+            body: "Link verification is enabled but robloxToken is missing.\nPlease configure a valid token or disable link verification to stop getting this notification.\nClick on this message to disable link verification.",
+            onClick: () => settings.store.linkVerification = "disabled"
+        });
+        return false; // user wants link verification but he didnt set a token
     }
 
-    log.debug(`[${trigger.name}] Verifying link (mode=${mode})...`);
-    // TODO: implementar chamada real de verificação (ex: resolver sharelink e checar se o servidor existe)
-    // Por ora retorna undefined para não bloquear nada
-    return undefined;
-}
+    log.debug(`[${trigger.name}] Verifying link ${JSON.stringify(link)}`);
 
-/**
- * Closes the Roblox process before joining, if the setting is enabled.
- * This can help prevent failed joins, at the cost of slightly increased join time (~100-200ms).
- */
-async function closeGameIfNeeded(trigger: Trigger, log: Logger): Promise<void> {
-    if (!settings.store.closeGameBeforeJoin) return;
+    const placeId = await getPlaceId(link);
 
-    try {
-        await Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
-        log.debug(`[${trigger.name}] Closed Roblox process.`);
-    } catch (err) {
-        log.warn(
-            `[${trigger.name}] Failed to close Roblox process: ${(err as Error).message}`
-        );
+    const allowedPlaceIds = parseCsv(settings.store.allowedPlaceIds);
+    if (allowedPlaceIds.size === 0 || allowedPlaceIds.has(String(placeId))) {
+        log.debug(`[${trigger.name}] Place ID ${placeId} is allowed.`);
+        return true;
     }
+
+    if (placeId === null) log.warn(`[${trigger.name}] Failed to resolve link: ${link.code}`);
+
+    await executeBadLinkAction();
+    return false;
 }
 
 /**
@@ -194,13 +206,12 @@ async function tryJoin(
         }
     }
 
-    await closeGameIfNeeded(trigger, log);
-
     const uri = buildJoinUri(link);
     log.info(`[${trigger.name}] Joining: ${uri}`);
 
     const tJoinStart = performance.now();
     try {
+        await closeGameIfNeeded();
         await Native.openUri(uri);
     } catch (err) {
         log.error(`[${trigger.name}] openUri failed: ${(err as Error).message}`);
@@ -224,8 +235,6 @@ async function tryJoin(
     if ((settings.store.linkVerification as string) === "after") {
         verifyLink(link, trigger, log).then(safe => {
             linkSafe = safe;
-            if (safe === false) log.warn(`[${trigger.name}] Post-join verification: link was BAIT.`);
-            else if (safe === true) log.info(`[${trigger.name}] Post-join verification: link is safe.`);
         });
     }
 
@@ -263,7 +272,6 @@ function tryNotify({ trigger, channel, guild, joined }: { trigger: Trigger; chan
         icon: trigger.iconUrl
     });
 
-    // TODO: mostrar toast / notificação do sistema
     log.info(`[${trigger.name}] Notify: matched in #${channel.name} @ ${guild.name}.`);
 }
 
