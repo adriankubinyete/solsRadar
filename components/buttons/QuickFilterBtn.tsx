@@ -4,19 +4,24 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Pill, PillVariant } from "../Pill";
+import { Pill, type PillProps } from "../Pill";
+
+export interface QuickFilterBtnProps
+    extends Omit<PillProps, "children"> {
+    label: string;
+    active: boolean;
+    onClick: () => void;
+}
 
 export function QuickFilterBtn({
     label,
-    variant,
     active,
     onClick,
-}: {
-    label: string;
-    variant: PillVariant;
-    active: boolean;
-    onClick: () => void;
-}) {
+    variant,
+    size = "small",
+    border,
+    ...rest
+}: QuickFilterBtnProps) {
     return (
         <button
             onClick={onClick}
@@ -28,9 +33,10 @@ export function QuickFilterBtn({
             }}
         >
             <Pill
+                {...rest}
                 variant={active ? variant : "muted"}
-                size="small"
-                border={active ? "subtle" : "none"}
+                size={size}
+                border={active ? (border ?? "subtle") : "none"}
             >
                 {label}
             </Pill>

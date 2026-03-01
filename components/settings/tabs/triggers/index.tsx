@@ -20,7 +20,7 @@ import {
     TriggerType,
     useTriggers,
 } from "../../../../stores/TriggerStore";
-import { Pill, PillVariant } from "../../../Pill";
+import { Pill, PillBorder, PillRadius, PillVariant } from "../../../Pill";
 import { openAddTriggerModal, openEditTriggerModal } from "./TriggerModal";
 
 const logger = new Logger("SolRadar");
@@ -280,6 +280,7 @@ function TriggerCard({
     isFirst,
     isLast,
     shiftHeld,
+    filterApplied,
     onMoveUp,
     onMoveDown,
 }: {
@@ -287,6 +288,7 @@ function TriggerCard({
     isFirst: boolean;
     isLast: boolean;
     shiftHeld: boolean;
+    filterApplied: boolean;
     onMoveUp: () => void;
     onMoveDown: () => void;
 }) {
@@ -294,6 +296,11 @@ function TriggerCard({
     const label = TYPE_LABELS[trigger.type];
     const initial = trigger.name.charAt(0).toUpperCase();
     const { enabled, autojoin, notify, joinlock, joinlockDuration, priority } = trigger.state;
+    const { bypassChannelRestriction, bypassMatchAmbiguity, bypassLinkVerification } = trigger.conditions;
+    const hasAnyBypass = bypassChannelRestriction || bypassMatchAmbiguity || bypassLinkVerification;
+
+    const PILL_BORDER_STYLE: PillBorder = "subtle";
+    const PILL_RADIUS_STYLE: PillRadius = "xs";
 
     const stopPropagation = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -302,15 +309,17 @@ function TriggerCard({
             style={s.card(enabled)}
             onClick={() => openEditTriggerModal(trigger)}
             onContextMenu={e => { e.preventDefault(); toggleTrigger(trigger.id); }}
-            title="Left click to edit · Right click to toggle"
+            title={`${trigger.name} · Left click to edit · Right click to toggle trigger`}
         >
             {/* Main row */}
             <div style={s.cardMain}>
                 {/* Ordem */}
-                <div style={s.orderButtons} onClick={stopPropagation} onContextMenu={stopPropagation}>
-                    <button style={s.orderBtn(isFirst)} disabled={isFirst} onClick={onMoveUp} title="Move up">▲</button>
-                    <button style={s.orderBtn(isLast)} disabled={isLast} onClick={onMoveDown} title="Move down">▼</button>
-                </div>
+                {!filterApplied && (
+                    <div style={s.orderButtons} onClick={stopPropagation} onContextMenu={stopPropagation}>
+                        <button style={s.orderBtn(isFirst)} disabled={isFirst} onClick={onMoveUp} title="Move this card up">▲</button>
+                        <button style={s.orderBtn(isLast)} disabled={isLast} onClick={onMoveDown} title="Move this card down">▼</button>
+                    </div>
+                )}
 
                 {/* Ícone */}
                 {trigger.iconUrl
@@ -326,9 +335,9 @@ function TriggerCard({
                 {/* Info */}
                 <div style={s.cardBody}>
                     <span style={s.cardName(enabled)}>{trigger.name}</span>
-                    <div style={s.cardMeta}>
-                        <Pill variant={enabled ? variant : "muted"} size="xs">{label}</Pill>
-                    </div>
+                    {/* <div style={s.cardMeta}>
+                        <Pill radius="none" variant={enabled ? variant : "muted"} size="xs">{label}</Pill>
+                    </div> */}
                     {trigger.description && (
                         <div style={s.cardDescription} title={trigger.description}>
                             {trigger.description}
@@ -339,7 +348,7 @@ function TriggerCard({
                 {/* Delete (só com shift) */}
                 {shiftHeld && (
                     <div onClick={stopPropagation} onContextMenu={stopPropagation}>
-                        <button style={s.deleteBtn()} onClick={() => deleteTrigger(trigger.id)} title="Delete trigger">
+                        <button style={s.deleteBtn()} onClick={() => deleteTrigger(trigger.id)} title="Delete trigger (no confirmation!)">
                             Delete
                         </button>
                     </div>
@@ -348,20 +357,28 @@ function TriggerCard({
 
             {/* Footer — priority + estado */}
             <div style={s.cardFooter}>
-                <Pill variant={enabled ? "brand" : "muted"} size="xs" title="Priority (lower = more important)">
+                <Pill border={PILL_BORDER_STYLE} radius={PILL_RADIUS_STYLE} variant={enabled ? variant : "muted"} size="xs" title="Type of trigger">{label}</Pill>
+                <Pill border={PILL_BORDER_STYLE} radius={PILL_RADIUS_STYLE} variant={enabled ? "brand" : "muted"} size="xs" title={`This trigger has a join priority of ${priority} (lower = more important)`}>
                     ★ {priority}
                 </Pill>
-                {autojoin && (
-                    <Pill variant={enabled ? "green" : "muted"} size="xs" emoji="🎯">Auto-join</Pill>
-                )}
-                {notify && (
-                    <Pill variant={enabled ? "blue" : "muted"} size="xs" emoji="🔔">Notify</Pill>
-                )}
-                {joinlock && (
-                    <Pill variant={enabled ? "yellow" : "muted"} size="xs" emoji="🔒" title={`Lock duration: ${joinlockDuration}s`}>
-                        Lock {joinlockDuration > 0 ? `${joinlockDuration}s` : ""}
-                    </Pill>
-                )}
+                {autojoin && <Pill border={PILL_BORDER_STYLE} radius={PILL_RADIUS_STYLE} variant={enabled ? "green" : "muted"} size="xs" emoji="🎯" iconOnly title="This trigger will join the link once matched" />}
+                {notify && <Pill border={PILL_BORDER_STYLE} radius={PILL_RADIUS_STYLE} variant={enabled ? "blue" : "muted"} size="xs" emoji="🔔" iconOnly title="This trigger will notify you once matched" />}
+                {joinlock && <Pill border={PILL_BORDER_STYLE} radius={PILL_RADIUS_STYLE} variant={enabled ? "yellow" : "muted"} size="xs" emoji="🔒" iconOnly title={`This trigger will lock joins for ${joinlockDuration} seconds once matched`} />}
+                {hasAnyBypass && (() => {
+                    const bypasses: string[] = [];
+                    if (bypassChannelRestriction) bypasses.push("Channel restriction bypass");
+                    if (bypassMatchAmbiguity) bypasses.push("Match ambiguity bypass");
+                    if (bypassLinkVerification) bypasses.push("Link verification bypass");
+                    return (
+                        <Pill
+                            border={PILL_BORDER_STYLE} radius={PILL_RADIUS_STYLE} variant={enabled ? "red" : "muted"}
+                            size="xs"
+                            emoji="✂️"
+                            iconOnly
+                            title={"This trigger has the following bypasses:\n" + bypasses.join(" · ")}
+                        />
+                    );
+                })()}
             </div>
         </div>
     );
@@ -473,6 +490,7 @@ export function TriggersTab() {
                                         isFirst={realIdx === 0}
                                         isLast={realIdx === triggers.length - 1}
                                         shiftHeld={shiftHeld}
+                                        filterApplied={typeFilter !== "all"}
                                         onMoveUp={() => move(realIdx, realIdx - 1)}
                                         onMoveDown={() => move(realIdx, realIdx + 1)}
                                     />

@@ -12,9 +12,9 @@
 /* ─── Sizes ───────────────────────────────────────────────────────────────── */
 
 .vc-sora-pill-iconOnly {
-    padding: 3px 6px;
-    font-size: 12px;
     gap: 0;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
 }
 
 .vc-sora-pill-xs {
@@ -39,12 +39,28 @@
 
 /* ─── Radius ──────────────────────────────────────────────────────────────── */
 
-.vc-sora-pill-radius-rounded {
+.vc-sora-pill-radius-full {
     border-radius: 9999px;
 }
 
-.vc-sora-pill-radius-sharp {
+.vc-sora-pill-radius-lg {
+    border-radius: var(--radius-lg, 12px);
+}
+
+.vc-sora-pill-radius-md {
+    border-radius: var(--radius-md, 8px);
+}
+
+.vc-sora-pill-radius-sm {
     border-radius: var(--radius-sm, 4px);
+}
+
+.vc-sora-pill-radius-xs {
+    border-radius: var(--radius-xs, 2px);
+}
+
+.vc-sora-pill-radius-none {
+    border-radius: 0;
 }
 
 /* ─── Border ──────────────────────────────────────────────────────────────── */

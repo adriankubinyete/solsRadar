@@ -39,7 +39,7 @@ export function TagBadge({ tag, size = "normal" }: { tag?: JoinTag; size?: "smal
             size={size === "small" ? "small" : undefined}
             emoji={config.emoji}
             title={config.detail}
-            radius="sharp"
+            radius="md"
             border="subtle"
         >
             {config.label}
