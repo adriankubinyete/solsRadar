@@ -206,7 +206,10 @@ async function tryJoin(
         const safe = await verifyLink(link, trigger, log);
         if (safe === false) {
             log.warn(`[${trigger.name}] Link flagged as unsafe — aborting join.`);
-            return { joined: false, metrics: null, linkSafe: false };
+            // the join happened so we need to pass it on
+            // NOTE: veirfyLink COULD call the closeGame etc.. action
+            // but <this trigger was still joined>, hence why joined:true here
+            return { joined: true, metrics: null, linkSafe: false };
         }
         linkSafe = safe;
     }
@@ -238,20 +241,20 @@ function tryNotify({ link, trigger, channel, guild, joined, safe }: { link: Robl
         return;
     }
 
-    if (!safe) {
+    if (!safe && joined) {
         let extra: string = "";
         if (settings.store.onBadLink === "public") extra = "\nYou have been redirected to a public server.";
         if (settings.store.onBadLink === "close") extra = "\nYour game has closed for safety.";
         showNotification({
-            title: "⚠️ SoRa >> Unsafe link matched!",
-            body: `In: "${channel.name}" ("${guild.name}")${extra}`,
+            title: `⚠️ SoRa :: ${trigger.name} :: Unsafe link matched!`,
+            body: `${extra}\nIn: ${channel.name} (${guild.name})`,
             icon: trigger.iconUrl,
         });
         return;
     }
     showNotification({
-        title: joined ? `🎯 SoRa >> Joined "${trigger.name}"!` : `✅ SoRa >> Matched "${trigger.name}"! (click to join)`,
-        body: `In: "${channel.name}" ("${guild.name}")\n`,
+        title: joined ? `🎯 SoRa :: ${trigger.name} (joined)` : `✅ SoRa ::  ${trigger.name} (click to join)`,
+        body: `\nIn: ${channel.name} (${guild.name})`,
         onClick: async () => {
             await joinLink(link);
         },
