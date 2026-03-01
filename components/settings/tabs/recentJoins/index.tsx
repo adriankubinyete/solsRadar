@@ -210,7 +210,7 @@ export function RecentJoinsTab() {
 
             {/* Footer */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0, marginBottom: 12 }}>
-                <Paragraph style={{ fontSize: 12 }}>
+                <Paragraph>
                     {filtered.length === entries.length
                         ? `${entries.length} join${entries.length !== 1 ? "s" : ""}`
                         : `${filtered.length} of ${entries.length}`}
