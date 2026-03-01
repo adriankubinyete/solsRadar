@@ -174,3 +174,8 @@ export async function joinPublicServer(placeId: number): Promise<void> {
 export async function joinSolsPublicServer(): Promise<void> {
     return await joinPublicServer(15532962292);
 }
+
+export async function joinLink(link: RobloxLink): Promise<void> {
+    await closeGameIfNeeded();
+    return await Native.openUri(buildJoinUri(link));
+}

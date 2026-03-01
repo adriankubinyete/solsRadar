@@ -7,7 +7,7 @@
 import { showNotification } from "@api/Notifications";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
-import definePlugin, { PluginNative } from "@utils/types";
+import definePlugin from "@utils/types";
 import { Channel, Guild, Message } from "@vencord/discord-types";
 import { ChannelType } from "@vencord/discord-types/enums";
 import { ChannelStore, GuildStore, UserStore } from "@webpack/common";
@@ -16,14 +16,13 @@ import { PropsWithChildren } from "react";
 import { SolsRadarChatBarButton } from "./components/buttons/SolsRadarChatBarButton";
 import { SolsRadarTitleBarButton } from "./components/buttons/SolsRadarTitleBarButton";
 import { SolsRadarIcon } from "./components/ui/SolsRadarIcon";
-import { buildJoinUri, closeGameIfNeeded, extractServerLink, getPlaceId, joinSolsPublicServer, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
+import { closeGameIfNeeded, extractServerLink, getPlaceId, joinLink, joinSolsPublicServer, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
 import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
 import { JoinMetrics, JoinStore } from "./stores/JoinStore";
 import { getActiveTriggers, Trigger } from "./stores/TriggerStore";
 
 const logger = new Logger("SolRadar");
-const Native = VencordNative.pluginHelpers.SRadar as PluginNative<typeof import("./native")>;
 
 // ─── settings helpers ──────────────────────────────────────────────────────
 
@@ -143,6 +142,7 @@ async function verifyLink(link: RobloxLink, trigger: Trigger, log: Logger): Prom
 
     if (placeId === null) log.warn(`[${trigger.name}] Failed to resolve link: ${link.code}`);
 
+    log.debug(`[${trigger.name}] Place ID ${placeId} is not allowed.`);
     await executeBadLinkAction();
     return false;
 }
@@ -172,13 +172,10 @@ async function tryJoin(
         }
     }
 
-    const uri = buildJoinUri(link);
-    log.info(`[${trigger.name}] Joining: ${uri}`);
-
+    // log.info(`[${trigger.name}] Joining: ${uri}`);
     const tJoinStart = performance.now();
     try {
-        await closeGameIfNeeded();
-        await Native.openUri(uri);
+        joinLink(link);
     } catch (err) {
         log.error(`[${trigger.name}] openUri failed: ${(err as Error).message}`);
         return noJoin;
@@ -199,7 +196,12 @@ async function tryJoin(
 
     let linkSafe: boolean | undefined = undefined;
     if ((settings.store.linkVerification as string) === "after") {
-        verifyLink(link, trigger, log).then(safe => { linkSafe = safe; });
+        const safe = await verifyLink(link, trigger, log);
+        if (safe === false) {
+            log.warn(`[${trigger.name}] Link flagged as unsafe — aborting join.`);
+            return { joined: false, metrics: null, linkSafe: false };
+        }
+        linkSafe = safe;
     }
 
     return { joined: true, metrics, linkSafe };
@@ -219,7 +221,7 @@ async function runBiomeDetection(trigger: Trigger, log: Logger): Promise<void> {
     log.debug(`[${trigger.name}] Biome detection pending.`);
 }
 
-function tryNotify({ trigger, channel, guild, joined }: { trigger: Trigger; channel: Channel; guild: Guild; joined: boolean; }, log: Logger): void {
+function tryNotify({ link, trigger, channel, guild, joined, safe }: { link: RobloxLink; trigger: Trigger; channel: Channel; guild: Guild; joined: boolean, safe: boolean | undefined; }, log: Logger): void {
     if (!settings.store.notificationEnabled) {
         log.debug(`[${trigger.name}] Notifications globally disabled.`);
         return;
@@ -229,13 +231,27 @@ function tryNotify({ trigger, channel, guild, joined }: { trigger: Trigger; chan
         return;
     }
 
+    if (!safe) {
+        let extra: string = "";
+        if (settings.store.onBadLink === "public") extra = "\nYou have been redirected to a public server.";
+        if (settings.store.onBadLink === "close") extra = "\nYour game has closed for safety.";
+        showNotification({
+            title: "⚠️ SoRa >> Unsafe link matched!",
+            body: `In: "${channel.name}" ("${guild.name}")${extra}`,
+            icon: trigger.iconUrl,
+        });
+        return;
+    }
     showNotification({
-        title: joined ? `🎯 SoRa >> Joined "${trigger.name}"!` : `✅ SoRa >> Matched "${trigger.name}"!`,
-        body: `In: "${channel.name}" ("${guild.name}")`,
+        title: joined ? `🎯 SoRa >> Joined "${trigger.name}"!` : `✅ SoRa >> Matched "${trigger.name}"! (click to join)`,
+        body: `In: "${channel.name}" ("${guild.name}")\n`,
+        onClick: async () => {
+            await joinLink(link);
+        },
         icon: trigger.iconUrl,
     });
 
-    log.info(`[${trigger.name}] Notify: matched in #${channel.name} @ ${guild.name}.`);
+    // log.info(`[${trigger.name}] Notify: matched in #${channel.name} @ ${guild.name}.`);
 }
 
 // ─── JoinStore integration ────────────────────────────────────────────────────
@@ -321,7 +337,7 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
 
     const result = await tryJoin(link, trigger, log, tMessageReceived);
 
-    tryNotify({ trigger, channel, guild, joined: result.joined }, log);
+    tryNotify({ link, trigger, channel, guild, joined: result.joined, safe: result.linkSafe }, log);
 
     // Resolve as tags finais da entrada
     finalizeJoinRecord(joinId, result, log);
