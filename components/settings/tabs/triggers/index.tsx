@@ -8,6 +8,7 @@ import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { Logger } from "@utils/Logger";
 import { React, showToast, TextInput, Toasts, useEffect, useRef, useState } from "@webpack/common";
+import { QuickFilterBtn } from "userplugins/sradar/components/buttons/QuickFilterBtn";
 
 import {
     deleteTrigger,
@@ -363,40 +364,6 @@ function TriggerCard({
                 )}
             </div>
         </div>
-    );
-}
-
-// ─── Quick filter button ──────────────────────────────────────────────────────
-
-function QuickFilterBtn({
-    label,
-    variant,
-    active,
-    onClick,
-}: {
-    label: string;
-    variant: PillVariant;
-    active: boolean;
-    onClick: () => void;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-            }}
-        >
-            <Pill
-                variant={active ? variant : "muted"}
-                size="small"
-                border={active ? "subtle" : "none"}
-            >
-                {label}
-            </Pill>
-        </button>
     );
 }
 

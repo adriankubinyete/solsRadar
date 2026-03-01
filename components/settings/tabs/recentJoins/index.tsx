@@ -9,6 +9,8 @@ import { Paragraph } from "@components/Paragraph";
 import { NavigationRouter, React, showToast, TextInput, Toasts, useState } from "@webpack/common";
 
 import { JoinEntry, JoinStore, JoinTag, useJoinHistory } from "../../../../stores/JoinStore";
+import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
+import { PillVariant } from "../../../Pill";
 import { DANGER_TAGS, FallbackImage, formatTimeAgo, TagBadge } from "./components";
 import {
     openJoinModal,
@@ -115,12 +117,13 @@ function JoinCard({ entry, onClick, onContextMenu }: {
 
 // ─── RecentJoinsTab ───────────────────────────────────────────────────────────
 
-const FILTER_OPTIONS: { label: string; value: string; }[] = [
-    { label: "All", value: "all" },
-    { label: "Real", value: "biome-verified-real" },
-    { label: "Bait", value: "biome-verified-bait" },
-    { label: "Failed", value: "failed" },
-    { label: "Unverified", value: "link-not-verified" },
+const FILTER_OPTIONS: { tagName: JoinTag | "all"; label: string; variant: PillVariant; }[] = [
+    { tagName: "all", label: "All", variant: "purple" },
+    { tagName: "biome-verified-real", label: "Biome Real", variant: "green" },
+    { tagName: "biome-verified-bait", label: "Biome Bait", variant: "red" },
+    { tagName: "biome-verified-timeout", label: "Biome Timed Out", variant: "yellow" },
+    { tagName: "link-verified-unsafe", label: "Link Unsafe", variant: "red" },
+    { tagName: "failed", label: "Failed", variant: "red" },
 ];
 
 export function RecentJoinsTab() {
@@ -164,8 +167,8 @@ export function RecentJoinsTab() {
                     />
                 </div>
                 <div style={{ width: "100%", display: "flex", gap: 4 }}>
-                    {FILTER_OPTIONS.map(opt => (
-                        <Button
+                    {/* {FILTER_OPTIONS.map(opt => (
+                        <QuickFilterBtn
                             size="xs"
                             key={opt.value}
                             onClick={() => setFilter(opt.value)}
@@ -177,6 +180,15 @@ export function RecentJoinsTab() {
                         >
                             {opt.label}
                         </Button>
+                    ))} */}
+                    {FILTER_OPTIONS.map(f => (
+                        <QuickFilterBtn
+                            key={f.tagName}
+                            label={f.label}
+                            variant={f.variant}
+                            active={filter === f.tagName}
+                            onClick={() => setFilter(f.tagName)}
+                        />
                     ))}
                 </div>
             </div>
