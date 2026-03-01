@@ -9,7 +9,6 @@ import { Paragraph } from "@components/Paragraph";
 import { Logger } from "@utils/Logger";
 import { React, showToast, TextInput, Toasts, useEffect, useRef, useState } from "@webpack/common";
 import { QuickFilterBtn } from "userplugins/sradar/components/buttons/QuickFilterBtn";
-import { UIState } from "userplugins/sradar/stores/UIStateStore";
 
 import {
     deleteTrigger,
@@ -382,11 +381,10 @@ const QUICK_FILTERS: { type: TriggerType | "all"; label: string; variant: PillVa
 
 export function TriggersTab() {
     const triggers = useTriggers();
-    const saved = UIState.get("triggers");
     const importRef = useRef<HTMLInputElement>(null);
     const [shiftHeld, setShiftHeld] = useState(false);
     const [search, setSearch] = useState("");
-    const [typeFilter, setTypeFilter] = useState<TriggerType | "all">(saved.typeFilter);
+    const [typeFilter, setTypeFilter] = useState<TriggerType | "all">("all");
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Shift") setShiftHeld(true); };
@@ -420,16 +418,6 @@ export function TriggersTab() {
         e.target.value = "";
     };
 
-    const handleSearch = (v: string) => {
-        setSearch(v);
-        UIState.set("triggers", { search: v });
-    };
-
-    const handleTypeFilter = (v: TriggerType | "all") => {
-        setTypeFilter(v);
-        UIState.set("triggers", { typeFilter: v });
-    };
-
     const move = (fromIndex: number, toIndex: number) => {
         if (toIndex < 0 || toIndex >= triggers.length) return;
         const newOrder = [...triggers];
@@ -445,7 +433,7 @@ export function TriggersTab() {
             <div style={s.filters}>
                 <TextInput
                     value={search}
-                    onChange={handleSearch}
+                    onChange={setSearch}
                     placeholder="Search or query: enabled:true  join:false  priority:>5  notify:true"
                 />
                 <div style={s.quickFilters}>
@@ -455,7 +443,7 @@ export function TriggersTab() {
                             label={f.label}
                             variant={f.variant}
                             active={typeFilter === f.type}
-                            onClick={() => handleTypeFilter(f.type)}
+                            onClick={() => setTypeFilter(f.type)}
                         />
                     ))}
                 </div>
