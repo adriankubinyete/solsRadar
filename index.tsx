@@ -175,7 +175,14 @@ async function tryJoin(
     // log.info(`[${trigger.name}] Joining: ${uri}`);
     const tJoinStart = performance.now();
     try {
-        joinLink(link);
+
+        // @NOTE:
+        // we could not wait for this, but that would mess with our join timing stuff
+        // and we would not get the join metrics we want
+        // are they right? im not sure, but im accostumed to them and I can base myself on them
+        // to un-await this would mean to send the joinCardId into the joinLink function
+        // so they update the real roblox launch time themselves. is it really worth it?
+        await joinLink(link);
     } catch (err) {
         log.error(`[${trigger.name}] openUri failed: ${(err as Error).message}`);
         return noJoin;
