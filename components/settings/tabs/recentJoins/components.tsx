@@ -26,7 +26,7 @@ export function tagToPillVariant(tag: JoinTag): PillVariant {
     return "muted";
 }
 
-export function TagBadge({ tag, size = "normal" }: { tag?: JoinTag; size?: "small" | "normal"; }) {
+export function TagBadge({ tag }: { tag?: JoinTag; }) {
     if (!tag || !TAG_CONFIGS[tag]) {
         logger.warn("TagBadge received invalid tag:", tag);
         return null;
@@ -36,11 +36,11 @@ export function TagBadge({ tag, size = "normal" }: { tag?: JoinTag; size?: "smal
     return (
         <Pill
             variant={tagToPillVariant(tag)}
-            size={size === "small" ? "small" : undefined}
+            size="small"
+            radius="xs"
+            border="subtle"
             emoji={config.emoji}
             title={config.detail}
-            radius="md"
-            border="subtle"
         >
             {config.label}
         </Pill>

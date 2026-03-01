@@ -115,7 +115,7 @@ function JoinCard({ entry, onClick, onContextMenu }: {
                 padding: "6px 14px",
                 display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center",
             }}>
-                {visibleTags.map(t => <TagBadge key={t} tag={t} size="small" />)}
+                {visibleTags.map(t => <TagBadge key={t} tag={t} />)}
                 {extra > 0 && (
                     <span style={{ fontSize: 11, color: "var(--text-muted)" }}>+{extra}</span>
                 )}
