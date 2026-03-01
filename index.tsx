@@ -19,6 +19,7 @@ import { SolsRadarIcon } from "./components/ui/SolsRadarIcon";
 import { closeGameIfNeeded, extractServerLink, getPlaceId, joinLink, joinSolsPublicServer, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
 import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
+import { JoinLockStore } from "./stores/JoinLockStore";
 import { JoinMetrics, JoinStore } from "./stores/JoinStore";
 import { getActiveTriggers, Trigger } from "./stores/TriggerStore";
 
@@ -220,9 +221,23 @@ async function tryJoin(
 // ─── post-join ─────────────────────────────────────────────────────────────────
 
 function activateJoinLock(trigger: Trigger, log: Logger): void {
-    if (!trigger.state.joinlock) return;
-    // TODO: persistir timestamp do lock + duration
-    log.info(`[${trigger.name}] Join lock activated for ${trigger.state.joinlockDuration}s.`);
+    if (!trigger.state.joinlock || trigger.state.joinlockDuration <= 0) return;
+
+    const activated = JoinLockStore.activate(
+        trigger.state.priority,
+        trigger.state.joinlockDuration,
+        trigger.name,
+    );
+
+    if (activated) {
+        log.info(
+            `[${trigger.name}] Join lock activated — ` +
+            `priority: ${trigger.state.priority}, ` +
+            `duration: ${trigger.state.joinlockDuration}s`
+        );
+    } else {
+        log.debug(`[${trigger.name}] Join lock NOT updated — existing lock has higher priority.`);
+    }
 }
 
 async function runBiomeDetection(trigger: Trigger, log: Logger): Promise<void> {
@@ -300,26 +315,29 @@ function createJoinRecord(
  * Resolve as tags finais baseado no resultado do join e na verificação de link.
  * Chamado após tryJoin retornar.
  */
-function finalizeJoinRecord(
-    joinId: number,
-    result: JoinResult,
-    log: Logger
-): void {
+function finalizeJoinRecord(joinId: number, result: JoinResult, trigger: Trigger, log: Logger): void {
     if (!result.joined) {
         JoinStore.addTags(joinId, result.linkSafe === false ? "link-verified-unsafe" : "failed");
+        // Join didn't happen — lock should never have been set, nothing to release.
         return;
     }
 
-    // join aconteceu — salva métricas e resolve tags de link
     JoinStore.update(joinId, { metrics: result.metrics ?? undefined });
 
-    if (result.linkSafe === true) JoinStore.addTags(joinId, "link-verified-safe");
-    else if (result.linkSafe === false) JoinStore.addTags(joinId, "link-verified-unsafe");
-    else JoinStore.addTags(joinId, "link-not-verified");
+    if (result.linkSafe === true) {
+        JoinStore.addTags(joinId, "link-verified-safe");
+    } else if (result.linkSafe === false) {
+        // Join happened but link is confirmed bad — invalidate the lock.
+        JoinStore.addTags(joinId, "link-verified-unsafe");
+        if (JoinLockStore.isLocked) {
+            log.warn(`[${trigger.name}] Join was unsafe — releasing join lock.`);
+            JoinLockStore.release();
+        }
+    } else {
+        JoinStore.addTags(joinId, "link-not-verified");
+    }
 
-    // biome-not-verified por padrão — será sobrescrito pelo detector quando implementado
     JoinStore.addTags(joinId, "biome-not-verified");
-
     log.debug(`Join record ${joinId} finalized.`);
 }
 
@@ -342,20 +360,31 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
 
     if (!isMessageAllowed({ channel, trigger }, log)) return;
 
-    // Cria a entrada no histórico imediatamente após o match ser validado
+    // ── Join lock check ───────────────────────────────────────────────────
+    if (JoinLockStore.isBlocked(trigger.state.priority)) {
+        const lock = JoinLockStore.current!;
+        log.info(
+            `[${trigger.name}] Blocked by join lock ` +
+            `(lock priority: ${lock.priority}, trigger priority: ${trigger.state.priority}, ` +
+            `expires in ${(JoinLockStore.msRemaining() / 1000).toFixed(1)}s)`
+        );
+        return; // skip entirely — no history entry for blocked matches
+    }
+
     const joinId = createJoinRecord(message, link, trigger, channel, guild);
 
     const result = await tryJoin(link, trigger, log, tMessageReceived);
 
     tryNotify({ link, trigger, channel, guild, joined: result.joined, safe: result.linkSafe }, log);
 
-    // Resolve as tags finais da entrada
-    finalizeJoinRecord(joinId, result, log);
+    // ── Activate lock after a real, valid join ────────────────────────────
+    // linkSafe === undefined means verification was skipped — still a real join.
+    // linkSafe === false means the join is invalid — do NOT lock (handled in finalize).
+    if (result.joined && result.linkSafe !== false) {
+        activateJoinLock(trigger, log);
+    }
 
-    if (!result.joined) return;
-
-    // activateJoinLock(trigger, log);
-    // await runBiomeDetection(trigger, log);
+    finalizeJoinRecord(joinId, result, trigger, log);
 }
 
 // ─── plugin ───────────────────────────────────────────────────────────────────

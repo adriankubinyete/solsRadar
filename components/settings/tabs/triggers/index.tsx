@@ -9,6 +9,7 @@ import { Paragraph } from "@components/Paragraph";
 import { Logger } from "@utils/Logger";
 import { React, showToast, TextInput, Toasts, useEffect, useRef, useState } from "@webpack/common";
 import { QuickFilterBtn } from "userplugins/sradar/components/buttons/QuickFilterBtn";
+import { JoinLockBanner } from "userplugins/sradar/components/JoinLockBanner";
 
 import {
     deleteTrigger,
@@ -464,6 +465,7 @@ export function TriggersTab() {
                         />
                     ))}
                 </div>
+                <JoinLockBanner />
             </div>
 
             {/* List */}

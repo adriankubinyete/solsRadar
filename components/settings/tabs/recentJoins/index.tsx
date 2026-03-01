@@ -8,6 +8,7 @@ import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { closeAllModals } from "@utils/modal";
 import { NavigationRouter, React, showToast, TextInput, Toasts, useState } from "@webpack/common";
+import { JoinLockBanner } from "userplugins/sradar/components/JoinLockBanner";
 
 import { JoinEntry, JoinStore, JoinTag, useJoinHistory } from "../../../../stores/JoinStore";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
@@ -181,6 +182,7 @@ export function RecentJoinsTab() {
                         />
                     ))}
                 </div>
+                <JoinLockBanner />
             </div>
 
             {/* List */}

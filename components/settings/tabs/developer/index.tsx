@@ -6,27 +6,46 @@
 
 import { Button } from "@components/Button";
 import { Card } from "@components/Card";
+import { Divider } from "@components/Divider";
 import { Logger } from "@utils/Logger";
 import { React, RunningGameStore } from "@webpack/common";
 import { Pill } from "userplugins/sradar/components/Pill";
 import { getRobloxProcess } from "userplugins/sradar/services/RobloxService";
+import { JoinLockStore } from "userplugins/sradar/stores/JoinLockStore";
 
 const logger = new Logger("SolRadar.Developer");
 
-const s = {
-    container: {
+export function DeveloperTab() {
+    const row: React.CSSProperties = {
         display: "flex",
+        gap: "1rem",
+        flexWrap: "wrap",
         justifyContent: "center",
         alignItems: "center",
-        flexDirection: "column",
-        gap: "1rem"
-    } as React.CSSProperties
-};
+        width: "100%"
+    };
 
-export function DeveloperTab() {
+    const column: React.CSSProperties = {
+        display: "flex",
+        gap: "1rem",
+        flexDirection: "column",
+        alignItems: "center"
+    };
+
     return (
-        <div style={s.container}>
-            <div style={{ display: "flex", gap: "1rem", flexDirection: "row", alignItems: "center", justifyContent: "center", height: "100%" }}>
+        <div
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                width: "100%",
+                maxWidth: "100%",
+                padding: "1rem",
+                boxSizing: "border-box"
+            }}
+        >
+            {/* Actions */}
+            <div style={row}>
                 <Button onClick={() => logger.debug(getRobloxProcess())}>
                     getRobloxProcess
                 </Button>
@@ -34,62 +53,107 @@ export function DeveloperTab() {
                 <Button onClick={() => logger.debug(RunningGameStore.getRunningGames())}>
                     getRunningGames
                 </Button>
+
+                <Button onClick={() => JoinLockStore.activate(10, 30, "fakeLock")}>
+                    fakeLock
+                </Button>
             </div>
-            <div style={{ display: "flex", gap: "1rem", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
+
+            <Divider />
+
+            {/* Button Variants */}
+            <div style={row}>
+                <Button variant="dangerPrimary" size="small">dangerPrimary</Button>
+                <Button variant="dangerSecondary" size="small">dangerSecondary</Button>
+                <Button variant="link" size="small">link</Button>
+                <Button variant="none" size="small">none</Button>
+                <Button variant="overlayPrimary" size="small">overlayPrimary</Button>
+                <Button variant="positive" size="small">positive</Button>
+                <Button variant="primary" size="small">primary</Button>
+                <Button variant="secondary" size="small">secondary</Button>
+            </div>
+
+            <Divider />
+
+            {/* Cards */}
+            <div style={row}>
                 <Card variant="danger" defaultPadding>
-                    <Button onClick={() => logger.debug(RunningGameStore.getRunningGames())}>
-                        getRunningGames : DANGER
-                    </Button>
+                    <span>Danger Card</span>
                 </Card>
 
                 <Card variant="normal" defaultPadding>
-                    <Button onClick={() => logger.debug(RunningGameStore.getRunningGames())}>
-                        getRunningGames : NORMAL
-                    </Button>
+                    <span>Normal Card</span>
                 </Card>
 
-                <Card variant="warning" defaultPadding >
-                    <Button onClick={() => logger.debug(RunningGameStore.getRunningGames())}>
-                        getRunningGames : WARNING
-                    </Button>
+                <Card variant="warning" defaultPadding>
+                    <span>Warning Card</span>
                 </Card>
             </div>
-            <div style={{ display: "flex", gap: "1rem", flexDirection: "row", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                <div style={{ display: "flex", gap: "1rem", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                    <Pill variant="brand">default</Pill>
-                    <Pill border="strong" variant="blue">b:strong v:blue</Pill>
-                    <Pill border="subtle" variant="brand">b:subtle v:brand</Pill>
-                    <Pill radius="md" variant="green">r:md v:green</Pill>
-                    <Pill radius="none" variant="muted">r:none v:muted</Pill>
-                    <Pill iconOnly emoji="✌️" variant="pink" title="iconOnly v:pink" />
-                    <Pill variant="purple">v:purple</Pill>
-                    <Pill variant="red">v:red</Pill>
-                    <Pill variant="yellow">v:yellow</Pill>
+
+            <Divider />
+
+            {/* Pills Showcase */}
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                    width: "100%"
+                }}
+            >
+                {/* Sizes */}
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <Pill size="xs" variant="brand">size: xs</Pill>
+                    <Pill size="small" variant="brand">size: small</Pill>
+                    <Pill variant="brand">size: default</Pill>
                 </div>
-                <div style={{ display: "flex", gap: "1rem", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                    <Pill size="xs" variant="brand">default</Pill>
-                    <Pill size="xs" border="strong" variant="blue">b:strong v:blue</Pill>
-                    <Pill size="xs" border="subtle" variant="brand">b:subtle v:brand</Pill>
-                    <Pill size="xs" radius="md" variant="green">r:md v:green</Pill>
-                    <Pill size="xs" radius="none" variant="muted">r:none v:muted</Pill>
-                    <Pill size="xs" iconOnly emoji="✌️" variant="pink" title="iconOnly v:pink" />
-                    <Pill size="xs" variant="purple">v:purple</Pill>
-                    <Pill size="xs" variant="red">v:red</Pill>
-                    <Pill size="xs" variant="yellow">v:yellow</Pill>
+
+                {/* Radius */}
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <Pill radius="none" variant="blue">radius: none</Pill>
+                    <Pill radius="xs" variant="blue">radius: xs</Pill>
+                    <Pill radius="md" variant="blue">radius: md</Pill>
+                    <Pill variant="blue">radius: default</Pill>
                 </div>
-                <div style={{ display: "flex", gap: "1rem", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
-                    <Pill size="small" variant="brand">default</Pill>
-                    <Pill size="small" border="strong" variant="blue">b:strong v:blue</Pill>
-                    <Pill size="small" border="subtle" variant="brand">b:subtle v:brand</Pill>
-                    <Pill size="small" radius="md" variant="green">r:md v:green</Pill>
-                    <Pill size="small" radius="none" variant="muted">r:none v:muted</Pill>
-                    <Pill size="small" iconOnly emoji="✌️" variant="pink" title="iconOnly v:pink" />
-                    <Pill size="small" variant="purple">v:purple</Pill>
-                    <Pill size="small" variant="red">v:red</Pill>
-                    <Pill size="small" variant="yellow">v:yellow</Pill>
+
+                {/* Borders */}
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <Pill border="subtle" variant="purple">border: subtle</Pill>
+                    <Pill border="strong" variant="purple">border: strong</Pill>
+                    <Pill variant="purple">border: none</Pill>
+                </div>
+
+                {/* Variants */}
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <Pill variant="brand">brand</Pill>
+                    <Pill variant="green">green</Pill>
+                    <Pill variant="red">red</Pill>
+                    <Pill variant="yellow">yellow</Pill>
+                    <Pill variant="pink">pink</Pill>
+                    <Pill variant="purple">purple</Pill>
+                    <Pill variant="muted">muted</Pill>
+                </div>
+
+                {/* Icon Only */}
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <Pill iconOnly emoji="🔥" variant="red" title="fire" />
+                    <Pill iconOnly emoji="✨" variant="yellow" title="sparkle" />
+                    <Pill iconOnly emoji="🟢" variant="green" title="status" />
+                </div>
+
+                {/* Long Content Test */}
+                {/* why in gods name would you do that, what do you expect */}
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+                    <Pill variant="brand">
+                        Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugit, explicabo, laudantium numquam, assumenda ratione amet tempore eveniet incidunt unde dolorum dolores delectus cupiditate optio impedit reiciendis beatae distinctio illo eos?
+                    </Pill>
+
+                    <Pill size="xs" variant="muted">
+                        Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugit, explicabo, laudantium numquam, assumenda ratione amet tempore eveniet incidunt unde dolorum dolores delectus cupiditate optio impedit reiciendis beatae distinctio illo eos?
+                    </Pill>
                 </div>
             </div>
+            <Divider />
         </div>
     );
 }
-
