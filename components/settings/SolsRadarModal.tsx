@@ -7,6 +7,7 @@
 import { Heading } from "@components/Heading";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { React } from "@webpack/common";
+import { UIState } from "userplugins/sradar/stores/UIStateStore";
 
 import { DeveloperTab } from "./tabs/developer";
 import { RecentJoinsTab } from "./tabs/recentJoins";
@@ -72,10 +73,15 @@ interface SolsRadarModalProps {
     initialTab?: TabId;
 }
 
-export function SolsRadarModal({ modalProps, initialTab = "recentJoins" }: SolsRadarModalProps) {
-    const [activeTab, setActiveTab] = React.useState<TabId>(initialTab);
+export function SolsRadarModal({ modalProps, initialTab }: SolsRadarModalProps) {
+    const [activeTab, setActiveTab] = React.useState<TabId>(initialTab ?? UIState.get("activeTab"));
 
     const ActiveComponent = TABS.find(t => t.id === activeTab)!.component;
+
+    const handleTabChange = (tab: TabId) => {
+        setActiveTab(tab);
+        UIState.set("activeTab", tab);
+    };
 
     return (
         <ModalRoot {...modalProps} size={ModalSize.MEDIUM}>
@@ -95,7 +101,7 @@ export function SolsRadarModal({ modalProps, initialTab = "recentJoins" }: SolsR
                     <button
                         key={tab.id}
                         style={styles.tabBtn(activeTab === tab.id)}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={() => handleTabChange(tab.id)}
                     >
                         {tab.label}
                     </button>
@@ -110,7 +116,7 @@ export function SolsRadarModal({ modalProps, initialTab = "recentJoins" }: SolsR
                     </div>
                 </div>
             </ModalContent>
-        </ModalRoot>
+        </ModalRoot >
     );
 }
 

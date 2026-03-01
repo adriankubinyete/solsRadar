@@ -7,6 +7,7 @@
 import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { NavigationRouter, React, showToast, TextInput, Toasts, useState } from "@webpack/common";
+import { UIState } from "userplugins/sradar/stores/UIStateStore";
 
 import { JoinEntry, JoinStore, JoinTag, useJoinHistory } from "../../../../stores/JoinStore";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
@@ -128,8 +129,9 @@ const FILTER_OPTIONS: { tagName: JoinTag | "all"; label: string; variant: PillVa
 
 export function RecentJoinsTab() {
     const entries = useJoinHistory();
+    const saved = UIState.get("recentJoins");
     const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState("all");
+    const [filter, setFilter] = useState(saved.tagFilter);
 
     const filtered = React.useMemo(() => {
         let result = entries;
@@ -147,6 +149,11 @@ export function RecentJoinsTab() {
         }
         return result;
     }, [entries, filter, search]);
+
+    const handleTagFilter = (v: JoinTag | "all") => {
+        setFilter(v);
+        UIState.set("recentJoins", { tagFilter: v });
+    };
 
     const jumpToMessage = (entry: JoinEntry) => {
         if (!entry.messageJumpUrl) return;
@@ -173,7 +180,7 @@ export function RecentJoinsTab() {
                             label={f.label}
                             variant={f.variant}
                             active={filter === f.tagName}
-                            onClick={() => setFilter(f.tagName)}
+                            onClick={() => handleTagFilter(f.tagName)}
                         />
                     ))}
                 </div>
