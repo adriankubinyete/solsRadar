@@ -45,6 +45,15 @@ export function DeveloperTab() {
                 boxSizing: "border-box"
             }}
         >
+            {/* Header */}
+            <div style={{ ...column, gap: 0 }}>
+                <p style={{ fontSize: "1.2rem", color: "var(--text-muted)", fontWeight: "bold" }}>You're not supposed to be here!!</p>
+                <p style={{ fontSize: "1rem", color: "var(--text-muted)" }}>This is a tab just for testing stuff.</p>
+                <p style={{ fontSize: "1rem", color: "var(--text-muted)" }}>👉🔴🔵👈🤞🤌🫴🟣</p>
+            </div>
+
+            <Divider />
+
             {/* Actions */}
             <div style={row}>
                 <Button size="small" onClick={() => logger.debug(getRobloxProcess())}>
