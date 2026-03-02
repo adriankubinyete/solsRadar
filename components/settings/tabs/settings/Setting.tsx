@@ -6,8 +6,7 @@
 
 import { OptionType } from "@utils/types";
 import { React } from "@webpack/common";
-
-import { settings } from "../../../../settings";
+import { settings } from "userplugins/sradar/settings";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

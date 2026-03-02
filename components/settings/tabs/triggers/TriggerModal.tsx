@@ -11,7 +11,6 @@ import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, M
 import { findByPropsLazy } from "@webpack";
 import { React, showToast, TextInput, Toasts, useState } from "@webpack/common";
 import { settings } from "userplugins/sradar/settings";
-
 import {
     addTrigger,
     DEFAULT_BIOME,
@@ -22,7 +21,7 @@ import {
     TriggerConditions,
     TriggerType,
     updateTrigger,
-} from "../../../../stores/TriggerStore";
+} from "userplugins/sradar/stores/TriggerStore";
 
 // ─── Discord stores (lazy) ────────────────────────────────────────────────────
 

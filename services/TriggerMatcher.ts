@@ -6,8 +6,7 @@
 
 // import { Logger } from "@utils/Logger";
 import { Message } from "@vencord/discord-types";
-
-import { KeywordSet, Trigger } from "../stores/TriggerStore";
+import { KeywordSet, Trigger } from "userplugins/sradar/stores/TriggerStore";
 
 // const logger = new Logger("SolRadar.TriggerMatcher");
 

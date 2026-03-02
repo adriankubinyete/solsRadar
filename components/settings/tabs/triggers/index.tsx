@@ -9,8 +9,8 @@ import { Paragraph } from "@components/Paragraph";
 import { Logger } from "@utils/Logger";
 import { React, showToast, TextInput, Toasts, useEffect, useRef, useState } from "@webpack/common";
 import { QuickFilterBtn } from "userplugins/sradar/components/buttons/QuickFilterBtn";
-import { JoinLockBanner } from "userplugins/sradar/components/JoinLockBanner";
-
+import { Pill, PillBorder, PillRadius, PillVariant } from "userplugins/sradar/components/Pill";
+import { JoinLockBanner } from "userplugins/sradar/components/ui/JoinLockBanner";
 import {
     deleteTrigger,
     downloadTriggersJson,
@@ -20,8 +20,8 @@ import {
     Trigger,
     TriggerType,
     useTriggers,
-} from "../../../../stores/TriggerStore";
-import { Pill, PillBorder, PillRadius, PillVariant } from "../../../Pill";
+} from "userplugins/sradar/stores/TriggerStore";
+
 import { openAddTriggerModal, openEditTriggerModal } from "./TriggerModal";
 
 const logger = new Logger("SolRadar");
