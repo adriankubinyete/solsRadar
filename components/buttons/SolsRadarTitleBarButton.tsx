@@ -23,6 +23,7 @@ interface SolsRadarTitleBarButtonProps {
 }
 
 export function SolsRadarTitleBarButton({ className = "" }: SolsRadarTitleBarButtonProps) {
+    console.log("SolsRadarTitleBarButton classname: ", className);
     const { autoJoinEnabled, notificationEnabled, pluginIconShortcutAction, hideInactiveIndicator } = settings.use([
         "autoJoinEnabled",
         "notificationEnabled",
@@ -77,7 +78,7 @@ export function SolsRadarTitleBarButton({ className = "" }: SolsRadarTitleBarBut
 
     return (
         <HeaderBarIcon
-            className={`${className}`}
+            className={typeof className === "object" ? Object.values(className as any).join(" ") : className}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
             tooltip={`SolRadar (${stateText})`}
