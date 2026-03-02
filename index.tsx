@@ -78,22 +78,39 @@ function resolveTrigger({ message, channel, guild }: { message: Message; channel
 
 // ─── channel validation ───────────────────────────────────────────────────────
 
-function isMessageAllowed({ channel, trigger }: { channel: Channel; trigger: Trigger; }, log: Logger): boolean {
-    const blacklist = parseCsv(settings.store.NEVER_MONITOR_THESE_GUILDS);
-    if (blacklist.has(channel.guild_id)) {
-        log.debug(`[${trigger.name}] Guild ${channel.guild_id} is blacklisted — skipping.`);
+function isMessageAllowed({ channel, message, trigger }: { channel: Channel; message: Message; trigger: Trigger; }, log: Logger): boolean {
+    // Guild-level ignore (com bypass por trigger)
+    if (!trigger.conditions.bypassIgnoredGuilds) {
+        const ignoredGuilds = parseCsv(settings.store.ignoredGuilds);
+        if (ignoredGuilds.has(channel.guild_id)) {
+            log.debug(`[${trigger.name}] Guild ${channel.guild_id} is ignored — skipping.`);
+            return false;
+        }
+    }
+
+    // Channel-level ignore (com bypass por trigger)
+    if (!trigger.conditions.bypassIgnoredChannels) {
+        const ignoredChannels = parseCsv(settings.store.ignoredChannels);
+        if (ignoredChannels.has(channel.id)) {
+            log.debug(`[${trigger.name}] Channel #${channel.name} is ignored — skipping.`);
+            return false;
+        }
+    }
+
+    // User-level ignore (sem bypass)
+    const ignoredUsers = parseCsv(settings.store.ignoredUsers);
+    if (ignoredUsers.has(message.author.id)) {
+        log.debug(`[${trigger.name}] User ${message.author.id} is ignored — skipping.`);
         return false;
     }
 
-    if (trigger.conditions.bypassChannelRestriction) {
-        log.debug(`[${trigger.name}] Channel restriction bypassed.`);
-        return true;
-    }
-
-    const whitelist = parseCsv(settings.store.monitoredChannels);
-    if (whitelist.size > 0 && !whitelist.has(channel.id)) {
-        log.debug(`[${trigger.name}] Channel #${channel.name} is not monitored — skipping.`);
-        return false;
+    // Monitored channels whitelist
+    if (!trigger.conditions.bypassMonitoredOnly) {
+        const monitored = parseCsv(settings.store.monitoredChannels);
+        if (monitored.size > 0 && !monitored.has(channel.id)) {
+            log.debug(`[${trigger.name}] Channel #${channel.name} is not monitored — skipping.`);
+            return false;
+        }
     }
 
     return true;
@@ -426,7 +443,7 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
 
     log.info(`Match: "${trigger.name}" (p${trigger.state.priority}) — #${channel.name} @ ${guild.name}`);
 
-    if (!isMessageAllowed({ channel, trigger }, log)) return;
+    if (!isMessageAllowed({ channel, message, trigger }, log)) return;
 
     // ── Join lock check ───────────────────────────────────────────────────────
     if (JoinLockStore.isBlocked(trigger.state.priority)) {

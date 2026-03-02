@@ -90,8 +90,12 @@ export function SettingsTab() {
             <p style={sectionTitle}>Channel Monitoring</p>
             <Setting id="monitoredChannels" label="Monitored Channels"
                 description="Comma-separated channel IDs. Leave empty to monitor no channels." />
-            <Setting id="NEVER_MONITOR_THESE_GUILDS" label="Ignored Guilds"
+            <Setting id="ignoredGuilds" label="Ignored Guilds"
                 description="Comma-separated guild IDs. Messages from these guilds are always ignored." />
+            <Setting id="ignoredChannels" label="Ignored Channels"
+                description="Comma-separated channel IDs. Messages on these channels are always ignored." />
+            <Setting id="ignoredUsers" label="Ignored Users"
+                description="Comma-separated user IDs. Messages from these users are always ignored." />
 
             {/* ── Link Verification ─────────────────────────────────────── */}
             <p style={sectionTitle}>Link Verification</p>

@@ -123,7 +123,7 @@ const S = {
     note: {
         color: "var(--text-muted)",
         background: "var(--background-modifier-accent)",
-        fontSize: 12,
+        fontSize: 14,
         lineHeight: 1.5,
         padding: "8px 12px",
         borderRadius: 6,
@@ -134,7 +134,7 @@ const S = {
         color: "var(--text-warning)",
         background: "hsl(38deg 95% 54% / 10%)",
         border: "1px solid hsl(38deg 95% 54% / 25%)",
-        fontSize: 12,
+        fontSize: 14,
         lineHeight: 1.5,
         padding: "8px 12px",
         borderRadius: 6,
@@ -145,7 +145,7 @@ const S = {
         color: "var(--text-danger)",
         background: "hsl(359deg 87% 54% / 10%)",
         border: "1px solid hsl(359deg 87% 54% / 25%)",
-        fontSize: 12,
+        fontSize: 14,
         lineHeight: 1.5,
         padding: "8px 12px",
         borderRadius: 6,
@@ -406,7 +406,8 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
             />
             <TextField label="Trigger Name *" value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
             <TextField label="Trigger Description" value={description} placeholder="Optional" onChange={v => patch({ description: v })} />
-            <TextField label="Trigger Icon URL" value={iconUrl} placeholder="Optional. https://link_to_image..." onChange={v => patch({ iconUrl: v })} />
+            <TextField label="Trigger Icon URL" value={iconUrl} hint="Optional. Must link directly to an image." placeholder="Optional. https://linkToImage.png ..." onChange={v => patch({ iconUrl: v })} />
+            <p style={S.note}>Vencord has a lot of restrictions on what links are allowed. If you</p>
 
             <p style={S.sectionTitle}>Behavior</p>
 
@@ -547,19 +548,31 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
 
 function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
     const { conditions } = draft;
-    const { bypassChannelRestriction, bypassMatchAmbiguity, bypassLinkVerification } = conditions;
+    const { bypassMonitoredOnly, bypassIgnoredChannels, bypassIgnoredGuilds, bypassMatchAmbiguity, bypassLinkVerification } = conditions;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
             <p style={S.sectionTitle}>Bypasses</p>
-            <p style={S.noteWarning}>These options disable safety checks. Only change them if you know what you're doing.</p>
+            <p style={{ ...S.noteWarning, fontSize: 16 }}>These options disable safety checks. Only change them if you know what you're doing.</p>
 
             <SwitchField
-                label="Bypass channel restriction"
+                label="Bypass monitored channels"
                 hint="Ignore the monitored channels setting. This trigger matches in any channel."
-                value={bypassChannelRestriction}
-                onChange={v => patch({ conditions: { ...conditions, bypassChannelRestriction: v } })}
+                value={bypassMonitoredOnly}
+                onChange={v => patch({ conditions: { ...conditions, bypassMonitoredOnly: v } })}
+            />
+            <SwitchField
+                label="Bypass ignored channels"
+                hint="Ignore the ignored channels setting. This trigger matches even in ignored channels."
+                value={bypassIgnoredChannels}
+                onChange={v => patch({ conditions: { ...conditions, bypassIgnoredChannels: v } })}
+            />
+            <SwitchField
+                label="Bypass ignored guilds"
+                hint="Ignore the ignored guilds setting. This trigger matches even in ignored guilds."
+                value={bypassIgnoredGuilds}
+                onChange={v => patch({ conditions: { ...conditions, bypassIgnoredGuilds: v } })}
             />
             <SwitchField
                 label="Bypass match ambiguity"

@@ -306,8 +306,8 @@ function TriggerCard({
     const initial = trigger.name.charAt(0).toUpperCase();
     const [hovered, setHovered] = useState(false);
     const { enabled, autojoin, notify, joinlock, joinlockDuration, priority } = trigger.state;
-    const { bypassChannelRestriction, bypassMatchAmbiguity, bypassLinkVerification } = trigger.conditions;
-    const hasAnyBypass = bypassChannelRestriction || bypassMatchAmbiguity || bypassLinkVerification;
+    const { bypassMonitoredOnly, bypassIgnoredChannels, bypassIgnoredGuilds, bypassMatchAmbiguity, bypassLinkVerification } = trigger.conditions;
+    const hasAnyBypass = bypassMonitoredOnly || bypassIgnoredChannels || bypassIgnoredGuilds || bypassMatchAmbiguity || bypassLinkVerification;
 
     const PILL_BORDER_STYLE: PillBorder = "subtle";
     const PILL_RADIUS_STYLE: PillRadius = "xs";
@@ -378,7 +378,9 @@ function TriggerCard({
                 {joinlock && <Pill border={enabled ? PILL_BORDER_STYLE : "none"} radius={PILL_RADIUS_STYLE} variant={enabled ? "yellow" : "muted"} size="xs" emoji="🔒" iconOnly title={`This trigger will lock joins for ${joinlockDuration} seconds once matched`} />}
                 {hasAnyBypass && (() => {
                     const bypasses: string[] = [];
-                    if (bypassChannelRestriction) bypasses.push("Channel restriction bypass");
+                    if (bypassMonitoredOnly) bypasses.push("Monitor-only bypass");
+                    if (bypassIgnoredGuilds) bypasses.push("Guild bypass");
+                    if (bypassIgnoredChannels) bypasses.push("Channel bypass");
                     if (bypassMatchAmbiguity) bypasses.push("Match ambiguity bypass");
                     if (bypassLinkVerification) bypasses.push("Link verification bypass");
                     return (

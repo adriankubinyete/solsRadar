@@ -43,9 +43,11 @@ export interface TriggerConditions {
     };
     fromUser: string[]; // empty = ignore check
     inChannel: string[]; // empty = ignore check
-    bypassMatchAmbiguity: boolean;
-    bypassChannelRestriction: boolean;
-    bypassLinkVerification: boolean;
+    bypassMatchAmbiguity: boolean; // bypass the "multiple matches" check
+    bypassMonitoredOnly: boolean; // bypass the "only in monitored channels" check
+    bypassIgnoredGuilds: boolean; // bypass the "ignore this guild" check
+    bypassIgnoredChannels: boolean; // bypass the "ignore this channel" check
+    bypassLinkVerification: boolean; // bypass the Place ID check
 }
 
 export interface TriggerBiome {
@@ -86,7 +88,9 @@ export const DEFAULT_CONDITIONS: TriggerConditions = {
     fromUser: [],
     inChannel: [],
     bypassMatchAmbiguity: false,
-    bypassChannelRestriction: false,
+    bypassMonitoredOnly: false,
+    bypassIgnoredGuilds: false,
+    bypassIgnoredChannels: false,
     bypassLinkVerification: false,
 };
 
@@ -140,7 +144,9 @@ function migrateTrigger(raw: any): Trigger {
             fromUser: raw.conditions?.fromUser ?? [],
             inChannel: raw.conditions?.inChannel ?? [],
             bypassMatchAmbiguity: raw.conditions?.bypassMatchAmbiguity ?? false,
-            bypassChannelRestriction: raw.conditions?.bypassChannelRestriction ?? false,
+            bypassMonitoredOnly: raw.conditions?.bypassMonitoredOnly ?? false,
+            bypassIgnoredGuilds: raw.conditions?.bypassIgnoredGuilds ?? false,
+            bypassIgnoredChannels: raw.conditions?.bypassIgnoredChannels ?? false,
             bypassLinkVerification: raw.conditions?.bypassLinkVerification ?? false,
         },
         state: {
