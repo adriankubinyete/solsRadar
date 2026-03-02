@@ -5,13 +5,11 @@
  */
 
 import { Button } from "@components/Button";
-import { Divider } from "@components/Divider";
 import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
-import { Paragraph } from "@components/Paragraph";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { findByPropsLazy } from "@webpack";
-import { React, Select, showToast, TextInput, Toasts, useState } from "@webpack/common";
+import { React, showToast, TextInput, Toasts, useState } from "@webpack/common";
 
 import {
     addTrigger,
@@ -44,29 +42,168 @@ const TRIGGER_TYPE_OPTIONS = [
     { label: "Custom", value: "CUSTOM" },
 ];
 
-const needsBiomeTab = (type: TriggerType) => type === "RARE_BIOME" || type === "EVENT_BIOME" || type === "BIOME" || type === "WEATHER" || type === "CUSTOM";
+const needsBiomeTab = (type: TriggerType) =>
+    type === "RARE_BIOME" || type === "EVENT_BIOME" || type === "BIOME" || type === "WEATHER" || type === "CUSTOM";
+
 const arrToStr = (arr: string[]) => arr.join(", ");
 const strToArr = (str: string): string[] => str.split(",").map(s => s.trim()).filter(Boolean);
 
-// ─── KeywordsInput ─────────────────────────────────────────────────────────────
+// ─── Shared styles ────────────────────────────────────────────────────────────
 
-interface KeywordsInputProps {
-    label: string;
-    description?: string;
-    value: string[];
-    onChange: (v: string[]) => void;
-    placeholder?: string;
+const S = {
+    sectionTitle: {
+        color: "var(--text-muted)",
+        fontSize: 11,
+        fontWeight: 700,
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        marginBottom: 4,
+        marginTop: 20,
+    } as React.CSSProperties,
+
+    row: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        padding: "10px 14px",
+        borderRadius: 8,
+        background: "var(--background-secondary)",
+    } as React.CSSProperties,
+
+    rowStacked: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 0,
+        padding: "10px 14px",
+        borderRadius: 8,
+        background: "var(--background-secondary)",
+    } as React.CSSProperties,
+
+    rowLeft: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        flex: 1,
+        minWidth: 0,
+    } as React.CSSProperties,
+
+    label: {
+        color: "var(--text-normal)",
+        fontSize: 14,
+        fontWeight: 500,
+    } as React.CSSProperties,
+
+    hint: {
+        color: "var(--text-muted)",
+        fontSize: 12,
+        lineHeight: 1.4,
+        marginTop: 2,
+    } as React.CSSProperties,
+
+    select: {
+        background: "var(--background-tertiary)",
+        border: "1px solid var(--background-modifier-accent)",
+        borderRadius: 4,
+        color: "var(--text-normal)",
+        fontSize: 13,
+        padding: "5px 8px",
+        cursor: "pointer",
+        flexShrink: 0,
+        maxWidth: 220,
+    } as React.CSSProperties,
+
+    note: {
+        color: "var(--text-muted)",
+        background: "var(--background-modifier-accent)",
+        fontSize: 12,
+        lineHeight: 1.5,
+        padding: "8px 12px",
+        borderRadius: 6,
+        margin: 0,
+    } as React.CSSProperties,
+
+    noteWarning: {
+        color: "var(--text-warning)",
+        background: "hsl(38deg 95% 54% / 10%)",
+        border: "1px solid hsl(38deg 95% 54% / 25%)",
+        fontSize: 12,
+        lineHeight: 1.5,
+        padding: "8px 12px",
+        borderRadius: 6,
+        margin: 0,
+    } as React.CSSProperties,
+
+    noteDanger: {
+        color: "var(--text-danger)",
+        background: "hsl(359deg 87% 54% / 10%)",
+        border: "1px solid hsl(359deg 87% 54% / 25%)",
+        fontSize: 12,
+        lineHeight: 1.5,
+        padding: "8px 12px",
+        borderRadius: 6,
+        margin: 0,
+    } as React.CSSProperties,
+};
+
+// ─── Primitive field components ───────────────────────────────────────────────
+
+function TextField({ label, hint, value, placeholder, onChange, type }: {
+    label: string; hint?: string; value: string;
+    placeholder?: string; onChange: (v: string) => void; type?: string;
+}) {
+    return (
+        <div style={S.rowStacked}>
+            <span style={S.label}>{label}</span>
+            {hint && <span style={S.hint}>{hint}</span>}
+            <TextInput value={value} placeholder={placeholder} onChange={onChange} type={type} style={{ marginTop: 8 }} />
+        </div>
+    );
 }
 
-function KeywordsInput({ label, description, value, onChange, placeholder }: KeywordsInputProps) {
+function SwitchField({ label, hint, value, onChange }: {
+    label: string; hint?: string; value: boolean; onChange: (v: boolean) => void;
+}) {
+    return (
+        <div style={S.row}>
+            <div style={S.rowLeft}>
+                <span style={S.label}>{label}</span>
+                {hint && <span style={S.hint}>{hint}</span>}
+            </div>
+            <FormSwitch title="" value={value} onChange={onChange} hideBorder />
+        </div>
+    );
+}
+
+function SelectField({ label, hint, options, value, onChange }: {
+    label: string; hint?: string;
+    options: { label: string; value: string; }[];
+    value: string; onChange: (v: string) => void;
+}) {
+    return (
+        <div style={S.row}>
+            <div style={S.rowLeft}>
+                <span style={S.label}>{label}</span>
+                {hint && <span style={S.hint}>{hint}</span>}
+            </div>
+            <select style={S.select} value={value} onChange={e => onChange(e.target.value)}>
+                {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+        </div>
+    );
+}
+
+// ─── KeywordsInput ────────────────────────────────────────────────────────────
+
+function KeywordsInput({ label, hint, value, onChange, placeholder }: {
+    label: string; hint?: string; value: string[];
+    onChange: (v: string[]) => void; placeholder?: string;
+}) {
     const [raw, setRaw] = React.useState(() => arrToStr(value));
     const prevRef = React.useRef(value);
 
     React.useEffect(() => {
-        if (prevRef.current !== value) {
-            prevRef.current = value;
-            setRaw(arrToStr(value));
-        }
+        if (prevRef.current !== value) { prevRef.current = value; setRaw(arrToStr(value)); }
     }, [value]);
 
     const commit = () => {
@@ -77,23 +214,23 @@ function KeywordsInput({ label, description, value, onChange, placeholder }: Key
     };
 
     return (
-        <section>
-            <Heading tag="h5">{label}</Heading>
+        <div style={S.rowStacked}>
+            <span style={S.label}>{label}</span>
+            {hint && <span style={S.hint}>{hint}</span>}
             <TextInput
                 value={raw}
                 placeholder={placeholder ?? "keyword1, keyword2, keyword3"}
                 onChange={setRaw}
                 onBlur={commit}
+                style={{ marginTop: 8 }}
             />
-            {description && <Paragraph style={{ marginTop: 4 }}>{description}</Paragraph>}
-        </section>
+        </div>
     );
 }
 
 // ─── IdChipInput ──────────────────────────────────────────────────────────────
 
 type ChipKind = "user" | "channel";
-
 interface ResolvedUser { kind: "user"; id: string; name: string; discriminator?: string; avatarUrl?: string; }
 interface ResolvedChannel { kind: "channel"; id: string; name: string; guildName?: string; guildIcon?: string; }
 type ResolvedEntry = ResolvedUser | ResolvedChannel;
@@ -132,25 +269,21 @@ type ResolveState =
     | { status: "resolved"; entry: ResolvedEntry; }
     | { status: "error"; message: string; };
 
-const chipStyles = {
-    list: { display: "flex", flexWrap: "wrap" as const, gap: 6, marginBottom: 8 },
+const chip = {
+    list: { display: "flex", flexWrap: "wrap" as const, gap: 6, marginTop: 8 },
     chip: { display: "flex", alignItems: "center", gap: 6, padding: "3px 8px 3px 6px", borderRadius: 999, background: "var(--background-modifier-accent)", fontSize: 13 },
     avatar: { width: 20, height: 20, borderRadius: "50%", objectFit: "cover" as const, flexShrink: 0 },
     initial: { width: 20, height: 20, borderRadius: "50%", background: "var(--brand-500)", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-    label: { color: "var(--text-normal)", lineHeight: 1.2 },
-    sub: { color: "var(--text-muted)", fontSize: 11 },
-    remove: { background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "0 0 0 2px", fontSize: 16, lineHeight: 1, display: "flex", alignItems: "center" },
-    row: { display: "flex", gap: 8, marginTop: 4, alignItems: "center" },
+    remove: { background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", padding: "0 0 0 4px", fontSize: 16, lineHeight: 1 },
 };
 
 function EntryChip({ entry, onRemove }: { entry: ResolvedEntry; onRemove: () => void; }) {
     const avatarUrl = entry.kind === "user"
         ? (entry as ResolvedUser).avatarUrl
         : (entry as ResolvedChannel).guildIcon;
-    const initial = (entry.kind === "user"
+    const initial = ((entry.kind === "user"
         ? entry.name
-        : ((entry as ResolvedChannel).guildName ?? entry.name)
-    ).charAt(0).toUpperCase();
+        : ((entry as ResolvedChannel).guildName ?? entry.name)) || "?").charAt(0).toUpperCase();
     const label = entry.kind === "user"
         ? ((entry as ResolvedUser).discriminator ? `${entry.name}#${(entry as ResolvedUser).discriminator}` : entry.name)
         : `#${entry.name}`;
@@ -159,50 +292,40 @@ function EntryChip({ entry, onRemove }: { entry: ResolvedEntry; onRemove: () => 
         : entry.id;
 
     return (
-        <div style={chipStyles.chip}>
+        <div style={chip.chip}>
             {avatarUrl
-                ? <img src={avatarUrl} alt="" style={chipStyles.avatar} />
-                : <div style={chipStyles.initial}>{initial}</div>
+                ? <img src={avatarUrl} alt="" style={chip.avatar} />
+                : <div style={chip.initial}>{initial}</div>
             }
             <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={chipStyles.label}>{label}</span>
-                <span style={chipStyles.sub}>{sub}</span>
+                <span style={{ color: "var(--text-normal)", lineHeight: 1.2 }}>{label}</span>
+                <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{sub}</span>
             </div>
-            <button style={chipStyles.remove} onClick={onRemove}>×</button>
+            <button style={chip.remove} onClick={onRemove}>×</button>
         </div>
     );
 }
 
-interface IdChipInputProps {
-    kind: ChipKind;
-    label: string;
-    description?: string;
-    ids: string[];
-    onChange: (ids: string[]) => void;
-}
-
-function IdChipInput({ kind, label, description, ids, onChange }: IdChipInputProps) {
+function IdChipInput({ kind, label, hint, ids, onChange }: {
+    kind: ChipKind; label: string; hint?: string;
+    ids: string[]; onChange: (ids: string[]) => void;
+}) {
     const [inputVal, setInputVal] = useState("");
     const [state, setState] = useState<ResolveState>({ status: "idle" });
-
-    const isSnowflake = (v: string) => /^\d{17,20}$/.test(v.trim());
 
     const handleChange = (val: string) => {
         setInputVal(val);
         setState({ status: "idle" });
         const trimmed = val.trim();
-        if (!isSnowflake(trimmed)) return;
+        if (!/^\d{17,20}$/.test(trimmed)) return;
         if (ids.includes(trimmed)) { setState({ status: "error", message: "Already added." }); return; }
         const entry = resolveId(trimmed, kind);
-        setState(entry
-            ? { status: "resolved", entry }
-            : {
-                status: "error",
-                message: kind === "user"
-                    ? "User not found in local cache. They need to be visible in your current session."
-                    : "Channel not found in local cache. Open the channel first so Discord loads it.",
-            }
-        );
+        setState(entry ? { status: "resolved", entry } : {
+            status: "error",
+            message: kind === "user"
+                ? "User not found in local cache. They need to be visible in your current session."
+                : "Channel not found in local cache. Open the channel first so Discord loads it.",
+        });
     };
 
     const handleAdd = () => {
@@ -213,11 +336,12 @@ function IdChipInput({ kind, label, description, ids, onChange }: IdChipInputPro
     };
 
     return (
-        <section>
-            <Heading tag="h5">{label}</Heading>
+        <div style={S.rowStacked}>
+            <span style={S.label}>{label}</span>
+            {hint && <span style={S.hint}>{hint}</span>}
 
             {ids.length > 0 && (
-                <div style={chipStyles.list}>
+                <div style={chip.list}>
                     {ids.map(id => {
                         const entry = resolveId(id, kind) ?? { kind, id, name: id } as ResolvedEntry;
                         return <EntryChip key={id} entry={entry} onRemove={() => onChange(ids.filter(i => i !== id))} />;
@@ -225,8 +349,7 @@ function IdChipInput({ kind, label, description, ids, onChange }: IdChipInputPro
                 </div>
             )}
 
-            {/* FIX 3: TextInput dentro de div flex:1 — o componente nativo não propaga style */}
-            <div style={chipStyles.row}>
+            <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
                     <TextInput
                         value={inputVal}
@@ -235,31 +358,20 @@ function IdChipInput({ kind, label, description, ids, onChange }: IdChipInputPro
                         onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && handleAdd()}
                     />
                 </div>
-                <Button
-                    size="small"
-                    variant="primary"
-                    disabled={state.status !== "resolved"}
-                    onClick={handleAdd}
-                >
+                <Button size="small" variant="primary" disabled={state.status !== "resolved"} onClick={handleAdd}>
                     Add
                 </Button>
             </div>
 
             {state.status === "resolved" && (
                 <div style={{ marginTop: 6 }}>
-                    <EntryChip
-                        entry={state.entry}
-                        onRemove={() => { setInputVal(""); setState({ status: "idle" }); }}
-                    />
+                    <EntryChip entry={state.entry} onRemove={() => { setInputVal(""); setState({ status: "idle" }); }} />
                 </div>
             )}
             {state.status === "error" && (
-                <Paragraph style={{ color: "var(--text-danger)", marginTop: 4 }}>
-                    ⚠ {state.message}
-                </Paragraph>
+                <p style={{ ...S.noteDanger, marginTop: 6 }}>⚠ {state.message}</p>
             )}
-            {description && <Paragraph style={{ marginTop: 4 }}>{description}</Paragraph>}
-        </section>
+        </div>
     );
 }
 
@@ -269,66 +381,58 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
     const { name, description, iconUrl, type, state } = draft;
 
     return (
-        <>
-            <Heading style={{ marginBottom: 8 }} tag="h4">Details</Heading>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
-            <section>
-                <Heading tag="h5">Type</Heading>
-                <Select
-                    options={TRIGGER_TYPE_OPTIONS}
-                    select={v => patch({
-                        type: v as TriggerType,
-                        biome: needsBiomeTab(v as TriggerType)
-                            ? (draft.biome ?? { ...DEFAULT_BIOME })
-                            : undefined,
-                    })}
-                    isSelected={v => v === type}
-                    serialize={v => v}
-                />
-            </section>
+            <p style={S.sectionTitle}>Details</p>
 
-            <section style={{ marginTop: 8 }}>
-                <Heading tag="h5">Name *</Heading>
-                <TextInput value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
-            </section>
+            <SelectField
+                label="Type"
+                options={TRIGGER_TYPE_OPTIONS}
+                value={type}
+                onChange={v => patch({
+                    type: v as TriggerType,
+                    biome: needsBiomeTab(v as TriggerType)
+                        ? (draft.biome ?? { ...DEFAULT_BIOME })
+                        : undefined,
+                })}
+            />
+            <TextField label="Name *" value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
+            <TextField label="Description" value={description} placeholder="Optional" onChange={v => patch({ description: v })} />
+            <TextField label="Icon URL" value={iconUrl} placeholder="https://..." onChange={v => patch({ iconUrl: v })} />
 
-            <section style={{ marginTop: 8 }}>
-                <Heading tag="h5">Description</Heading>
-                <TextInput value={description} placeholder="Optional" onChange={v => patch({ description: v })} />
-            </section>
+            <p style={S.sectionTitle}>Behavior</p>
 
-            <section style={{ marginTop: 8 }}>
-                <Heading tag="h5">Icon URL</Heading>
-                <TextInput value={iconUrl} placeholder="https://..." onChange={v => patch({ iconUrl: v })} />
-            </section>
+            <SwitchField label="Enabled" hint="Whether this trigger is active." value={state.enabled} onChange={v => patch({ state: { ...state, enabled: v } })} />
+            <SwitchField label="Auto-join" hint="Automatically join the match when triggered." value={state.autojoin} onChange={v => patch({ state: { ...state, autojoin: v } })} />
+            <SwitchField label="Notify" hint="Show a notification when matched." value={state.notify} onChange={v => patch({ state: { ...state, notify: v } })} />
 
-            <Divider style={{ margin: "12px 0" }} />
-            <Heading style={{ marginBottom: 8 }} tag="h4">Behavior</Heading>
+            <TextField
+                label="Priority"
+                hint="Lower number = higher priority. Defaults to 10."
+                value={String(state.priority)}
+                placeholder="e.g. 10"
+                type="number"
+                onChange={v => patch({ state: { ...state, priority: Number(v) } })}
+            />
 
-            <FormSwitch title="Enabled" value={state.enabled} onChange={v => patch({ state: { ...state, enabled: v } })} description="Whether this trigger is active." />
-            <FormSwitch title="Auto-join" value={state.autojoin} onChange={v => patch({ state: { ...state, autojoin: v } })} description="Automatically join the match when triggered." />
-            <FormSwitch title="Notify" value={state.notify} onChange={v => patch({ state: { ...state, notify: v } })} description="Show a notification when matched." />
-            <section style={{ marginTop: 8 }}>
-                <Heading tag="h5">Priority</Heading>
-                <Paragraph style={{ marginBottom: 4 }}>
-                    A low number means more important. Defaults to 10.
-                </Paragraph>
-                <TextInput value={String(state.priority)} placeholder="e.g. 10" onChange={v => patch({ state: { ...state, priority: Number(v) } })} />
-            </section>
-            <Divider style={{ margin: "12px 0" }} />
-            <FormSwitch title="Join lock" value={state.joinlock} onChange={v => patch({ state: { ...state, joinlock: v } })} description="Should prevent other triggers from happening while this one is active? Triggers with a higher priority will bypass join locks." />
+            <p style={S.sectionTitle}>Join Lock</p>
 
+            <SwitchField
+                label="Join lock"
+                hint="Prevents other triggers from firing while this one is active. Higher-priority triggers bypass this."
+                value={state.joinlock}
+                onChange={v => patch({ state: { ...state, joinlock: v } })}
+            />
             {state.joinlock && (
-                <section style={{ marginTop: 8 }}>
-                    <Heading tag="h5">Join lock duration (seconds)</Heading>
-                    <TextInput
-                        type="number"
-                        value={String(state.joinlockDuration)}
-                        onChange={v => patch({ state: { ...state, joinlockDuration: Number(v) } })}
-                    />
-                </section>
+                <TextField
+                    label="Duration (seconds)"
+                    value={String(state.joinlockDuration)}
+                    type="number"
+                    onChange={v => patch({ state: { ...state, joinlockDuration: Number(v) } })}
+                />
             )}
-        </>
+
+        </div>
     );
 }
 
@@ -336,158 +440,118 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
 
 function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions; onChange: (c: TriggerConditions) => void; }) {
     const { keywords, fromUser, inChannel } = conditions;
-
     const patchMatch = (p: Partial<typeof keywords.match>) => onChange({ ...conditions, keywords: { ...keywords, match: { ...keywords.match, ...p } } });
     const patchExclude = (p: Partial<typeof keywords.exclude>) => onChange({ ...conditions, keywords: { ...keywords, exclude: { ...keywords.exclude, ...p } } });
 
     return (
-        <>
-            <Heading tag="h5">Match keywords</Heading>
-            <Paragraph style={{ marginBottom: 8 }}>
-                Message must contain at least one of these. Separate with commas. Click away to confirm.
-            </Paragraph>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
-            <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <KeywordsInput
-                    label="Keywords"
-                    value={keywords.match.value}
-                    onChange={v => patchMatch({ value: v })}
-                    placeholder="cyber, cyberspace, cyber space"
-                />
+            <p style={S.sectionTitle}>Match Keywords</p>
+            <p style={S.note}>Message must contain at least one of these. Separate with commas.</p>
+            <KeywordsInput label="Keywords" value={keywords.match.value} onChange={v => patchMatch({ value: v })} placeholder="cyber, cyberspace, cyber space" />
+            <SwitchField label="Strict match" hint="Must match exact word boundary, not just a substring." value={keywords.match.strict} onChange={v => patchMatch({ strict: v })} />
 
-                <FormSwitch
-                    title="Strict match"
-                    value={keywords.match.strict}
-                    onChange={v => patchMatch({ strict: v })}
-                    description="Must match the exact word boundary, not just a substring."
-                    hideBorder={true}
-                />
-            </section>
+            <p style={S.sectionTitle}>Exclude Keywords</p>
+            <p style={S.note}>Message must NOT contain any of these. Separate with commas.</p>
+            <KeywordsInput label="Keywords" value={keywords.exclude.value} onChange={v => patchExclude({ value: v })} placeholder="hunt, help" />
+            <SwitchField label="Strict match" hint="Must match exact word boundary, not just a substring." value={keywords.exclude.strict} onChange={v => patchExclude({ strict: v })} />
 
-            <Divider style={{ margin: "12px 0" }} />
-
-            <Heading tag="h5">Exclude keywords</Heading>
-            <Paragraph style={{ marginBottom: 8 }}>
-                Message must NOT contain any of these. Separate with commas. Click away to confirm.
-            </Paragraph>
-
-
-            <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <KeywordsInput
-                    label="Keywords"
-                    value={keywords.exclude.value}
-                    onChange={v => patchExclude({ value: v })}
-                    placeholder="hunt, help"
-                />
-
-                <FormSwitch
-                    title="Strict match"
-                    value={keywords.exclude.strict}
-                    onChange={v => patchExclude({ strict: v })}
-                    description="Must match the exact word boundary, not just a substring."
-                    hideBorder={true}
-                />
-            </section>
-
-            <Divider style={{ margin: "12px 0" }} />
-
+            <p style={S.sectionTitle}>User Filter</p>
             <IdChipInput
                 kind="user"
-                label="Filter by user"
-                description="Only match messages from these users. Leave empty to match any user."
+                label="Allowed Users"
+                hint="Only match messages from these users. Leave empty to match any user."
                 ids={fromUser}
                 onChange={ids => onChange({ ...conditions, fromUser: ids })}
             />
 
-            <Divider style={{ margin: "12px 0" }} />
-
+            <p style={S.sectionTitle}>Channel Filter</p>
             <IdChipInput
                 kind="channel"
-                label="Filter by channel"
-                description="In addition to the main monitored channels setting, only match this trigger if the message was sent in these channels. Leave empty to match any channel."
+                label="Allowed Channels"
+                hint="In addition to monitored channels, only match this trigger in these channels. Leave empty for any channel."
                 ids={inChannel}
                 onChange={ids => onChange({ ...conditions, inChannel: ids })}
             />
-        </>
+
+        </div>
     );
 }
 
 // ─── Tab: Biome ───────────────────────────────────────────────────────────────
 
 function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: TriggerBiome) => void; }) {
-    const biomeGloballyEnabled = true; // TODO: conectar à sua store de settings
-
     return (
-        <>
-            {!biomeGloballyEnabled && (
-                <Paragraph style={{ color: "var(--text-danger)", marginBottom: 12 }}>
-                    ⚠️ Biome detection is currently disabled in your settings or your detection user list is empty. These settings will have no effect.
-                </Paragraph>
-            )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
-            <FormSwitch
-                title="Enable biome detection"
+            <p style={S.sectionTitle}>Detection</p>
+
+            <SwitchField
+                label="Enable biome detection"
+                hint="Verify the biome after joining by reading Roblox log files."
                 value={biome.detectionEnabled}
                 onChange={v => onChange({ ...biome, detectionEnabled: v })}
             />
 
-            {biome.detectionEnabled && (
+            {biome.detectionEnabled ? (
                 <>
-                    <section style={{ marginTop: 8 }}>
-                        <Heading tag="h5">RPC Keyword</Heading>
-                        <TextInput
-                            value={biome.detectionKeyword}
-                            placeholder="e.g. GLITCHED"
-                            onChange={v => onChange({ ...biome, detectionKeyword: v })}
-                        />
-                        <Paragraph style={{ marginTop: 4 }}>
-                            Keyword used to detect a biome from Roblox's client debug log. Should match the BloxstrapRPC "hoverText" field. If empty, biome detection will be disabled.
-                        </Paragraph>
-                    </section>
-                    <Divider style={{ margin: "8px 0" }} />
-                    <FormSwitch
-                        title="Skip Redundant Join"
+                    <TextField
+                        label="RPC Keyword"
+                        hint='Matches the BloxstrapRPC "hoverText" field in the Roblox log. Case-insensitive.'
+                        value={biome.detectionKeyword}
+                        placeholder="e.g. GLITCHED"
+                        onChange={v => onChange({ ...biome, detectionKeyword: v })}
+                    />
+
+                    <p style={S.sectionTitle}>Behavior</p>
+
+                    <SwitchField
+                        label="Skip redundant join"
+                        hint="If already in the detected biome, skip the join. Will still notify."
                         value={biome.skipRedundantJoin}
                         onChange={v => onChange({ ...biome, skipRedundantJoin: v })}
-                        description="If enabled, check if the player is already in the detected biome before joining. If they are, skip the join (will still try to notify)."
                     />
                 </>
+            ) : (
+                <p style={S.note}>Enable biome detection above to configure the keyword and behavior options.</p>
             )}
-        </>
+
+        </div>
     );
 }
 
-// ─── Tab: Advanced ──────────────────────────────────────────────────────────
+// ─── Tab: Advanced ────────────────────────────────────────────────────────────
 
 function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
     const { conditions } = draft;
     const { bypassChannelRestriction, bypassMatchAmbiguity, bypassLinkVerification } = conditions;
 
     return (
-        <>
-            <Heading style={{ marginBottom: 8 }} tag="h4">Bypasses - Conditions</Heading>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
-            <FormSwitch
-                title="Bypass channel restriction"
+            <p style={S.sectionTitle}>Bypasses</p>
+            <p style={S.noteWarning}>These options disable safety checks. Only change them if you know what you're doing.</p>
+
+            <SwitchField
+                label="Bypass channel restriction"
+                hint="Ignore the monitored channels setting. This trigger matches in any channel."
                 value={bypassChannelRestriction}
                 onChange={v => patch({ conditions: { ...conditions, bypassChannelRestriction: v } })}
-                description="Ignore the main monitored channel setting, that restricts triggers to certain channels. Useful for important triggers you want to work everywhere. If you don't know what this does, you probably don't need it."
             />
-
-            <FormSwitch
-                title="Bypass match ambiguity"
+            <SwitchField
+                label="Bypass match ambiguity"
+                hint="Always treat this trigger as unambiguous, even if multiple triggers match."
                 value={bypassMatchAmbiguity}
                 onChange={v => patch({ conditions: { ...conditions, bypassMatchAmbiguity: v } })}
-                description="Ignores the ambiguity system and treats this trigger as always unambiguous. Useful for very specific triggers that would otherwise be blocked by the ambiguity system. If you don't understand what the match ambiguity system is, you probably don't need this."
             />
-
-            <FormSwitch
-                title="Bypass link verification"
+            <SwitchField
+                label="Bypass link verification"
+                hint="Skip Place ID verification for this trigger."
                 value={bypassLinkVerification}
                 onChange={v => patch({ conditions: { ...conditions, bypassLinkVerification: v } })}
-                description="Ignores the PlaceID verification. If you don't know what this does, you probably don't need it."
             />
-        </>
+
+        </div>
     );
 }
 
@@ -516,10 +580,7 @@ const tabBarStyles = {
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-interface TriggerModalProps {
-    modalProps: ModalProps;
-    trigger?: Trigger;
-}
+interface TriggerModalProps { modalProps: ModalProps; trigger?: Trigger; }
 
 function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
     const isEditing = trigger !== undefined;
@@ -558,13 +619,8 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
     return (
         <ModalRoot {...modalProps} size={ModalSize.MEDIUM}>
 
-            {/* Nunca scrolla */}
             <ModalHeader>
-                <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    width: "100%",
-                }}>
+                <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
                     <Heading tag="h5">{isEditing ? `Edit — ${trigger.name}` : "Add Trigger"}</Heading>
                     <ModalCloseButton onClick={modalProps.onClose} />
                 </div>
@@ -578,7 +634,6 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
                 ))}
             </div>
 
-            {/* Só o conteúdo scrolla */}
             <ModalContent separator>
                 {innerTab === "general" && <GeneralTab draft={draft} patch={patch} />}
                 {innerTab === "conditions" && <ConditionsTab conditions={draft.conditions} onChange={c => patch({ conditions: c })} />}
@@ -586,10 +641,8 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
                 {innerTab === "advanced" && <AdvancedTab draft={draft} patch={patch} />}
             </ModalContent>
 
-            {/* Nunca scrolla */}
             <ModalFooter separator>
                 {isEditing && (
-                    /* FIX 1: dangerPrimary = botão vermelho real */
                     <Button variant="dangerPrimary" onClick={handleDelete} style={{ marginLeft: "8px" }}>
                         Delete
                     </Button>
