@@ -42,6 +42,14 @@ export type ResolvedShareLink =
     | { ok: true; placeId: string; serverId: string; ownerId: string; isValid: boolean; }
     | { ok: false; status: number; error: string; };
 
+/** Entrada de log do Roblox — definida aqui pra evitar import circular com BiomeDetector. */
+export interface LogEntry {
+    path: string;
+    account: string | null;
+    lastModified: number;
+}
+
+
 // ─── Roblox: abrir URI ────────────────────────────────────────────────────────
 
 /**
@@ -210,87 +218,106 @@ export async function killProcess(
 // pois requerem acesso ao Node/fs (native context).
 
 const ROBLOX_LOGS_DIR = path.join(os.homedir(), "AppData", "Local", "Roblox", "logs");
-const LOG_TAIL_READ_BYTES = 2 * 1024 * 1024; // 2 MB
-const LOG_READ_SIZE = 1_048_576; // 1 MB
-const TIME_THRESHOLD = 7200; // 2h em segundos
+const LOG_TAIL_READ_BYTES = 2 * 1024 * 1024; // 2 MB — tail lido por tick
+const LOG_HEAD_READ_BYTES = 1 * 1024 * 1024; // 1 MB — head lido pra extrair userid/username
+const LOG_MAX_AGE_S = 7_200; // 2h — logs mais velhos são ignorados
 
-// export function getRobloxLogs(_: IpcMainInvokeEvent, from?: "username" | "userid"): LogEntry[] {
-//     const now = Date.now() / 1000;
-//     let files: string[] = [];
+/**
+ * Lista logs do Roblox recentes e extrai o account (userid ou username) de cada um.
+ * Usa uma única chamada a `fs.statSync` por arquivo (cache local) em vez de três.
+ */
+export function getRobloxLogs(_: IpcMainInvokeEvent, from: "username" | "userid"): LogEntry[] {
+    const nowMs = Date.now();
 
-//     try {
-//         files = fs.readdirSync(ROBLOX_LOGS_DIR)
-//             .filter(f => {
-//                 const full = path.join(ROBLOX_LOGS_DIR, f);
-//                 if (!fs.statSync(full).isFile()) return false;
-//                 return (now - fs.statSync(full).mtime.getTime() / 1000) <= TIME_THRESHOLD;
-//             })
-//             .sort((a, b) =>
-//                 fs.statSync(path.join(ROBLOX_LOGS_DIR, b)).mtime.getTime() -
-//                 fs.statSync(path.join(ROBLOX_LOGS_DIR, a)).mtime.getTime()
-//             )
-//             .map(f => path.join(ROBLOX_LOGS_DIR, f));
-//     } catch (err) {
-//         console.error("Error listing Roblox logs:", err);
-//     }
+    let entries: { file: string; mtime: number; }[] = [];
 
-//     return files.flatMap(logPath => {
-//         try {
-//             const account = from === "userid"
-//                 ? getUseridFromLog(_, logPath)
-//                 : getUsernameFromLog(_, logPath);
-//             return [{ path: logPath, account, lastModified: fs.statSync(logPath).mtime.getTime() }];
-//         } catch {
-//             return [];
-//         }
-//     });
-// }
-
-export function getUsernameFromLog(_: IpcMainInvokeEvent, logPath: string): string | null {
     try {
-        const match = fs.readFileSync(logPath, "utf8")
-            .substring(0, LOG_READ_SIZE)
-            .match(/Players\.([^.]+)\.PlayerGui/);
-        return match?.[1] ?? null;
-    } catch {
-        return null;
+        entries = fs.readdirSync(ROBLOX_LOGS_DIR).flatMap(f => {
+            const full = path.join(ROBLOX_LOGS_DIR, f);
+            try {
+                const stat = fs.statSync(full);
+                if (!stat.isFile()) return [];
+                const ageS = (nowMs - stat.mtime.getTime()) / 1000;
+                if (ageS > LOG_MAX_AGE_S) return [];
+                return [{ file: full, mtime: stat.mtime.getTime() }];
+            } catch {
+                return [];
+            }
+        });
+    } catch (err) {
+        console.error("[SolRadar.Native] Error listing Roblox logs:", err);
+        return [];
     }
+
+    // Sort newest first
+    entries.sort((a, b) => b.mtime - a.mtime);
+
+    return entries.flatMap(({ file, mtime }) => {
+        try {
+            const account = from === "userid"
+                ? _getUseridFromLog(file)
+                : _getUsernameFromLog(file);
+            return [{ path: file, account, lastModified: mtime }];
+        } catch {
+            return [];
+        }
+    });
 }
 
-export function getUseridFromLog(_: IpcMainInvokeEvent, logPath: string): string | null {
+/** @internal — só chamado pelo getRobloxLogs, não exposto como IPC handler. */
+function _getUsernameFromLog(logPath: string): string | null {
     try {
-        const match = fs.readFileSync(logPath, "utf8")
-            .substring(0, LOG_READ_SIZE)
-            .match(/GameJoinLoadTime[\s\S]*?userid:(\d+),/i);
-        return match?.[1] ?? null;
-    } catch {
-        return null;
-    }
+        const head = _readHead(logPath);
+        return head.match(/Players\.([^.]+)\.PlayerGui/)?.[1] ?? null;
+    } catch { return null; }
 }
 
+/** @internal */
+function _getUseridFromLog(logPath: string): string | null {
+    try {
+        const head = _readHead(logPath);
+        return head.match(/GameJoinLoadTime[\s\S]*?userid:(\d+),/i)?.[1] ?? null;
+    } catch { return null; }
+}
+
+/** Lê os primeiros LOG_HEAD_READ_BYTES do arquivo como UTF-8. */
+function _readHead(logPath: string): string {
+    const fd = fs.openSync(logPath, "r");
+    const buffer = Buffer.alloc(LOG_HEAD_READ_BYTES);
+    const read = fs.readSync(fd, buffer, 0, LOG_HEAD_READ_BYTES, 0);
+    fs.closeSync(fd);
+    return buffer.slice(0, read).toString("utf8");
+}
+
+/**
+ * Lê o tail do log e extrai RPCs de bioma e eventos de desconexão.
+ *
+ * Retorna:
+ * - `rpcs`                — linhas completas de BloxstrapRPC, da mais antiga à mais nova
+ * - `disconnects`         — timestamps de Client:Disconnect encontrados no tail
+ * - `effectiveDisconnected` — true se o disconnect mais recente é posterior à RPC mais recente
+ */
 export function getRelevantRpcsFromLogTail(
     _: IpcMainInvokeEvent,
     logPath: string,
-    entireLine = false
 ): {
     rpcs: string[];
     disconnects: string[];
     effectiveDisconnected: boolean;
-    mostRecentRpcTime?: string;
 } {
     const empty = { rpcs: [], disconnects: [], effectiveDisconnected: false };
     if (!fs.existsSync(logPath)) return empty;
 
     try {
-        const stats = fs.statSync(logPath);
-        const readStart = Math.max(0, stats.size - LOG_TAIL_READ_BYTES);
+        const { size } = fs.statSync(logPath);
+        const readFrom = Math.max(0, size - LOG_TAIL_READ_BYTES);
         const fd = fs.openSync(logPath, "r");
         const buffer = Buffer.alloc(LOG_TAIL_READ_BYTES);
-        fs.readSync(fd, buffer, 0, LOG_TAIL_READ_BYTES, readStart);
+        const bytesRead = fs.readSync(fd, buffer, 0, LOG_TAIL_READ_BYTES, readFrom);
         fs.closeSync(fd);
-        const content = buffer.toString("utf8");
+        const content = buffer.slice(0, bytesRead).toString("utf8");
 
-        // Disconnects
+        // ── Disconnects ───────────────────────────────────────────────────────
         const disconnects: string[] = [];
         const disconnectRe = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z).*Client:Disconnect/g;
         let m: RegExpExecArray | null;
@@ -299,54 +326,41 @@ export function getRelevantRpcsFromLogTail(
             ? new Date(disconnects[disconnects.length - 1]).getTime()
             : undefined;
 
-        // RPCs (mais recentes primeiro depois do unshift)
+        // ── RPCs — busca reversa pra manter O(tail) em vez de O(file) ────────
         const rpcs: string[] = [];
-        let last = content.length;
+        let searchFrom = content.length;
         while (true) {
-            const idx = content.lastIndexOf("[BloxstrapRPC]", last);
+            const idx = content.lastIndexOf("[BloxstrapRPC]", searchFrom);
             if (idx === -1) break;
-            if (entireLine) {
-                const start = content.lastIndexOf("\n", idx) + 1;
-                const end = content.indexOf("\n", idx);
-                rpcs.unshift(content.substring(start, end === -1 ? content.length : end));
-            } else {
-                const partial = content.substring(idx);
-                const endIdx = partial.indexOf("}}}") + 3;
-                if (endIdx > 3) rpcs.unshift(partial.substring(0, endIdx));
-            }
-            last = idx - 1;
+            const lineStart = content.lastIndexOf("\n", idx) + 1;
+            const lineEnd = content.indexOf("\n", idx);
+            rpcs.unshift(content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd));
+            searchFrom = idx - 1;
         }
 
-        // Timestamp da RPC mais recente
-        let mostRecentRpcTime: string | undefined;
+        // ── effectiveDisconnected ─────────────────────────────────────────────
         let mostRecentRpcMs: number | undefined;
         if (rpcs.length) {
             const ts = rpcs[rpcs.length - 1].match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)/);
-            if (ts) { mostRecentRpcTime = ts[1]; mostRecentRpcMs = new Date(ts[1]).getTime(); }
+            if (ts) mostRecentRpcMs = new Date(ts[1]).getTime();
         }
 
         const effectiveDisconnected = lastDisconnectMs !== undefined
             && (mostRecentRpcMs === undefined || mostRecentRpcMs <= lastDisconnectMs);
 
-        return { rpcs, disconnects, effectiveDisconnected, mostRecentRpcTime };
+        return { rpcs, disconnects, effectiveDisconnected };
     } catch (err) {
-        console.error(`Error reading RPCs from ${logPath}:`, err);
+        console.error(`[SolRadar.Native] Error reading log tail ${logPath}:`, err);
         return empty;
     }
 }
 
-export function getBiomeFromRpc(_: IpcMainInvokeEvent, rpcMessage: string): string | null {
-    try {
-        const jsonStart = rpcMessage.indexOf("{");
-        if (jsonStart === -1) return null;
-        const data = JSON.parse(rpcMessage.substring(jsonStart));
-        const hover = data?.data?.largeImage?.hoverText;
-        return typeof hover === "string" ? hover : null;
-    } catch {
-        return null;
-    }
-}
+// ─── Roblox API ───────────────────────────────────────────────────────────────
 
+/**
+ * Converte uma lista de usernames do Roblox em userids via API pública.
+ * Usernames não encontrados ficam como null no resultado.
+ */
 export async function robloxUsernamesToUserIds(
     _: IpcMainInvokeEvent,
     usernames: string[]
@@ -368,4 +382,3 @@ export async function robloxUsernamesToUserIds(
 
     return result;
 }
-

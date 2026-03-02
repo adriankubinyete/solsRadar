@@ -7,7 +7,7 @@
 import { showNotification } from "@api/Notifications";
 import ErrorBoundary from "@components/ErrorBoundary";
 import { Logger } from "@utils/Logger";
-import definePlugin from "@utils/types";
+import definePlugin, { PluginNative } from "@utils/types";
 import { Channel, Guild, Message } from "@vencord/discord-types";
 import { ChannelType } from "@vencord/discord-types/enums";
 import { ChannelStore, GuildStore, UserStore } from "@webpack/common";
@@ -16,14 +16,16 @@ import { PropsWithChildren } from "react";
 import { SolsRadarChatBarButton } from "./components/buttons/SolsRadarChatBarButton";
 import { SolsRadarTitleBarButton } from "./components/buttons/SolsRadarTitleBarButton";
 import { SolsRadarIcon } from "./components/ui/SolsRadarIcon";
-import { closeGameIfNeeded, extractServerLink, getPlaceId, joinLink, joinSolsPublicServer, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
+import { BiomeDetector } from "./services/BiomeDetector";
+import { buildJoinUri, closeGameIfNeeded, extractServerLink, getPlaceId, joinSolsPublicServer, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
 import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
 import { JoinMetrics, JoinStore } from "./stores/JoinStore";
-import { getActiveTriggers, Trigger } from "./stores/TriggerStore";
+import { getActiveTriggers, Trigger, TriggerType } from "./stores/TriggerStore";
 
 const logger = new Logger("SolRadar");
+const Native = VencordNative.pluginHelpers.SRadar as PluginNative<typeof import("./native")>;
 
 // ─── settings helpers ──────────────────────────────────────────────────────
 
@@ -64,10 +66,10 @@ function resolveTrigger({ message, channel, guild }: { message: Message; channel
     const { trigger, status, allMatched } = getMatchingTrigger(message, activeTriggers);
 
     if (status === "ambiguous") {
-        // log.debug(
-        //     `Ambiguous — ${allMatched.length} triggers matched: ${allMatched.map(t => t.name).join(", ")} ` +
-        //     `(#${channel.name} @ ${guild.name})`
-        // ); // spammy-ish because it reads every message and not just monitored chans
+        log.debug(
+            `Ambiguous — ${allMatched.length} triggers matched: ${allMatched.map(t => t.name).join(", ")} ` +
+            `(#${channel.name} @ ${guild.name})`
+        );
         return null;
     }
 
@@ -143,7 +145,6 @@ async function verifyLink(link: RobloxLink, trigger: Trigger, log: Logger): Prom
 
     if (placeId === null) log.warn(`[${trigger.name}] Failed to resolve link: ${link.code}`);
 
-    log.debug(`[${trigger.name}] Place ID ${placeId} is not allowed.`);
     await executeBadLinkAction();
     return false;
 }
@@ -173,17 +174,13 @@ async function tryJoin(
         }
     }
 
-    // log.info(`[${trigger.name}] Joining: ${uri}`);
+    const uri = buildJoinUri(link);
+    log.info(`[${trigger.name}] Joining: ${uri}`);
+
     const tJoinStart = performance.now();
     try {
-
-        // @NOTE:
-        // we could not wait for this, but that would mess with our join timing stuff
-        // and we would not get the join metrics we want
-        // are they right? im not sure, but im accostumed to them and I can base myself on them
-        // to un-await this would mean to send the joinCardId into the joinLink function
-        // so they update the real roblox launch time themselves. is it really worth it?
-        await joinLink(link);
+        await closeGameIfNeeded();
+        await Native.openUri(uri);
     } catch (err) {
         log.error(`[${trigger.name}] openUri failed: ${(err as Error).message}`);
         return noJoin;
@@ -204,21 +201,16 @@ async function tryJoin(
 
     let linkSafe: boolean | undefined = undefined;
     if ((settings.store.linkVerification as string) === "after") {
-        const safe = await verifyLink(link, trigger, log);
-        if (safe === false) {
-            log.warn(`[${trigger.name}] Link flagged as unsafe — aborting join.`);
-            // the join happened so we need to pass it on
-            // NOTE: veirfyLink COULD call the closeGame etc.. action
-            // but <this trigger was still joined>, hence why joined:true here
-            return { joined: true, metrics: null, linkSafe: false };
-        }
-        linkSafe = safe;
+        linkSafe = await verifyLink(link, trigger, log);
     }
 
     return { joined: true, metrics, linkSafe };
 }
 
 // ─── post-join ─────────────────────────────────────────────────────────────────
+
+/** Tipos de trigger que suportam detecção de bioma via log. */
+const BIOME_DETECTABLE_TYPES = new Set<TriggerType>(["RARE_BIOME", "EVENT_BIOME", "BIOME", "WEATHER"]);
 
 function activateJoinLock(trigger: Trigger, log: Logger): void {
     if (!trigger.state.joinlock || trigger.state.joinlockDuration <= 0) return;
@@ -240,13 +232,97 @@ function activateJoinLock(trigger: Trigger, log: Logger): void {
     }
 }
 
-async function runBiomeDetection(trigger: Trigger, log: Logger): Promise<void> {
-    if (!trigger.biome?.detectionEnabled) return;
-    // TODO: ler log do Roblox e verificar detectionKeyword
-    log.debug(`[${trigger.name}] Biome detection pending.`);
+/**
+ * Aguarda detecção de bioma via log do Roblox e atualiza o JoinStore com o resultado.
+ * Fire-and-forget — não bloqueia handleMessage.
+ * O cancel() é retornado para que o chamador possa cancelar se um novo join acontecer.
+ */
+function startBiomeDetection(
+    trigger: Trigger,
+    joinId: number,
+    log: Logger,
+): (() => void) | null {
+    if (!trigger.biome?.detectionEnabled) {
+        JoinStore.addTags(joinId, "biome-not-verified");
+        return null;
+    }
+
+    if (!BIOME_DETECTABLE_TYPES.has(trigger.type)) {
+        JoinStore.addTags(joinId, "biome-not-verified");
+        return null;
+    }
+
+    if (!settings.store.detectorEnabled) {
+        log.debug(`[${trigger.name}] Biome detector globally disabled.`);
+        JoinStore.addTags(joinId, "biome-not-verified");
+        return null;
+    }
+
+    const expectedBiome = trigger.biome.detectionKeyword || trigger.name;
+    const startDelayMs = settings.store.closeGameBeforeJoin ? 6_000 : 0;
+    log.info(`[${trigger.name}] Awaiting biome detection — expecting "${expectedBiome}" (delay: ${startDelayMs}ms).`);
+
+    const { promise, cancel } = BiomeDetector.waitForBiome(
+        expectedBiome,
+        settings.store.detectorTimeoutMs ?? 30_000,
+        startDelayMs,
+    );
+
+    const t0 = performance.now();
+
+    promise.then(verdict => {
+        const elapsed = Math.round(performance.now() - t0);
+        log.info(`[${trigger.name}] Biome verdict: ${verdict.result} (${elapsed}ms)`);
+
+        switch (verdict.result) {
+            case "real":
+                JoinStore.addTags(joinId, "biome-verified-real");
+                _waitForBiomeEnd(trigger, log);
+                showNotification({
+                    title: `✅ SoRa :: Real — ${trigger.name}`,
+                    body: `Detected in ${elapsed}ms`,
+                    icon: trigger.iconUrl,
+                });
+                break;
+
+            case "bait":
+                JoinStore.addTags(joinId, "biome-verified-bait");
+                if (JoinLockStore.isLocked) {
+                    log.warn(`[${trigger.name}] Bait detected — releasing join lock.`);
+                    JoinLockStore.release();
+                }
+                showNotification({
+                    title: `❌ SoRa :: Fake — ${trigger.name}`,
+                    body: `Got "${verdict.biome}" instead (${elapsed}ms)`,
+                    icon: trigger.iconUrl,
+                });
+                break;
+
+            case "timeout":
+                JoinStore.addTags(joinId, "biome-verified-timeout");
+                log.warn(`[${trigger.name}] Biome detection timed out — releasing join lock.`);
+                if (JoinLockStore.isLocked) JoinLockStore.release();
+                showNotification({
+                    title: `⏱ SoRa :: Timeout — ${trigger.name}`,
+                    body: "Biome detection timed out.",
+                    icon: trigger.iconUrl,
+                });
+                break;
+        }
+    });
+
+    return cancel;
 }
 
-function tryNotify({ link, trigger, channel, guild, joined, safe }: { link: RobloxLink; trigger: Trigger; channel: Channel; guild: Guild; joined: boolean, safe: boolean | undefined; }, log: Logger): void {
+function _waitForBiomeEnd(trigger: Trigger, log: Logger): void {
+    const { promise } = BiomeDetector.waitForBiome("__never_match__", 1_800_000);
+    promise.then(() => {
+        log.info(`[${trigger.name}] Biome ended — releasing join lock.`);
+        JoinLockStore.release();
+    });
+}
+
+function tryNotify({ trigger, channel, guild, joined, safe }: { trigger: Trigger; channel: Channel; guild: Guild; joined: boolean; safe: boolean | undefined; }, log: Logger): void {
     if (!settings.store.notificationEnabled) {
         log.debug(`[${trigger.name}] Notifications globally disabled.`);
         return;
@@ -256,27 +332,22 @@ function tryNotify({ link, trigger, channel, guild, joined, safe }: { link: Robl
         return;
     }
 
-    if (!safe && joined) {
-        let extra: string = "";
-        if (settings.store.onBadLink === "public") extra = "\nYou have been redirected to a public server.";
-        if (settings.store.onBadLink === "close") extra = "\nYour game has closed for safety.";
+    if (safe === false && joined) {
         showNotification({
-            title: `⚠️ SoRa :: ${trigger.name} :: Unsafe link matched!`,
-            body: `${extra}\nIn: ${channel.name} (${guild.name})`,
+            title: `⚠️ SoRa :: ${trigger.name} :: Unsafe link!`,
+            body: `In: "${channel.name}" ("${guild.name}")`,
             icon: trigger.iconUrl,
         });
         return;
     }
+
     showNotification({
-        title: joined ? `🎯 SoRa :: ${trigger.name} (joined)` : `✅ SoRa ::  ${trigger.name} (click to join)`,
-        body: `\nIn: ${channel.name} (${guild.name})`,
-        onClick: async () => {
-            await joinLink(link);
-        },
+        title: joined ? `🎯 SoRa >> Joined "${trigger.name}"!` : `✅ SoRa >> Matched "${trigger.name}"!`,
+        body: `In: "${channel.name}" ("${guild.name}")`,
         icon: trigger.iconUrl,
     });
 
-    // log.info(`[${trigger.name}] Notify: matched in #${channel.name} @ ${guild.name}.`);
+    log.info(`[${trigger.name}] Notify: matched in #${channel.name} @ ${guild.name}.`);
 }
 
 // ─── JoinStore integration ────────────────────────────────────────────────────
@@ -315,31 +386,28 @@ function createJoinRecord(
  * Resolve as tags finais baseado no resultado do join e na verificação de link.
  * Chamado após tryJoin retornar.
  */
-function finalizeJoinRecord(joinId: number, result: JoinResult, trigger: Trigger, log: Logger): void {
+function finalizeJoinRecord(
+    joinId: number,
+    result: JoinResult,
+    log: Logger
+): void {
     if (!result.joined) {
         JoinStore.addTags(joinId, result.linkSafe === false ? "link-verified-unsafe" : "failed");
-        // Join didn't happen — lock should never have been set, nothing to release.
         return;
     }
 
+    // join aconteceu — salva métricas e resolve tags de link
     JoinStore.update(joinId, { metrics: result.metrics ?? undefined });
 
-    if (result.linkSafe === true) {
-        JoinStore.addTags(joinId, "link-verified-safe");
-    } else if (result.linkSafe === false) {
-        // Join happened but link is confirmed bad — invalidate the lock.
-        JoinStore.addTags(joinId, "link-verified-unsafe");
-        if (JoinLockStore.isLocked) {
-            log.warn(`[${trigger.name}] Join was unsafe — releasing join lock.`);
-            JoinLockStore.release();
-        }
-    } else {
-        JoinStore.addTags(joinId, "link-not-verified");
-    }
+    if (result.linkSafe === true) JoinStore.addTags(joinId, "link-verified-safe");
+    else if (result.linkSafe === false) JoinStore.addTags(joinId, "link-verified-unsafe");
+    else JoinStore.addTags(joinId, "link-not-verified");
 
-    JoinStore.addTags(joinId, "biome-not-verified");
     log.debug(`Join record ${joinId} finalized.`);
 }
+
+// Active biome detection cancel function — cancels previous detection when a new join happens
+let _cancelBiomeDetection: (() => void) | null = null;
 
 // ─── orchestration ─────────────────────────────────────────────────────────────
 
@@ -360,31 +428,34 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
 
     if (!isMessageAllowed({ channel, trigger }, log)) return;
 
-    // ── Join lock check ───────────────────────────────────────────────────
+    // ── Join lock check ───────────────────────────────────────────────────────
     if (JoinLockStore.isBlocked(trigger.state.priority)) {
         const lock = JoinLockStore.current!;
         log.info(
             `[${trigger.name}] Blocked by join lock ` +
-            `(lock priority: ${lock.priority}, trigger priority: ${trigger.state.priority}, ` +
+            `(lock: "${lock.triggerName}", priority: ${lock.priority}, ` +
             `expires in ${(JoinLockStore.msRemaining() / 1000).toFixed(1)}s)`
         );
-        return; // skip entirely — no history entry for blocked matches
+        return;
     }
 
     const joinId = createJoinRecord(message, link, trigger, channel, guild);
 
     const result = await tryJoin(link, trigger, log, tMessageReceived);
 
-    tryNotify({ link, trigger, channel, guild, joined: result.joined, safe: result.linkSafe }, log);
+    tryNotify({ trigger, channel, guild, joined: result.joined, safe: result.linkSafe }, log);
 
-    // ── Activate lock after a real, valid join ────────────────────────────
-    // linkSafe === undefined means verification was skipped — still a real join.
-    // linkSafe === false means the join is invalid — do NOT lock (handled in finalize).
-    if (result.joined && result.linkSafe !== false) {
-        activateJoinLock(trigger, log);
-    }
+    finalizeJoinRecord(joinId, result, log);
 
-    finalizeJoinRecord(joinId, result, trigger, log);
+    if (!result.joined || result.linkSafe === false) return;
+
+    // ── Activate join lock ────────────────────────────────────────────────────
+    activateJoinLock(trigger, log);
+
+    // ── Biome detection ───────────────────────────────────────────────────────
+    // Cancel any pending detection from a previous join
+    _cancelBiomeDetection?.();
+    _cancelBiomeDetection = startBiomeDetection(trigger, joinId, log);
 }
 
 // ─── plugin ───────────────────────────────────────────────────────────────────
@@ -422,8 +493,28 @@ export default definePlugin({
         render: SolsRadarChatBarButton,
     },
 
-    async start() { logger.info("Starting"); },
-    async stop() { logger.info("Stopping"); },
+    async start() {
+        logger.info("Starting");
+
+        if (settings.store.detectorEnabled) {
+            const accounts = (settings.store.detectorAccounts as string ?? "")
+                .split(",").map(s => s.trim()).filter(Boolean);
+
+            if (accounts.length) {
+                await BiomeDetector.configure(accounts);
+                BiomeDetector.start(settings.store.detectorIntervalMs ?? 1_000);
+            } else {
+                logger.info("Biome detector enabled but no accounts configured.");
+            }
+        }
+    },
+
+    stop() {
+        logger.info("Stopping");
+        BiomeDetector.stop();
+        _cancelBiomeDetection?.();
+        _cancelBiomeDetection = null;
+    },
 
     flux: {
         async MESSAGE_CREATE({ message, optimistic }: { message: Message; optimistic: boolean; }) {

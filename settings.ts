@@ -91,5 +91,29 @@ export const settings = definePluginSettings({
         type: OptionType.STRING,
         description: "Comma-separated list of place IDs that are allowed to be joined. If empty, all place IDs are allowed. Example: `123456789012345678, 987654321098765432`",
         default: "",
-    }
+    },
+    detectorEnabled: {
+        type: OptionType.BOOLEAN,
+        description: "Enable biome detection. When active, the plugin reads your Roblox log files to verify whether the biome you joined actually matches what was announced. Requires at least one account configured below.",
+        default: false,
+        restartNeeded: true, // i am NOT gonna hot-reload this
+    },
+    detectorAccounts: {
+        type: OptionType.STRING,
+        description: "Comma-separated list of Roblox usernames to monitor for biome detection. If empty, biome detection is disabled.",
+        default: "",
+        restartNeeded: true, // i am NOT gonna hot-reload this
+    },
+    detectorTimeoutMs: {
+        type: OptionType.NUMBER,
+        description: "How long (in milliseconds) to wait for a biome to be detected after joining. If no biome is detected within this window, the join is marked as timed out and the join lock is released. Recommended: 30000",
+        default: 30000,
+        restartNeeded: true, // i am NOT gonna hot-reload this
+    },
+    detectorIntervalMs: {
+        type: OptionType.NUMBER,
+        description: "How often (in milliseconds) the detector reads your Roblox log files. Lower values give faster detection but read the disk more frequently. Recommended: 5000. Advised to keep this above 1000 due to minimal returns.",
+        default: 5000,
+        restartNeeded: true, // i am NOT gonna hot-reload this
+    },
 });
