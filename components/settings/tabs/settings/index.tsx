@@ -69,10 +69,10 @@ export function SettingsTab() {
 
             {/* ── General ──────────────────────────────────────────────── */}
             <p style={sectionTitle}>General</p>
-            <Setting id="autoJoinEnabled" label="Auto-join" />
-            <Setting id="notificationEnabled" label="Notifications" />
+            <Setting id="autoJoinEnabled" description="Allow triggers to execute auto-joins. Disable to quickly stop all auto-joins." label="Auto-joins" />
+            <Setting id="notificationEnabled" description="Allow triggers to send notifications." label="Notifications" />
             <Setting id="flattenEmbeds" label="Interpret Embeds"
-                description="Merge embed titles/descriptions into message content when matching triggers. Useful for macro bots." />
+                description="Merge embed titles/descriptions into message content when matching triggers. Enable this if you intend to monitor macro servers." />
 
             {/* ── Plugin Icon ───────────────────────────────────────────── */}
             {/* <p style={sectionTitle}>Plugin Icon</p>
@@ -89,7 +89,7 @@ export function SettingsTab() {
             {/* ── Channel Monitoring ────────────────────────────────────── */}
             <p style={sectionTitle}>Channel Monitoring</p>
             <Setting id="monitoredChannels" label="Monitored Channels"
-                description="Comma-separated channel IDs. Leave empty to monitor no channels." />
+                description="Comma-separated channel IDs. Leave empty to monitor all possible channels." />
             <Setting id="ignoredGuilds" label="Ignored Guilds"
                 description="Comma-separated guild IDs. Messages from these guilds are always ignored." />
             <Setting id="ignoredChannels" label="Ignored Channels"

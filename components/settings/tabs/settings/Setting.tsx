@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { FormSwitch } from "@components/FormSwitch";
 import { OptionType } from "@utils/types";
 import { React } from "@webpack/common";
 import { settings } from "userplugins/sradar/settings";
@@ -128,12 +129,12 @@ const s = () => settings.store as Record<string, any>;
 function BooleanControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; }) {
     const value = settings.use([id])[id] as boolean;
     return (
-        <input
-            type="checkbox"
-            style={S.toggle}
-            checked={!!value}
+        <FormSwitch
+            title=""
+            value={!!value}
+            onChange={v => (s()[id] = v)}
+            hideBorder
             disabled={disabled}
-            onChange={e => (s()[id] = e.target.checked)}
         />
     );
 }
