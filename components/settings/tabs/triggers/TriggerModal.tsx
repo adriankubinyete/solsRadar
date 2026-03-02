@@ -9,7 +9,7 @@ import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { findByPropsLazy } from "@webpack";
-import { React, showToast, TextInput, Toasts, useState } from "@webpack/common";
+import { React, showToast, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 import { settings } from "userplugins/sradar/settings";
 import {
     addTrigger,
@@ -123,7 +123,7 @@ const S = {
     note: {
         color: "var(--text-muted)",
         background: "var(--background-modifier-accent)",
-        fontSize: 14,
+        fontSize: 12,
         lineHeight: 1.5,
         padding: "8px 12px",
         borderRadius: 6,
@@ -134,7 +134,7 @@ const S = {
         color: "var(--text-warning)",
         background: "hsl(38deg 95% 54% / 10%)",
         border: "1px solid hsl(38deg 95% 54% / 25%)",
-        fontSize: 14,
+        fontSize: 12,
         lineHeight: 1.5,
         padding: "8px 12px",
         borderRadius: 6,
@@ -145,7 +145,18 @@ const S = {
         color: "var(--text-danger)",
         background: "hsl(359deg 87% 54% / 10%)",
         border: "1px solid hsl(359deg 87% 54% / 25%)",
-        fontSize: 14,
+        fontSize: 12,
+        lineHeight: 1.5,
+        padding: "8px 12px",
+        borderRadius: 6,
+        margin: 0,
+    } as React.CSSProperties,
+
+    noteSuccess: {
+        color: "hsl(140deg 50% 50%)",
+        background: "hsl(140deg 50% 50% / 10%)",
+        border: "1px solid hsl(140deg 50% 50% / 25%)",
+        fontSize: 12,
         lineHeight: 1.5,
         padding: "8px 12px",
         borderRadius: 6,
@@ -386,6 +397,26 @@ function IdChipInput({ kind, label, hint, ids, onChange }: {
 
 function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
     const { name, description, iconUrl, type, state } = draft;
+    const [iconAllowed, setIconAllowed] = useState<boolean | null>(null);
+
+    // those domains will generally work
+    const ALWAYS_ALLOWED_DOMAINS = [
+        "github.io", // *.github.io (raw pages)
+        "githubusercontent.com", // raw.githubusercontent.com
+        "cdn.discordapp.com",
+    ];
+
+    useEffect(() => {
+        if (!iconUrl) return void setIconAllowed(null);
+        try {
+            const { origin, hostname } = new URL(iconUrl);
+            const hardcoded = ALWAYS_ALLOWED_DOMAINS.some(d => hostname === d || hostname.endsWith(`.${d}`));
+            if (hardcoded) return void setIconAllowed(true);
+            VencordNative.csp.isDomainAllowed(origin, ["img-src"]).then(setIconAllowed);
+        } catch {
+            setIconAllowed(null);
+        }
+    }, [iconUrl]);
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -406,8 +437,26 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
             />
             <TextField label="Trigger Name *" value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
             <TextField label="Trigger Description" value={description} placeholder="Optional" onChange={v => patch({ description: v })} />
-            <TextField label="Trigger Icon URL" value={iconUrl} hint="Optional. Must link directly to an image." placeholder="Optional. https://linkToImage.png ..." onChange={v => patch({ iconUrl: v })} />
-            <p style={S.note}>Vencord has a lot of restrictions on what links are allowed. If you</p>
+            <TextField
+                label="Trigger Icon URL"
+                value={iconUrl}
+                hint={iconAllowed === false
+                    ? "⚠️ Optional. Must link directly to an image.\n"
+                    : "Optional. Must link directly to an image."
+                }
+                placeholder="https://i.imgur.com/example.png"
+                onChange={v => patch({ iconUrl: v })}
+            />
+            {iconAllowed === false &&
+                <p style={{ ...S.noteDanger, fontSize: 14 }}>
+                    Your current image link will probably not load due to Discord's Content Security Policy (CSP).
+                    To avoid this, use an image from <strong>cdn.discordapp.com</strong>, <strong>i.imgur.com</strong> or <strong>githubusercontent.com</strong> instead.<br />
+                    <strong>Note: this has no impact on the functionality of the trigger!</strong>
+                </p>
+            }
+            {iconAllowed === true &&
+                <p style={{ ...S.noteSuccess, fontSize: 14 }}>✅ Your image will most likely load.</p>
+            }
 
             <p style={S.sectionTitle}>Behavior</p>
 
