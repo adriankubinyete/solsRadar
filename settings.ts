@@ -12,7 +12,7 @@ export const settings = definePluginSettings({
         type: OptionType.SELECT,
         description: "Where to place the menu button",
         options: [
-            { label: "Chat Bar (default)", value: "chatbar", default: true },
+            { label: "Chat Bar (default)", value: "chatbar", default: true }, // this is the most stable place
             { label: "Title Bar", value: "titlebar" },
             { label: "Hidden (not recommended)", value: "hide" }
         ],
@@ -45,9 +45,8 @@ export const settings = definePluginSettings({
     },
     hideInactiveIndicator: {
         type: OptionType.BOOLEAN,
-        description: "Whether to hide the red 'inactive' dot when shortcut action is disabled.",
+        description: "Whether to hide the red 'inactive' dot in menu button when joins are disabled.",
         default: true,
-        hidden: true
     },
     monitoredChannels: {
         type: OptionType.STRING,
