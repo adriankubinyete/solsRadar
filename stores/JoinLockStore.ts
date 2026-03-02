@@ -6,6 +6,8 @@
 
 import { React } from "@webpack/common";
 
+// @TODO: this is not a store. move to services
+
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export interface JoinLock {
