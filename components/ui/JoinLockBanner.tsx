@@ -6,7 +6,8 @@
 
 import { Button } from "@components/Button";
 import { React, useReducer } from "@webpack/common";
-import { JoinLockStore, useJoinLock } from "userplugins/sradar/stores/JoinLockStore";
+
+import { JoinLockStore, useJoinLock } from "../../stores/JoinLockStore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

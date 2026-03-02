@@ -478,7 +478,7 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
 // ─── plugin ───────────────────────────────────────────────────────────────────
 
 export default definePlugin({
-    name: "SRadar",
+    name: "SolRadar",
     description: "Does Sols RNG stuff",
     authors: [{ name: "masutty", id: 188851299255713792n }],
     settings,
