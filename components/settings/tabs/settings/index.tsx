@@ -56,14 +56,13 @@ const warningNote: React.CSSProperties = {
 // ─── SettingsTab ──────────────────────────────────────────────────────────────
 
 export function SettingsTab() {
-    const { detectorEnabled, linkVerification } = settings.use([
-        "detectorEnabled",
+    const { linkVerification, robloxToken } = settings.use([
         "linkVerification",
         "robloxToken",
     ]);
 
     const verificationEnabled = linkVerification !== "disabled";
-    const hasToken = !!settings.store.robloxToken;
+    const hasToken = !!robloxToken;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>

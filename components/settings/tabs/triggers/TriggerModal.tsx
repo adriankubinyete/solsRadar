@@ -10,6 +10,7 @@ import { Heading } from "@components/Heading";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { findByPropsLazy } from "@webpack";
 import { React, showToast, TextInput, Toasts, useState } from "@webpack/common";
+import { settings } from "userplugins/sradar/settings";
 
 import {
     addTrigger,
@@ -59,6 +60,13 @@ const S = {
         letterSpacing: "0.06em",
         marginBottom: 4,
         marginTop: 20,
+    } as React.CSSProperties,
+
+    sectionDescription: {
+        color: "var(--text-normal)",
+        fontSize: 13,
+        margin: "8px 0",
+        lineHeight: 1.4,
     } as React.CSSProperties,
 
     row: {
@@ -386,7 +394,8 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
             <p style={S.sectionTitle}>Details</p>
 
             <SelectField
-                label="Type"
+                label="Trigger Type *"
+                hint="What kind of trigger is this?"
                 options={TRIGGER_TYPE_OPTIONS}
                 value={type}
                 onChange={v => patch({
@@ -396,9 +405,9 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
                         : undefined,
                 })}
             />
-            <TextField label="Name *" value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
-            <TextField label="Description" value={description} placeholder="Optional" onChange={v => patch({ description: v })} />
-            <TextField label="Icon URL" value={iconUrl} placeholder="https://..." onChange={v => patch({ iconUrl: v })} />
+            <TextField label="Trigger Name *" value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
+            <TextField label="Trigger Description" value={description} placeholder="Optional" onChange={v => patch({ description: v })} />
+            <TextField label="Trigger Icon URL" value={iconUrl} placeholder="Optional. https://link_to_image..." onChange={v => patch({ iconUrl: v })} />
 
             <p style={S.sectionTitle}>Behavior</p>
 
@@ -406,27 +415,29 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
             <SwitchField label="Auto-join" hint="Automatically join the match when triggered." value={state.autojoin} onChange={v => patch({ state: { ...state, autojoin: v } })} />
             <SwitchField label="Notify" hint="Show a notification when matched." value={state.notify} onChange={v => patch({ state: { ...state, notify: v } })} />
 
+            <p style={S.sectionTitle}>Join Lock</p>
+
+            <p style={S.sectionDescription}>This section sets the join lock for this trigger, preventing higher or equal priority triggers from auto-joining for a set duration.<br />This is useful for avoiding re-joins due to repeated messages, which can send you to the server's queue.</p>
+
+            <SwitchField
+                label="Join lock"
+                hint="Prevent any triggers of priority equal to or higher than this trigger's priority from being auto-joined."
+                value={state.joinlock}
+                onChange={v => patch({ state: { ...state, joinlock: v } })}
+            />
             <TextField
-                label="Priority"
-                hint="Lower number = higher priority. Defaults to 10."
+                label="Join Priority"
+                hint="Join priority. Lower number means higher priority. Defaults to 10."
                 value={String(state.priority)}
                 placeholder="e.g. 10"
                 type="number"
                 onChange={v => patch({ state: { ...state, priority: Number(v) } })}
             />
-
-            <p style={S.sectionTitle}>Join Lock</p>
-
-            <SwitchField
-                label="Join lock"
-                hint="Prevents other triggers from firing while this one is active. Higher-priority triggers bypass this."
-                value={state.joinlock}
-                onChange={v => patch({ state: { ...state, joinlock: v } })}
-            />
             {state.joinlock && (
                 <TextField
                     label="Duration (seconds)"
                     value={String(state.joinlockDuration)}
+                    hint="How long to prevent joins. In case of biomes, this is recommended to be set as ~80% of the biome's duration."
                     type="number"
                     onChange={v => patch({ state: { ...state, joinlockDuration: Number(v) } })}
                 />
@@ -447,12 +458,12 @@ function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
             <p style={S.sectionTitle}>Match Keywords</p>
-            <p style={S.note}>Message must contain at least one of these. Separate with commas.</p>
+            <p style={S.sectionDescription}>Message must contain at least one of these. Separate with commas.</p>
             <KeywordsInput label="Keywords" value={keywords.match.value} onChange={v => patchMatch({ value: v })} placeholder="cyber, cyberspace, cyber space" />
             <SwitchField label="Strict match" hint="Must match exact word boundary, not just a substring." value={keywords.match.strict} onChange={v => patchMatch({ strict: v })} />
 
             <p style={S.sectionTitle}>Exclude Keywords</p>
-            <p style={S.note}>Message must NOT contain any of these. Separate with commas.</p>
+            <p style={S.sectionDescription}>Message must <strong>NOT</strong> contain any of these. Separate with commas.</p>
             <KeywordsInput label="Keywords" value={keywords.exclude.value} onChange={v => patchExclude({ value: v })} placeholder="hunt, help" />
             <SwitchField label="Strict match" hint="Must match exact word boundary, not just a substring." value={keywords.exclude.strict} onChange={v => patchExclude({ strict: v })} />
 
@@ -481,8 +492,21 @@ function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions
 // ─── Tab: Biome ───────────────────────────────────────────────────────────────
 
 function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: TriggerBiome) => void; }) {
+    const { detectorEnabled, detectorAccounts } = settings.use([
+        "detectorEnabled", "detectorAccounts",
+    ]);
+
+    const hasAccounts = !!detectorAccounts;
+
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+
+            {(!detectorEnabled || !hasAccounts) && (
+                <p style={S.noteDanger}>
+                    You either have biome detection disabled in the plugin's settings, or you have no accounts configured.<br />
+                    Biome detection will not work.
+                </p>
+            )}
 
             <p style={S.sectionTitle}>Detection</p>
 
