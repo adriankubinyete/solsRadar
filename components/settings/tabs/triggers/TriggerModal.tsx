@@ -63,7 +63,7 @@ const S = {
     } as React.CSSProperties,
 
     sectionDescription: {
-        color: "var(--text-normal)",
+        color: "var(--text-default)",
         fontSize: 13,
         margin: "8px 0",
         lineHeight: 1.4,
@@ -97,7 +97,7 @@ const S = {
     } as React.CSSProperties,
 
     label: {
-        color: "var(--text-normal)",
+        color: "var(--text-default)",
         fontSize: 14,
         fontWeight: 500,
     } as React.CSSProperties,
@@ -113,7 +113,7 @@ const S = {
         background: "var(--background-tertiary)",
         border: "1px solid var(--background-modifier-accent)",
         borderRadius: 4,
-        color: "var(--text-normal)",
+        color: "var(--text-default)",
         fontSize: 13,
         padding: "5px 8px",
         cursor: "pointer",
@@ -317,7 +317,7 @@ function EntryChip({ entry, onRemove }: { entry: ResolvedEntry; onRemove: () => 
                 : <div style={chip.initial}>{initial}</div>
             }
             <div style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ color: "var(--text-normal)", lineHeight: 1.2 }}>{label}</span>
+                <span style={{ color: "var(--text-default)", lineHeight: 1.2 }}>{label}</span>
                 <span style={{ color: "var(--text-muted)", fontSize: 11 }}>{sub}</span>
             </div>
             <button style={chip.remove} onClick={onRemove}>×</button>
@@ -657,7 +657,7 @@ const tabBarStyles = {
         borderBottom: active ? "2px solid var(--brand-500)" : "2px solid transparent",
         marginBottom: -2,
         padding: "8px 14px",
-        color: active ? "var(--text-normal)" : "var(--text-muted)",
+        color: active ? "var(--text-default)" : "var(--text-muted)",
         fontWeight: active ? 600 : 400,
         cursor: "pointer",
         fontSize: 14,

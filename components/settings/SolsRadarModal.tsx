@@ -54,7 +54,7 @@ const styles = {
             : "2px solid transparent",
         marginBottom: -2,
         padding: "8px 14px",
-        color: active ? "var(--text-normal)" : "var(--text-muted)",
+        color: active ? "var(--text-default)" : "var(--text-muted)",
         fontWeight: active ? 600 : 400,
         cursor: "pointer",
         fontSize: 14,

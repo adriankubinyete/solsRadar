@@ -82,7 +82,7 @@ function JoinCard({ entry, onClick, onContextMenu }: {
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                        fontWeight: 600, fontSize: 14, color: "var(--text-normal)",
+                        fontWeight: 600, fontSize: 14, color: "var(--control-secondary-text-default)",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                         marginBottom: 2,
                     }}>

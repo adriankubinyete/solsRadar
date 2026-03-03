@@ -54,7 +54,7 @@ const S = {
     } as React.CSSProperties,
 
     label: {
-        color: "var(--text-normal)",
+        color: "var(--control-secondary-text-default)",
         fontSize: 14,
         fontWeight: 500,
         display: "flex",
@@ -94,7 +94,7 @@ const S = {
         background: "var(--background-tertiary)",
         border: "1px solid var(--background-modifier-accent)",
         borderRadius: 4,
-        color: "var(--text-normal)",
+        color: "var(--control-secondary-text-default)",
         fontSize: 13,
         padding: "5px 8px",
         cursor: "pointer",
@@ -106,7 +106,7 @@ const S = {
         background: "var(--background-tertiary)",
         border: "1px solid var(--background-modifier-accent)",
         borderRadius: 4,
-        color: "var(--text-normal)",
+        color: "var(--control-secondary-text-default)",
         fontSize: 13,
         padding: "6px 8px",
         width: "100%",

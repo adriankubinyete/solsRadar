@@ -20,7 +20,7 @@ export function DetailRow({ label, value }: { label: string; value: React.ReactN
     return (
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, fontSize: 13 }}>
             <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>{label}</span>
-            <span style={{ color: "var(--text-normal)", textAlign: "right" }}>{value}</span>
+            <span style={{ color: "var(--control-secondary-text-default)", textAlign: "right" }}>{value}</span>
         </div>
     );
 }

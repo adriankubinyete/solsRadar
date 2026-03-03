@@ -117,6 +117,6 @@
 }
 
 .vc-sora-pill-muted {
-    background: var(--background-modifier-accent);
+    background: var(--control-secondary-background-default);
     color: var(--text-muted);
 }
