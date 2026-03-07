@@ -1,4 +1,4 @@
-# SolsRadar
+# SolRadar
 
 A plugin for Vencord.
 
