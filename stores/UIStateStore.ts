@@ -6,7 +6,7 @@
 
 import { localStorage } from "@utils/localStorage";
 
-import { JoinTag } from "./SnipeStore";
+import { SnipeTag } from "./SnipeStore";
 
 const STORAGE_KEY = "vc-sora-ui-state";
 
@@ -14,7 +14,7 @@ const STORAGE_KEY = "vc-sora-ui-state";
 
 export type ModalTab = "recentJoins" | "triggers" | "settings" | "dev";
 export type TriggerFilter = "all" | "RARE_BIOME" | "EVENT_BIOME" | "BIOME" | "WEATHER" | "MERCHANT" | "CUSTOM";
-export type JoinFilter = JoinTag | "all";
+export type JoinFilter = SnipeTag | "all";
 
 interface UIState {
     activeTab: ModalTab;

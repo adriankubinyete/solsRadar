@@ -132,7 +132,7 @@ class SnipeHistoryStore {
             ...data,
             id: Date.now(),
             timestamp: Date.now(),
-            tags: data.tags ?? ["unknown"],
+            tags: data.tags ?? [],
         };
 
         this._entries.unshift(entry);

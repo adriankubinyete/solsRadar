@@ -110,21 +110,23 @@ function JoinCard({ entry, onClick, onContextMenu }: {
             </div>
 
             {/* Tags footer */}
-            <div style={{
-                borderTop: "1px solid var(--background-mod-normal)",
-                padding: "6px 14px",
-                display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center",
-            }}>
-                {visibleTags.map(t => <TagBadge key={t} tag={t} />)}
-                {extra > 0 && (
-                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>+{extra}</span>
-                )}
-                {entry.metrics && (
-                    <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
-                        ⚡ {entry.metrics.timeToJoinMs.toFixed(0)}ms
-                    </span>
-                )}
-            </div>
+            {(visibleTags.length > 0 || entry.metrics) && (
+                <div style={{
+                    borderTop: "1px solid var(--background-mod-normal)",
+                    padding: "6px 14px",
+                    display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center",
+                }}>
+                    {visibleTags.map(t => <TagBadge key={t} tag={t} />)}
+                    {extra > 0 && (
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>+{extra}</span>
+                    )}
+                    {entry.metrics && (
+                        <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+                            ⚡ {entry.metrics.timeToJoinMs.toFixed(0)}ms
+                        </span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
