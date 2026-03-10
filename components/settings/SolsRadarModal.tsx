@@ -9,6 +9,7 @@ import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, Mod
 import { React } from "@webpack/common";
 
 import { UIState } from "../../stores/UIStateStore";
+import { AboutTab } from "./tabs/about";
 import { DeveloperTab } from "./tabs/developer";
 import { RecentJoinsTab } from "./tabs/recentJoins";
 import { SettingsTab } from "./tabs/settings";
@@ -16,7 +17,7 @@ import { TriggersTab } from "./tabs/triggers";
 
 // ─── Definição das tabs ────────────────────────────────────────────────────────
 
-type TabId = "recentJoins" | "triggers" | "settings" | "dev";
+type TabId = "recentJoins" | "triggers" | "settings" | "about" | "dev";
 
 interface Tab {
     id: TabId;
@@ -28,6 +29,7 @@ const TABS: Tab[] = [
     { id: "recentJoins", label: "Snipe History", component: RecentJoinsTab },
     { id: "triggers", label: "Triggers", component: TriggersTab },
     { id: "settings", label: "Settings", component: SettingsTab },
+    { id: "about", label: "About", component: AboutTab },
     { id: "dev", label: "Developer", component: DeveloperTab },
 ];
 
