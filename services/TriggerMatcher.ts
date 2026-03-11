@@ -58,11 +58,19 @@ function evaluateTrigger(message: Message, trigger: Trigger): TriggerEvalResult 
     if (conditions.inChannel.length > 0 && !conditions.inChannel.includes(channelId))
         return { trigger, matched: false, reason: `channel ${channelId} not in inChannel list` };
 
-    if (!evaluateKeywordSet(content, conditions.keywords.match, "require"))
-        return { trigger, matched: false, reason: `no match keyword found (strict=${conditions.keywords.match.strict})` };
+    const hasKeywords = conditions.keywords.match.value.length > 0;
+    const hasMentionRoles = conditions.mentionRoles.length > 0;
+
+    if (hasKeywords || hasMentionRoles) {
+        const keywordMatch = hasKeywords && evaluateKeywordSet(content, conditions.keywords.match, "require");
+        const mentionMatch = hasMentionRoles && conditions.mentionRoles.some(r => message.mentionRoles?.includes(r.id));
+
+        if (!keywordMatch && !mentionMatch)
+            return { trigger, matched: false, reason: "neither keywords nor mentionRoles matched" };
+    }
 
     if (!evaluateKeywordSet(content, conditions.keywords.exclude, "exclude"))
-        return { trigger, matched: false, reason: `excluded keyword found (strict=${conditions.keywords.exclude.strict})` };
+        return { trigger, matched: false, reason: "excluded keyword found" };
 
     return { trigger, matched: true };
 }

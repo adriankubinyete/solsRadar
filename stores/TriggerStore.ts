@@ -41,6 +41,7 @@ export interface TriggerConditions {
         match: KeywordSet;
         exclude: KeywordSet;
     };
+    mentionRoles: { id: string; label: string; }[]; // for servers which only pings role instead of saying what biome it is
     fromUser: string[]; // empty = ignore check
     inChannel: string[]; // empty = ignore check
     ignoredChannels: string[]; // trigger-level ignored channels
@@ -87,6 +88,7 @@ export const DEFAULT_CONDITIONS: TriggerConditions = {
         match: { strict: false, value: [] },
         exclude: { strict: false, value: [] },
     },
+    mentionRoles: [],
     fromUser: [],
     inChannel: [],
     ignoredChannels: [],
@@ -145,6 +147,7 @@ function migrateTrigger(raw: any): Trigger {
                 match: raw.conditions?.keywords?.match ?? { strict: false, value: [] },
                 exclude: raw.conditions?.keywords?.exclude ?? { strict: false, value: [] },
             },
+            mentionRoles: raw.conditions?.mentionRoles ?? [],
             fromUser: raw.conditions?.fromUser ?? [],
             inChannel: raw.conditions?.inChannel ?? [],
             ignoredChannels: raw.conditions?.ignoredChannels ?? [],

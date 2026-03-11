@@ -425,6 +425,100 @@ function IdChipInput({ kind, label, hint, ids, onChange }: {
     );
 }
 
+function RoleChipInput({ roles, onChange }: {
+    roles: { id: string; label: string; }[];
+    onChange: (roles: { id: string; label: string; }[]) => void;
+}) {
+    const [newId, setNewId] = useState("");
+    const [newLabel, setNewLabel] = useState("");
+
+    const add = () => {
+        const id = newId.trim();
+        const label = newLabel.trim();
+        if (!id || roles.some(r => r.id === id)) return;
+        onChange([...roles, { id, label }]);
+        setNewId("");
+        setNewLabel("");
+    };
+
+    return (
+        <div style={S.rowStacked}>
+            <span style={S.label}>Mention roles</span>
+            {/* <span style={S.hint}>Match if the message pings any of these roles. Description is optional just to keep track of what you've added.</span> */}
+
+            {roles.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                    {roles.map(r => (
+                        <div key={r.id} style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            padding: "8px 12px",
+                            borderRadius: 6,
+                            background: "var(--background-mod-strong)",
+                        }}>
+                            <div style={{
+                                width: 28, height: 28, borderRadius: 6,
+                                background: "var(--brand-500)",
+                                color: "#fff", fontSize: 13, fontWeight: 700,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                flexShrink: 0,
+                            }}>@</div>
+
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, color: "var(--text-default)", fontWeight: 500 }}>
+                                    {r.label || r.id}
+                                </div>
+                                {r.label && (
+                                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-code)" }}>
+                                        {r.id}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={() => onChange(roles.filter(x => x.id !== r.id))}
+                                style={{
+                                    background: "none", border: "none", cursor: "pointer",
+                                    color: "var(--text-muted)", fontSize: 18, padding: 0,
+                                    lineHeight: 1, flexShrink: 0,
+                                }}
+                            >×</button>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, marginTop: 8, alignItems: "center" }}>
+                <div style={{ width: 160, flexShrink: 0 }}>
+                    <TextInput
+                        value={newId}
+                        placeholder="Role ID"
+                        onChange={setNewId}
+                        onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && add()}
+                    />
+                </div>
+                <div style={{ flex: 1 }}>
+                    <TextInput
+                        value={newLabel}
+                        placeholder="Description (optional)"
+                        onChange={setNewLabel}
+                        onKeyDown={(e: React.KeyboardEvent) => e.key === "Enter" && add()}
+                    />
+                </div>
+                <Button
+                    size="small"
+                    variant="primary"
+                    disabled={!newId.trim() || roles.some(r => r.id === newId.trim())}
+                    onClick={add}
+                >
+                    Add
+                </Button>
+            </div>
+        </div>
+    );
+}
+
 // ─── Tab: General ─────────────────────────────────────────────────────────────
 
 function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
@@ -532,6 +626,9 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
 
 function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions; onChange: (c: TriggerConditions) => void; }) {
     const { keywords } = conditions;
+    const [newId, setNewId] = React.useState("");
+    const [newLabel, setNewLabel] = React.useState("");
+
     const patchMatch = (p: Partial<typeof keywords.match>) => onChange({ ...conditions, keywords: { ...keywords, match: { ...keywords.match, ...p } } });
     const patchExclude = (p: Partial<typeof keywords.exclude>) => onChange({ ...conditions, keywords: { ...keywords, exclude: { ...keywords.exclude, ...p } } });
 
@@ -547,6 +644,11 @@ function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions
             <p style={S.sectionDescription}>Message must <strong>NOT</strong> contain any of these. Separate with commas.</p>
             <KeywordsInput label="Keywords" value={keywords.exclude.value} onChange={v => patchExclude({ value: v })} placeholder="hunt, help" />
             <SwitchField label="Strict match" hint="Must match exact word boundary, not just a substring." value={keywords.exclude.strict} onChange={v => patchExclude({ strict: v })} />
+
+            <p style={S.sectionTitle}>Mention Roles</p>
+            <p style={S.sectionDescription}>Match if the message pings any of these roles. Leave empty to skip this check.<br />
+    <strong>If both keywords and roles are configured, either one is enough to match.</strong></p>
+            <RoleChipInput roles={conditions.mentionRoles} onChange={roles => onChange({ ...conditions, mentionRoles: roles })} />
 
         </div>
     );
