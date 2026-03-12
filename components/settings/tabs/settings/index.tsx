@@ -65,7 +65,7 @@ export function SettingsTab() {
     const hasToken = !!robloxToken;
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 20 }}>
 
             {/* ── General ──────────────────────────────────────────────── */}
             <p style={sectionTitle}>General</p>
@@ -145,6 +145,11 @@ export function SettingsTab() {
                     to verify that the biome you joined matches what was announced.
                 </p>
             )} */}
+            {/* ── Advanced Settings ───────────────────────────────────────────── */}
+            <p style={sectionTitle}>Advanced</p>
+            <p style={note("danger")}>Do <strong>NOT</strong> change these settings unless you know what you're doing.</p>
+            <Setting id="ignoreWebhookForwards" label="Ignore Webhook Forwards"
+                description="If an embed footer contains the text 'solradar', it will be ignored." />
 
         </div>
     );

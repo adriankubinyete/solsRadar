@@ -23,7 +23,7 @@ import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
 import { SnipeMetrics, SnipeStore } from "./stores/SnipeStore";
-import { getActiveTriggers, Trigger, TriggerType } from "./stores/TriggerStore";
+import { getActiveTriggers, getTriggersWithWebhook, Trigger, TriggerType } from "./stores/TriggerStore";
 import { parseCsv, sendWebhook } from "./utils";
 
 const logger = new Logger("SolRadar");
@@ -36,7 +36,8 @@ function flattenEmbeds(message: Message): void {
     let flattened = message.content;
     for (const embed of message.embeds) {
         if (embed.type !== "rich") continue; // only flatten rich embeds
-        // @ts-ignore — campos sem prefixo "raw" no tipo, mas presentes em runtime
+
+        // @ts-ignore
         if (embed.title) flattened += ` ${embed.title}`;
         // @ts-ignore
         if (embed.description) flattened += ` ${embed.description}`;
@@ -459,6 +460,29 @@ function notify(snipe: Snipe, log: Logger): void {
 
 // ─── forward stuff ──────────────────────────────────────────────────────────────
 
+function isValidMessage(message: Message, log: Logger): boolean {
+
+    // @ts-ignore - ts is drunk, I think the type is not updated
+    const webhook_id = message.webhook_id ?? message.author.id ?? undefined;
+    const isASelfForward = getTriggersWithWebhook().some(t => t.forwarding?.webhookUrl?.includes(webhook_id!));
+
+    if (isASelfForward) {
+        log.warn("This message is a self-forward!");
+        return false;
+    }
+
+    const isReforward = message.embeds.some(e =>
+        e.type === "rich" && (e as any).footer?.text?.toLowerCase() === "solradar"
+    );
+
+    if (isReforward && settings.store.ignoreWebhookForwards) {
+        log.warn("This message is a re-forward! Protection against forward loops is enabled.");
+        return false;
+    }
+
+    return true;
+}
+
 async function forwardSnipe(snipe: Snipe, log: Logger): Promise<void> {
     const { webhookUrl } = snipe.trigger.forwarding!;
     if (!webhookUrl) {
@@ -471,15 +495,16 @@ async function forwardSnipe(snipe: Snipe, log: Logger): Promise<void> {
     const body = JSON.stringify({
         content: null,
         embeds: [{
-            title: `🎯 ${snipe.trigger.name} - Click to join link`,
-            description: `Forwarded from <#${snipe.channel.id}> (${snipe.guild.name})\n[🔗 Server Link](${snipe.link.link})`,
+            title: `🎯 ${snipe.trigger.name} (click to join)`,
+            description: `[🔗 Server Link](${snipe.link.link})`,
             url: snipe.link.link,
             fields: [
-                { name: "Posted by", value: "@" + snipe.message.author.username || "Unknown", inline: true },
-                { name: "Trigger", value: snipe.trigger.name, inline: true },
+                { name: "Sent by", value: `<@${snipe.message.author.id}>` || "Unknown", inline: true },
+                { name: "Sent in", value: `https://discord.com/channels/${snipe.guild.id}/${snipe.channel.id}/${snipe.message.id}`, inline: true },
             ],
             color: 0x5865f2,
             timestamp: new Date().toISOString(),
+            footer: { text: "SolRadar" },
         }],
     });
 
@@ -495,6 +520,8 @@ async function forwardSnipe(snipe: Snipe, log: Logger): Promise<void> {
 
 async function handleMessage(message: Message, channel: Channel, guild: Guild, tMessageReceived: number): Promise<void> {
     const log = new Logger(`SolRadar:${message.id}`);
+
+    if (!isValidMessage(message, log)) return;
 
     flattenEmbeds(message);
 

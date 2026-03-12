@@ -799,7 +799,7 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
             {draft.forwarding?.enabled && <>
                 <SwitchField
                     label="Early forward"
-                    hint="Forward first, join later."
+                    hint="Forward as soon as possible. Can impact your join speed."
                     value={draft.forwarding.earlyForward}
                     onChange={v => patch({ forwarding: { ...draft.forwarding!, earlyForward: v } })}
                 />

@@ -53,6 +53,14 @@ export const settings = definePluginSettings({
         description: "Whether to merge embeds into the message content when checking for triggers. If you're monitoring a Macro server, you might want to enable this.",
         default: true
     },
+    // @NOTE
+    // there is already forward-loop prevention for self-webhooks
+    // but with this enabled, we EXPLICITLY ignore ANY forwards from solradar, just in case.
+    ignoreWebhookForwards: {
+        type: OptionType.BOOLEAN,
+        description: "With this enabled, if an embed footer contains the text 'solradar', it will be ignored. Only disable this if you know what you're doing!",
+        default: true
+    },
 
     // ui
     hideInactiveIndicator: {

@@ -236,6 +236,10 @@ export function getActiveTriggers(): Trigger[] {
     return _triggers.filter(t => t.state.enabled);
 }
 
+export function getTriggersWithWebhook(): Trigger[] {
+    return _triggers.filter(t => t.state.enabled && t.forwarding?.enabled);
+}
+
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
 async function persist() {
