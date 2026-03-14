@@ -66,6 +66,11 @@ export const settings = definePluginSettings({
         description: "For any setting where you want to send notifications, this webhook URL will be used by default if one wasn't provided in the specific setting.",
         default: ""
     },
+    censorWebhooks: {
+        type: OptionType.BOOLEAN,
+        description: "If enabled, the fields 'Sent by' and 'Sent in' from webhook notifications will be redacted.",
+        default: false
+    },
 
     // ui
     hideInactiveIndicator: {

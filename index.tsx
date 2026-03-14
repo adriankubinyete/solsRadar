@@ -503,6 +503,7 @@ async function forwardSnipe(snipe: Snipe, log: Logger, kind: ForwardKind = "matc
 
     const isDetection = kind === "detection";
     const hasBiome = snipe.trigger.type !== "MERCHANT";
+    const censor = settings.store.censorWebhooks;
 
     const body = JSON.stringify({
         content: null,
@@ -513,9 +514,23 @@ async function forwardSnipe(snipe: Snipe, log: Logger, kind: ForwardKind = "matc
             description: `[🔗 Server Link](${snipe.link.link})`,
             url: snipe.link.link,
             fields: [
-                { name: "Sent by", value: `<@${snipe.message.author.id}>` || "Unknown", inline: true },
-                { name: "Sent in", value: `https://discord.com/channels/${snipe.guild.id}/${snipe.channel.id}/${snipe.message.id}`, inline: true },
-                ...(hasBiome ? [{ name: "Biome", value: isDetection ? "✅ Real" : "⚠️ Not verified", inline: true }] : []),
+                {
+                    name: "Sent by",
+                    value: censor ? "```[REDACTED]```" : `<@${snipe.message.author.id}>`,
+                    inline: true
+                },
+                {
+                    name: "Sent in",
+                    value: censor
+                        ? "```[REDACTED]```"
+                        : `https://discord.com/channels/${snipe.guild.id}/${snipe.channel.id}/${snipe.message.id}`,
+                    inline: true
+                },
+                ...(hasBiome ? [{
+                    name: "Biome",
+                    value: isDetection ? "```✅ Verified```" : "```⚠️ Not verified```",
+                    inline: false
+                }] : []),
             ],
             color: isDetection ? 0x57f287 : 0x5865f2,
             timestamp: new Date().toISOString(),
