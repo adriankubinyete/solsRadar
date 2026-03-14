@@ -75,7 +75,7 @@ export function JoinLockBanner({
                 <div style={{
                     fontSize: 12,
                     fontWeight: 600,
-                    color: "var(--text-normal)",
+                    color: "var(--text-default)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",

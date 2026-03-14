@@ -5,13 +5,16 @@
  */
 
 import { findComponentByCodeLazy } from "@webpack";
-import { React,showToast, Toasts } from "@webpack/common";
+import { React, showToast, Toasts, useState } from "@webpack/common";
 
 import { settings } from "../../settings";
 import { openSolsRadarModal } from "../settings/SolsRadarModal";
 import { SolsRadarIcon } from "../ui/SolsRadarIcon";
 
-const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_TOP:", '"aria-haspopup":');
+const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
+
+setTimeout(() => console.log("[SolRadar] HeaderBarIcon:", HeaderBarIcon), 5000);
+
 
 const STATE_COLORS = {
     ACTIVE: "#43a25a",
@@ -32,6 +35,7 @@ export function SolsRadarTitleBarButton({ className = "" }: SolsRadarTitleBarBut
 
     const isActive = autoJoinEnabled;
     const stateText = isActive ? "ACTIVE" : "INACTIVE";
+    const [hovered, setHovered] = useState(false);
 
     const handleClick = () => {
         openSolsRadarModal();
@@ -76,34 +80,41 @@ export function SolsRadarTitleBarButton({ className = "" }: SolsRadarTitleBarBut
     };
 
     return (
-        <HeaderBarIcon
-            className={typeof className === "object" ? Object.values(className as any).join(" ") : className}
-            onClick={handleClick}
+        <div
             onContextMenu={handleContextMenu}
-            tooltip={`SolRadar (${stateText})`}
-            aria-haspopup="dialog"
-            icon={() => (
-                <div style={{ position: "relative", display: "inline-block" }}>
-                    <SolsRadarIcon height={20} width={20} />
-
-                    {/* indicator */}
-                    {(isActive || !hideInactiveIndicator) && (<div
-                        style={{
-                            position: "absolute",
-                            right: 4,
-                            bottom: 4,
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            backgroundColor: isActive ? STATE_COLORS.ACTIVE : STATE_COLORS.INACTIVE,
-                            border: "1.5px solid var(--background-primary)",
-                            boxShadow: "0 0 3px rgba(0,0,0,0.3)",
-                            transform: "scale(0.7)",
-                        }}
-                    />)}
-                </div>
-            )}
-            selected={isActive}
-        />
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            <HeaderBarIcon
+                onClick={handleClick}
+                tooltip={`SolRadar (${stateText})`}
+                aria-haspopup="dialog"
+                icon={() => (
+                    <div
+                        style={{ position: "relative", display: "inline-block" }}
+                    >
+                        <SolsRadarIcon
+                            height={20}
+                            width={20}
+                            color={hovered ? "var(--interactive-icon-hover)" : "var(--interactive-icon-default)"}
+                        />
+                        {(isActive || !hideInactiveIndicator) && (
+                            <div style={{
+                                position: "absolute",
+                                right: 0,
+                                bottom: 0,
+                                width: 5,
+                                height: 5,
+                                borderRadius: "50%",
+                                backgroundColor: isActive ? STATE_COLORS.ACTIVE : STATE_COLORS.INACTIVE,
+                                border: "1.5px solid var(--background-primary)",
+                                boxShadow: "0 0 3px rgba(0,0,0,0.3)",
+                            }} />
+                        )}
+                    </div>
+                )}
+                selected={isActive}
+            />
+        </div>
     );
 }

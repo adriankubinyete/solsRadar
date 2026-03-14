@@ -568,19 +568,20 @@ export default definePlugin({
         {
             find: '?"BACK_FORWARD_NAVIGATION":',
             replacement: {
-                match: /(?<=trailing:.{0,50})\i\.Fragment,\{(?=.+?className:(\i))/,
-                replace: "$self.TitlebarWrapper,{className:$1,"
+                match: /(?<=trailing:.{0,50})\i\.Fragment,(?=\{children:\[)/,
+                replace: "$self.TitlebarWrapper,"
             },
             predicate: () => settings.store.pluginIconLocation === "titlebar",
         }
     ],
 
-    TitlebarWrapper({ children, className }: PropsWithChildren<{ className: string; }>) {
+    TitlebarWrapper({ children }: PropsWithChildren) {
+        logger.debug("TitlebarWrapper");
         return (
             <>
                 {children}
                 <ErrorBoundary noop>
-                    <SolsRadarTitleBarButton className={className} />
+                    <SolsRadarTitleBarButton />
                 </ErrorBoundary>
             </>
         );
