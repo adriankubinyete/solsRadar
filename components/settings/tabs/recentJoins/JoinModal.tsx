@@ -12,7 +12,7 @@ import { closeAllModals, ModalCloseButton, ModalContent, ModalFooter, ModalHeade
 import { NavigationRouter, React, showToast, Toasts } from "@webpack/common";
 
 import { joinUri } from "../../../../services/RobloxService";
-import { SnipeEntry, SnipeStore } from "../../../../stores/SnipeStore";
+import { SnipeEntry, SnipeLogEntry, SnipeStore, useSnipeEntry } from "../../../../stores/SnipeStore";
 import { FallbackImage, formatTimeAgo, TagBadge } from "./components";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -28,10 +28,73 @@ export function DetailRow({ label, value }: { label: string; value: React.ReactN
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
-function JoinModal({ entry, modalProps }: {
+function SnipeLog({ entries }: { entries: SnipeLogEntry[]; }) {
+    const ref = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
+    }, [entries.length]);
+
+    const levelColor = (level: SnipeLogEntry["level"]) => {
+        switch (level) {
+            case "error": return "var(--text-feedback-critical)";
+            case "warn": return "var(--status-warning)";
+            case "debug": return "var(--text-muted)";
+            default: return "var(--text-brand)";
+        }
+    };
+
+    const copyLog = () => {
+        const text = entries
+            .map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] ${l.level.toUpperCase()} ${l.message}`)
+            .join("\n");
+        copyToClipboard(text);
+        showToast("Log copied!", Toasts.Type.SUCCESS);
+    };
+
+    return (
+        <>
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+                <Button size="small" variant="none" onClick={copyLog}>click here to copy</Button>
+            </div>
+            <div ref={ref} style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+                fontFamily: "var(--font-code)",
+                fontSize: 12,
+                background: "var(--background-tertiary)",
+                border: "1px solid var(--background-mod-subtle)",
+                borderRadius: 6,
+                padding: "8px 10px",
+                maxHeight: 200,
+                overflowY: "auto",
+                scrollbarWidth: "thin",
+            }}>
+                {entries.map((line, i) => (
+                    <div key={i} style={{ display: "flex", gap: 8, lineHeight: 1.6 }}>
+                        <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>
+                            {new Date(line.timestamp).toLocaleTimeString()}
+                        </span>
+                        <span style={{ color: levelColor(line.level), flexShrink: 0, minWidth: 36 }}>
+                            {line.level.toUpperCase()}
+                        </span>
+                        <span style={{ color: "var(--text-default)", wordBreak: "break-word" }}>
+                            {line.message}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        </>
+    );
+}
+
+function JoinModal({ entry: initialEntry, modalProps }: {
     entry: SnipeEntry;
     modalProps: ModalProps;
 }) {
+    const entry = useSnipeEntry(initialEntry.id) ?? initialEntry;
+
     const jumpToMessage = () => {
         if (!entry.messageJumpUrl) return;
         try {
@@ -93,30 +156,35 @@ function JoinModal({ entry, modalProps }: {
                                     </span>
                                 } />
                             )}
-                            {entry?.processedMessageText && (
-                                <textarea
-                                    readOnly
-                                    value={entry.processedMessageText ?? ""}
-                                    style={{
-                                        width: "100%",
-                                        resize: "vertical",
-                                        padding: "8px 10px",
-                                        borderRadius: 6,
-                                        border: "1px solid var(--background-mod-subtle)",
-                                        background: "var(--background-tertiary)",
-                                        color: "var(--text-default)",
-                                        fontSize: 13,
-                                        fontFamily: "var(--font-code)",
-                                        lineHeight: 1.5,
-                                        minHeight: 60,
-                                        boxSizing: "border-box",
-                                        outline: "none",
-                                        scrollbarWidth: "thin",
-                                    }}
-                                />
-                            )}
                         </div>
                     </section>
+
+                    {entry?.processedMessageText && <>
+                        <Divider />
+                        <section>
+                            <Heading tag="h5" style={{ marginBottom: 8 }}>User message (cleaned)</Heading>
+                            <textarea
+                                readOnly
+                                value={entry.processedMessageText}
+                                style={{
+                                    width: "100%",
+                                    resize: "vertical",
+                                    padding: "8px 10px",
+                                    borderRadius: 6,
+                                    border: "1px solid var(--background-mod-subtle)",
+                                    background: "var(--background-tertiary)",
+                                    color: "var(--text-default)",
+                                    fontSize: 13,
+                                    fontFamily: "var(--font-code)",
+                                    lineHeight: 1.5,
+                                    minHeight: 60,
+                                    boxSizing: "border-box",
+                                    outline: "none",
+                                    scrollbarWidth: "thin",
+                                }}
+                            />
+                        </section>
+                    </>}
 
                     {entry.metrics && <>
                         <Divider />
@@ -130,6 +198,13 @@ function JoinModal({ entry, modalProps }: {
                         </section>
                     </>}
 
+                    {entry.log && entry.log.length > 0 && <>
+                        <Divider />
+                        <section>
+                            <Heading tag="h5" style={{ marginBottom: 8 }}>Log</Heading>
+                            <SnipeLog entries={entry.log} />
+                        </section>
+                    </>}
                 </div>
             </ModalContent>
 
@@ -162,7 +237,6 @@ function JoinModal({ entry, modalProps }: {
         </ModalRoot>
     );
 }
-
 // ─── Entrypoint ───────────────────────────────────────────────────────────────
 
 export function openJoinModal(entry: SnipeEntry, onCloseAll?: () => void): void {

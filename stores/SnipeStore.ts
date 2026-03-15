@@ -57,6 +57,12 @@ export interface SnipeMetrics {
     overheadMs: number;
 }
 
+export interface SnipeLogEntry {
+    timestamp: number;
+    level: "info" | "warn" | "error" | "debug";
+    message: string;
+}
+
 export interface SnipeEntry {
     id: number;
     timestamp: number;
@@ -88,10 +94,13 @@ export interface SnipeEntry {
     joinUri?: string;
     // link do servidor privado
     link?: string;
+
+    log: SnipeLogEntry[];
 }
 
-export type NewSnipeData = Omit<SnipeEntry, "id" | "timestamp" | "tags"> & {
+export type NewSnipeData = Omit<SnipeEntry, "id" | "timestamp" | "tags" | "log"> & {
     tags?: SnipeTag[];
+    log?: SnipeLogEntry[];
 };
 
 type Listener = (entries: SnipeEntry[]) => void;
@@ -139,6 +148,7 @@ class SnipeHistoryStore {
             id: Date.now(),
             timestamp: Date.now(),
             tags: data.tags ?? [],
+            log: [],
         };
 
         this._entries.unshift(entry);
@@ -215,8 +225,17 @@ class SnipeHistoryStore {
                 tags: choices[Math.floor(Math.random() * choices.length)],
                 metrics: { timeToJoinMs: 0, joinDurationMs: 0, overheadMs: 0 },
                 processedMessageText: "Fake message",
+                log: [],
             });
         }
+    }
+
+    appendLog(id: number, level: SnipeLogEntry["level"], message: string): boolean {
+        const entry = this.getById(id);
+        if (!entry) return false;
+        return this.update(id, {
+            log: [...entry.log, { timestamp: Date.now(), level, message }],
+        }, { replaceTags: false });
     }
 
     // ── Observers ────────────────────────────────────────────────────────────
@@ -263,4 +282,12 @@ export function useSnipeHistory(): SnipeEntry[] {
     const [entries, setEntries] = React.useState<SnipeEntry[]>(SnipeStore.all);
     React.useEffect(() => SnipeStore.subscribe(setEntries), []);
     return entries;
+}
+
+export function useSnipeEntry(id: number): SnipeEntry | undefined {
+    const [entry, setEntry] = React.useState(() => SnipeStore.getById(id));
+    React.useEffect(() => SnipeStore.subscribe(entries => {
+        setEntry(entries.find(e => e.id === id));
+    }), [id]);
+    return entry;
 }

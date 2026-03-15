@@ -119,4 +119,16 @@ export class Snipe {
     private _tag(...tags: SnipeTag[]) {
         SnipeStore.addTags(this.id, ...tags);
     }
+
+    // ── Log ───────────────────────────────────────────────────────────────────
+
+    log(message: string) { this._log("debug", message); }
+    logInfo(message: string) { this._log("info", message); }
+    logWarn(message: string) { this._log("warn", message); }
+    logError(message: string) { this._log("error", message); }
+    logDebug(message: string) { this._log("debug", message); }
+
+    private _log(level: "info" | "warn" | "error" | "debug", message: string) {
+        SnipeStore.appendLog(this.id, level, message);
+    }
 }

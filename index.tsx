@@ -142,8 +142,11 @@ async function executeBadLinkAction(): Promise<void> {
     }
 }
 
-async function verifyLink(link: RobloxLink, log: Logger): Promise<boolean | undefined> {
+type VerifyLinkResult =
+    | { ok: true; placeId: string; }
+    | { ok: false; reason: "no-token" | "place-not-allowed" | "resolve-failed"; detail?: string; };
 
+async function verifyLink(link: RobloxLink, log: Logger): Promise<VerifyLinkResult> {
     if (!settings.store.robloxToken) {
         log.warn("Link verification enabled but robloxToken is missing.");
         showNotification({
@@ -151,22 +154,26 @@ async function verifyLink(link: RobloxLink, log: Logger): Promise<boolean | unde
             body: "Link verification is enabled but robloxToken is missing.\nPlease configure a valid token or disable link verification to stop getting this notification.\nClick on this message to disable link verification.",
             onClick: () => settings.store.linkVerification = "disabled",
         });
-        return false;
+        return { ok: false, reason: "no-token" };
     }
 
     log.debug(`Verifying link ${JSON.stringify(link)}`);
     const placeId = await getPlaceId(link);
-    const allowedPlaceIds = parseCsv(settings.store.allowedPlaceIds);
 
-    if (allowedPlaceIds.size === 0 || allowedPlaceIds.has(String(placeId))) {
-        log.debug(`Place ID ${placeId} is allowed.`);
-        return true;
+    if (placeId === null) {
+        log.warn(`Failed to resolve link: ${link.code}`);
+        await executeBadLinkAction();
+        return { ok: false, reason: "resolve-failed", detail: link.code };
     }
 
-    if (placeId === null) log.warn(`Failed to resolve link: ${link.code}`);
+    const allowedPlaceIds = parseCsv(settings.store.allowedPlaceIds);
+    if (allowedPlaceIds.size === 0 || allowedPlaceIds.has(String(placeId))) {
+        log.debug(`Place ID ${placeId} is allowed.`);
+        return { ok: true, placeId: String(placeId) };
+    }
 
     await executeBadLinkAction();
-    return false;
+    return { ok: false, reason: "place-not-allowed", detail: String(placeId) };
 }
 
 // ─── post-join ─────────────────────────────────────────────────────────────────
@@ -174,7 +181,8 @@ async function verifyLink(link: RobloxLink, log: Logger): Promise<boolean | unde
 /** Tipos de trigger que suportam detecção de bioma via log. */
 const BIOME_DETECTABLE_TYPES = new Set<TriggerType>(["RARE_BIOME", "EVENT_BIOME", "BIOME", "WEATHER"]);
 
-function activateJoinLock(trigger: Trigger, log: Logger): void {
+function activateJoinLock(snipe: Snipe, log: Logger): void {
+    const { trigger } = snipe;
     if (!trigger.state.joinlock || trigger.state.joinlockDuration <= 0) return;
 
     const activated = JoinLockStore.activate(
@@ -189,8 +197,10 @@ function activateJoinLock(trigger: Trigger, log: Logger): void {
             `priority: ${trigger.state.priority}, ` +
             `duration: ${trigger.state.joinlockDuration}s`
         );
+        snipe.logInfo(`Join lock activated — priority ${trigger.state.priority}, duration ${trigger.state.joinlockDuration}s.`);
     } else {
         log.debug(`[${trigger.name}] Join lock NOT updated — existing lock has higher priority.`);
+        snipe.logInfo("Join lock not updated — existing lock has higher priority.");
     }
 }
 
@@ -204,6 +214,7 @@ let _unsubscribeBiomeDetection: (() => void) | null = null;
 function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
     const activeBiome = (snipe.trigger.biome?.detectionKeyword || snipe.trigger.name).toLowerCase();
     log.info(`[${snipe.trigger.name}] Watching for biome to end.`);
+    snipe.logInfo(`Watching for biome "${activeBiome}" to end.`);
 
     const unsubChange = BiomeDetector.on("biomeChanged", ({ from, to }) => {
         if (from?.toLowerCase() !== activeBiome) {
@@ -211,6 +222,7 @@ function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
             return;
         }
         log.info(`[${snipe.trigger.name}] Biome ended (changed to "${to}") — releasing lock.`);
+        snipe.logInfo(`Biome ended — changed to "${to}", join lock released.`);
         JoinLockStore.release();
         unsubChange();
         unsubClear();
@@ -219,6 +231,7 @@ function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
     const unsubClear = BiomeDetector.on("biomeCleared", ({ from }) => {
         if (from.toLowerCase() !== activeBiome) return;
         log.info(`[${snipe.trigger.name}] Biome ended (disconnected) — releasing lock.`);
+        snipe.logInfo("Biome ended — disconnected, join lock released.");
         JoinLockStore.release();
         unsubChange();
         unsubClear();
@@ -226,18 +239,20 @@ function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
 }
 
 function startBiomeDetection(snipe: Snipe, log: Logger): void {
-    _unsubscribeBiomeDetection?.(); // Cancela qualquer detecção anterior
+    _unsubscribeBiomeDetection?.();
 
     if (!BIOME_DETECTABLE_TYPES.has(snipe.trigger.type)) {
         return;
     }
     if (!snipe.trigger.biome?.detectionEnabled) {
         snipe.markAsBiomeNotVerified();
+        snipe.logInfo("Biome detection disabled for this trigger.");
         return;
     }
     if (!settings.store.detectorEnabled) {
         log.debug(`[${snipe.trigger.name}] Biome detector globally disabled.`);
         snipe.markAsBiomeNotVerified();
+        snipe.logWarn("Biome detector is globally disabled.");
         return;
     }
 
@@ -246,6 +261,7 @@ function startBiomeDetection(snipe: Snipe, log: Logger): void {
     const t0 = performance.now();
 
     log.info(`[${snipe.trigger.name}] Awaiting biome — expecting "${expected}" (delay: ${startDelayMs}ms).`);
+    snipe.logInfo(`Awaiting biome — expecting "${expected}"${startDelayMs > 0 ? ` (delay: ${startDelayMs}ms)` : ""}.`);
 
     let detecting = true;
 
@@ -262,6 +278,7 @@ function startBiomeDetection(snipe: Snipe, log: Logger): void {
 
         if (detected === expected) {
             snipe.markAsBiomeReal();
+            snipe.logInfo(`Biome confirmed — "${to}" matched in ${elapsed}ms.`);
             _watchForBiomeEnd(snipe, log);
             showNotification({
                 title: `✅ SoRa :: Real — ${snipe.trigger.name}`,
@@ -270,15 +287,19 @@ function startBiomeDetection(snipe: Snipe, log: Logger): void {
             });
             if (snipe.trigger.forwarding.onDetection.enabled) {
                 log.info(`[${snipe.trigger.name}] Forwarding on detection...`);
-                forwardSnipe(snipe, log, "detection").catch(err =>
-                    log.error(`[${snipe.trigger.name}] Forward on detection failed: ${(err as Error).message}`)
-                );
+                snipe.logInfo("Forwarding on detection...");
+                forwardSnipe(snipe, log, "detection").catch(err => {
+                    log.error(`[${snipe.trigger.name}] Forward on detection failed: ${(err as Error).message}`);
+                    snipe.logError(`Forward on detection failed: ${(err as Error).message}`);
+                });
             }
         } else {
             snipe.markAsBiomeBait();
+            snipe.logWarn(`Biome bait — got "${to}" instead of "${expected}" (${elapsed}ms).`);
             unsubChange();
             if (JoinLockStore.isLocked) {
                 log.warn(`[${snipe.trigger.name}] Bait — releasing lock.`);
+                snipe.logWarn("Releasing join lock — bait detected.");
                 JoinLockStore.release();
             }
             showNotification({
@@ -289,17 +310,17 @@ function startBiomeDetection(snipe: Snipe, log: Logger): void {
         }
     });
 
-    // Timeout manual
     const timer = setTimeout(() => {
         if (!detecting) return;
         detecting = false;
         unsubChange();
         _unsubscribeBiomeDetection = null;
         snipe.markAsBiomeTimeout();
+        snipe.logWarn(`Biome detection timed out after ${((settings.store.detectorTimeoutMs ?? 30_000) + startDelayMs) / 1000}s.`);
         log.warn(`[${snipe.trigger.name}] Biome detection timed out.`);
         if (JoinLockStore.isLocked) JoinLockStore.release();
         showNotification({
-            title: `⏱ SoRa :: Timeout — ${snipe.trigger.name}`,
+            title: `⌛ SoRa :: Timeout — ${snipe.trigger.name}`,
             body: "Biome detection timed out.",
             icon: snipe.trigger.iconUrl,
         });
@@ -320,27 +341,30 @@ function isRedundantJoin(snipe: Snipe, log: Logger): boolean {
     const expected = snipe.trigger.biome.detectionKeyword || snipe.trigger.name;
     if (!BiomeDetector.isAnyAccountInBiome(expected)) return false;
 
-    // Bypass se a mensagem indica bioma recém-iniciado
     const freshKeywords = parseCsv("start,fresh");
     if (freshKeywords.size > 0) {
         const content = snipe.getRawMessageContent().toLowerCase() ?? "";
         if ([...freshKeywords].some(kw => content.includes(kw.toLowerCase()))) {
             snipe.markAsRedundancyBypassed();
+            snipe.logInfo("Redundant biome bypassed — fresh keyword detected in message.");
             return false;
         }
     }
 
+    snipe.logWarn(`Redundant join skipped — already in biome "${expected}".`);
     return true;
 }
 
 function shouldJoin(snipe: Snipe, log: Logger): boolean {
     if (!settings.store.autoJoinEnabled) {
         log.debug(`[${snipe.trigger.name}] Auto-join globally disabled.`);
+        snipe.logInfo("Auto-join is globally disabled.");
         return false;
     }
 
     if (!snipe.trigger.state.autojoin) {
         log.debug(`[${snipe.trigger.name}] Auto-join is disabled for this trigger.`);
+        snipe.logInfo("Auto-join is disabled for this trigger.");
         return false;
     }
 
@@ -354,51 +378,77 @@ function shouldJoin(snipe: Snipe, log: Logger): boolean {
 }
 
 async function verifySnipeSafety(snipe: Snipe, log: Logger): Promise<void> {
-    if (snipe.trigger.conditions.bypassLinkVerification) return;
-    if (settings.store.linkVerification === "disabled") return;
-    const safe = await verifyLink(snipe.link, log);
-
-    if (safe === true) {
-        snipe.markAsLinkSafe();
-    } else if (safe === false) {
-        snipe.markAsLinkUnsafe();
-    } else {
-        snipe.markAsLinkNotVerified();
+    if (snipe.trigger.conditions.bypassLinkVerification) {
+        snipe.logInfo("Link verification bypassed by trigger.");
+        return;
+    }
+    if (settings.store.linkVerification === "disabled") {
+        snipe.logInfo("Link verification disabled — skipping.");
+        return;
     }
 
+    snipe.logInfo("Verifying link...");
+    const result = await verifyLink(snipe.link, log);
+
+    if (result.ok) {
+        snipe.markAsLinkSafe();
+        snipe.logInfo(`Link verified — Place ID ${result.placeId} is allowed.`);
+    } else if (result.reason === "no-token") {
+        snipe.markAsLinkUnsafe();
+        snipe.logError("Link verification failed — no Roblox token configured.");
+    } else if (result.reason === "resolve-failed") {
+        snipe.markAsLinkNotVerified();
+        snipe.logWarn(`Link verification failed — could not resolve place ID for code "${result.detail}".`);
+    } else {
+        snipe.markAsLinkUnsafe();
+        snipe.logWarn(`Link unsafe — Place ID ${result.detail} is not in the allowed list.`);
+    }
 }
 
 async function join(snipe: Snipe, log: Logger): Promise<void> {
     if (settings.store.linkVerification === "before") {
         await verifySnipeSafety(snipe, log);
-        if (!snipe.isSafe()) return;
+        if (!snipe.isSafe()) {
+            snipe.logWarn("Join aborted — link failed verification (before).");
+            return;
+        }
     }
 
     const uri = snipe.getJoinUri();
     if (!uri) {
         snipe.markAsFailed();
+        snipe.logError("Join failed — no URI available.");
         return;
     }
 
-    const metrics = await joinServer(uri, snipe.tMessageReceived, log);
-    if (!metrics) {
+    snipe.logInfo("Attempting to join...");
+    const result = await joinServer(uri, snipe.tMessageReceived, log);
+    if (!result.ok) {
         snipe.markAsFailed();
+        snipe.logError(`Join failed — ${result.detail ?? result.reason}`);
         return;
     }
-    snipe.setMetrics(metrics);
+
+    snipe.setMetrics(result.metrics);
+    snipe.logInfo(`Joined in ${result.metrics.joinDurationMs.toFixed(1)}ms (overhead: ${result.metrics.overheadMs.toFixed(1)}ms)`);
 
     if (settings.store.linkVerification === "after") {
         await verifySnipeSafety(snipe, log);
-        if (!snipe.isSafe()) return;
+        if (!snipe.isSafe()) {
+            snipe.logWarn("Link failed verification (after join).");
+            return;
+        }
     }
 
-    activateJoinLock(snipe.trigger, log);
-
+    activateJoinLock(snipe, log);
     startBiomeDetection(snipe, log);
-
 }
 
-async function joinServer(uri: string, tMessageReceived: number, log: Logger): Promise<SnipeMetrics | null> {
+type JoinServerResult =
+    | { ok: true; metrics: SnipeMetrics; }
+    | { ok: false; reason: "link-unsafe" | "no-uri" | "native-failed"; detail?: string; };
+
+async function joinServer(uri: string, tMessageReceived: number, log: Logger): Promise<JoinServerResult> {
     log.info(`Joining: ${uri}`);
 
     const tJoinStart = performance.now();
@@ -406,16 +456,20 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
         await closeGameIfNeeded();
         await Native.openUri(uri);
     } catch (err) {
-        log.error(`Native.openUri failed: ${(err as Error).message}`);
-        return null;
+        const detail = (err as Error).message;
+        log.error(`Native.openUri failed: ${detail}`);
+        return { ok: false, reason: "native-failed", detail };
     }
     const tJoinEnd = performance.now();
 
-    const joinDurationMs = tJoinEnd - tJoinStart;
-    const timeToJoinMs = tJoinEnd - tMessageReceived;
-    const overheadMs = timeToJoinMs - joinDurationMs;
-
-    return { timeToJoinMs, joinDurationMs, overheadMs };
+    return {
+        ok: true,
+        metrics: {
+            joinDurationMs: tJoinEnd - tJoinStart,
+            timeToJoinMs: tJoinEnd - tMessageReceived,
+            overheadMs: (tJoinEnd - tMessageReceived) - (tJoinEnd - tJoinStart),
+        },
+    };
 }
 
 // ─── notify stuff ──────────────────────────────────────────────────────────────
@@ -440,6 +494,7 @@ function notify(snipe: Snipe, log: Logger): void {
             icon: snipe.trigger.iconUrl,
             onClick,
         });
+        snipe.logWarn("Notification sent — unsafe link.");
         return;
     }
 
@@ -449,6 +504,7 @@ function notify(snipe: Snipe, log: Logger): void {
             body: `In: "${snipe.channel.name}" ("${snipe.guild.name}")`,
             icon: snipe.trigger.iconUrl,
         });
+        snipe.logWarn("Notification sent — join failed.");
         return;
     }
 
@@ -461,6 +517,7 @@ function notify(snipe: Snipe, log: Logger): void {
         onClick,
     });
 
+    snipe.logInfo("Notification sent.");
     log.info(`[${snipe.trigger.name}] Notified: #${snipe.channel.name} @ ${snipe.guild.name}`);
 }
 
@@ -498,18 +555,21 @@ function canForward(snipe: Snipe, log: Logger): boolean {
     const webhookUrl = snipe.trigger.forwarding.webhookUrl || settings.store.globalWebhookUrl;
     if (!webhookUrl) {
         log.warn(`[${snipe.trigger.name}] Forwarding enabled but no webhook URL configured (trigger or global).`);
+        snipe.logWarn("Forward skipped — no webhook URL configured.");
         return false;
     }
 
     const excludedGuilds = snipe.trigger.forwarding.excludedGuilds ?? [];
     if (excludedGuilds.includes(snipe.guild.id)) {
         log.info(`[${snipe.trigger.name}] Skipping forward — guild ${snipe.guild.id} is excluded.`);
+        snipe.logInfo(`Forward skipped — guild "${snipe.guild.name}" is excluded.`);
         return false;
     }
 
     const excludedChannels = snipe.trigger.forwarding.excludedChannels ?? [];
     if (excludedChannels.includes(snipe.channel.id)) {
         log.info(`[${snipe.trigger.name}] Skipping forward — channel ${snipe.channel.id} is excluded.`);
+        snipe.logInfo(`Forward skipped — channel "#${snipe.channel.name}" is excluded.`);
         return false;
     }
 
@@ -560,8 +620,11 @@ async function forwardSnipe(snipe: Snipe, log: Logger, kind: ForwardKind = "matc
     try {
         await sendWebhook(webhookUrl, body);
         log.info(`[${snipe.trigger.name}] Forward successful (${kind}).`);
+        snipe.logInfo(`Forwarded (${kind}).`);
     } catch (err) {
-        log.error(`[${snipe.trigger.name}] Forward failed: ${(err as Error).message}`);
+        const { message } = (err as Error);
+        log.error(`[${snipe.trigger.name}] Forward failed: ${message}`);
+        snipe.logError(`Forward failed: ${message}`);
     }
 }
 
@@ -588,10 +651,12 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
     if (isJoinLocked(trigger)) return;
 
     const snipe = Snipe.create(message, link, trigger, channel, guild, tMessageReceived);
+    snipe.logDebug("snipe created");
 
     // early forward
     if (snipe.trigger.forwarding.onMatch.enabled && snipe.trigger.forwarding.onMatch.early) {
         log.info(`[${snipe.trigger.name}] Forwarding early...`);
+        snipe.logInfo("Forwarding early...");
         await forwardSnipe(snipe, log);
     }
 
@@ -601,6 +666,7 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
     // late forward
     if (snipe.trigger.forwarding.onMatch.enabled && !snipe.trigger.forwarding.onMatch.early) {
         log.info(`[${snipe.trigger.name}] Forwarding late...`);
+        snipe.logInfo("Forwarding late...");
         await forwardSnipe(snipe, log);
     }
 }
