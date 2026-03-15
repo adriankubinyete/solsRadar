@@ -520,16 +520,13 @@ function RoleChipInput({ roles, onChange }: {
     );
 }
 
-// ─── Tab: General ─────────────────────────────────────────────────────────────
-
 function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
     const { name, description, iconUrl, type, state } = draft;
     const [iconAllowed, setIconAllowed] = useState<boolean | null>(null);
 
-    // those domains will generally work
     const ALWAYS_ALLOWED_DOMAINS = [
-        "github.io", // *.github.io (raw pages)
-        "githubusercontent.com", // raw.githubusercontent.com
+        "github.io",
+        "githubusercontent.com",
         "cdn.discordapp.com",
     ];
 
@@ -545,20 +542,17 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
         }
     }, [iconUrl]);
 
+    const patchState = (p: Partial<typeof state>) => patch({ state: { ...state, ...p } });
+
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
-            <p style={S.sectionTitle}>Behavior</p>
-
-            <SwitchField label="Enabled" hint="Whether this trigger is active." value={state.enabled} onChange={v => patch({ state: { ...state, enabled: v } })} />
-            <SwitchField label="Automatic Join" hint="Automatically join the match when triggered." value={state.autojoin} onChange={v => patch({ state: { ...state, autojoin: v } })} />
-            <SwitchField label="Notification" hint="Show a notification when matched." value={state.notify} onChange={v => patch({ state: { ...state, notify: v } })} />
-
-            <p style={S.sectionTitle}>Details</p>
+            {/* ── Identity ── */}
+            <p style={S.sectionTitle}>Identity</p>
 
             <SelectField
-                label="Trigger Type *"
-                hint="What kind of trigger is this?"
+                label="Type *"
+                hint="Controls what kind of event this trigger watches for."
                 options={TRIGGER_TYPE_OPTIONS}
                 value={type}
                 onChange={v => patch({
@@ -568,55 +562,88 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
                         : undefined,
                 })}
             />
-            <TextField label="Trigger Name *" value={name} placeholder="e.g. Glitch" onChange={v => patch({ name: v })} />
-            <TextField label="Trigger Description" value={description} placeholder="Optional" onChange={v => patch({ description: v })} />
             <TextField
-                label="Trigger Icon URL"
+                label="Name *"
+                value={name}
+                placeholder="e.g. Glitch"
+                onChange={v => patch({ name: v })}
+            />
+            <TextField
+                label="Description"
+                value={description}
+                placeholder="Optional — just for your own reference"
+                onChange={v => patch({ description: v })}
+            />
+            <TextField
+                label="Icon URL"
                 value={iconUrl}
-                hint={iconAllowed === false
-                    ? "⚠️ Optional. Must link directly to an image.\n"
-                    : "Optional. Must link directly to an image."
-                }
+                hint="Optional. Paste a direct link to an image (must end in .png, .jpg, etc.)."
                 placeholder="https://i.imgur.com/example.png"
                 onChange={v => patch({ iconUrl: v })}
             />
-            {iconAllowed === false &&
+            {iconAllowed === false && (
                 <p style={{ ...S.noteDanger, fontSize: 14 }}>
-                    Your current image link will probably not load due to Discord's Content Security Policy (CSP).
-                    To avoid this, use an image from <strong>cdn.discordapp.com</strong>, <strong>i.imgur.com</strong> or <strong>githubusercontent.com</strong> instead.<br />
-                    <strong>Note: this has no impact on the functionality of the trigger!</strong>
+                    This image probably won't load — Discord blocks external images that aren't on its allowlist.
+                    Use an image from <strong>cdn.discordapp.com</strong>, <strong>imgur.com</strong> or <strong>githubusercontent.com</strong> instead.<br />
+                    <strong>This doesn't affect how the trigger works, only the icon display.</strong>
                 </p>
-            }
-            {iconAllowed === true &&
-                <p style={{ ...S.noteSuccess, fontSize: 14 }}>✅ Your image will most likely load.</p>
-            }
+            )}
+            {iconAllowed === true && (
+                <p style={{ ...S.noteSuccess, fontSize: 14 }}>✅ This image should load correctly.</p>
+            )}
 
-            <p style={S.sectionTitle}>Join Lock</p>
-
-            <p style={S.sectionDescription}>This section sets the join lock for this trigger, preventing higher or equal priority triggers from auto-joining for a set duration. This is useful for avoiding re-joins due to repeated messages, which can send you to the server's queue.</p>
+            {/* ── Behavior ── */}
+            <p style={S.sectionTitle}>Behavior</p>
 
             <SwitchField
-                label="Join lock"
-                hint="Prevent auto-joins from triggers of priority equal to or higher than this'."
+                label="Enabled"
+                hint="Turn this trigger on or off without deleting it."
+                value={state.enabled}
+                onChange={v => patchState({ enabled: v })}
+            />
+            <SwitchField
+                label="Auto Join"
+                hint="Automatically join the Roblox server when this trigger fires."
+                value={state.autojoin}
+                onChange={v => patchState({ autojoin: v })}
+            />
+            <SwitchField
+                label="Notification"
+                hint="Show a desktop notification when this trigger matches."
+                value={state.notify}
+                onChange={v => patchState({ notify: v })}
+            />
+
+            {/* ── Join Lock ── */}
+            <p style={S.sectionTitle}>Join Lock</p>
+            <p style={S.sectionDescription}>
+                After this trigger fires, join lock temporarily blocks other auto-joins of equal or higher priority.
+                Useful when the same biome gets posted multiple times in a row — without this, you'd get sent to the queue repeatedly.
+            </p>
+
+            <SwitchField
+                label="Enable join lock"
+                hint="Block other auto-joins for a short time after this trigger fires."
                 value={state.joinlock}
-                onChange={v => patch({ state: { ...state, joinlock: v } })}
+                onChange={v => patchState({ joinlock: v })}
             />
             {state.joinlock && (
                 <>
                     <TextField
-                        label="Join Priority"
-                        hint="Lower number means higher priority. Defaults to 10."
+                        label="Priority"
+                        hint="Triggers with a lower number have higher priority. The join lock only blocks triggers at this priority level or higher. Default is 10."
                         value={String(state.priority)}
-                        placeholder="e.g. 10"
+                        placeholder="10"
                         type="number"
-                        onChange={v => patch({ state: { ...state, priority: Number(v) } })}
+                        onChange={v => patchState({ priority: Number(v) })}
                     />
                     <TextField
-                        label="Join Lock duration (seconds)"
+                        label="Lock Duration (seconds)"
+                        hint="How many seconds to block auto-joins after this trigger fires."
                         value={String(state.joinlockDuration)}
-                        hint="How long to prevent joins after matching this trigger."
+                        placeholder="e.g. 30"
                         type="number"
-                        onChange={v => patch({ state: { ...state, joinlockDuration: Number(v) } })}
+                        onChange={v => patchState({ joinlockDuration: Number(v) })}
                     />
                 </>
             )}
@@ -629,28 +656,41 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
 
 function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions; onChange: (c: TriggerConditions) => void; }) {
     const { keywords } = conditions;
-    const [newId, setNewId] = React.useState("");
-    const [newLabel, setNewLabel] = React.useState("");
 
-    const patchMatch = (p: Partial<typeof keywords.match>) => onChange({ ...conditions, keywords: { ...keywords, match: { ...keywords.match, ...p } } });
-    const patchExclude = (p: Partial<typeof keywords.exclude>) => onChange({ ...conditions, keywords: { ...keywords, exclude: { ...keywords.exclude, ...p } } });
+    const patchKeywords = (side: "match" | "exclude", p: Partial<typeof keywords.match>) =>
+        onChange({ ...conditions, keywords: { ...keywords, [side]: { ...keywords[side], ...p } } });
+
+    const strictHint = (example: string) =>
+        `When enabled, "${example}" only matches the word "${example}" by itself — not "${example}s" or "${example}ing".`;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
             <p style={S.sectionTitle}>Match Keywords</p>
             <p style={S.sectionDescription}>Message must contain at least one of these. Separate with commas.</p>
-            <KeywordsInput label="Keywords" value={keywords.match.value} onChange={v => patchMatch({ value: v })} placeholder="cyber, cyberspace, cyber space" />
-            <SwitchField label="Strict match" hint="Must match exact word boundary, not just a substring." value={keywords.match.strict} onChange={v => patchMatch({ strict: v })} />
+            <KeywordsInput label="Keywords" value={keywords.match.value} onChange={v => patchKeywords("match", { value: v })} placeholder="cyber, cyberspace, cyber space" />
+            <SwitchField
+                label="Strict match"
+                hint={strictHint(keywords.match.value[0] ?? "cyber")}
+                value={keywords.match.strict}
+                onChange={v => patchKeywords("match", { strict: v })}
+            />
 
             <p style={S.sectionTitle}>Exclude Keywords</p>
             <p style={S.sectionDescription}>Message must <strong>NOT</strong> contain any of these. Separate with commas.</p>
-            <KeywordsInput label="Keywords" value={keywords.exclude.value} onChange={v => patchExclude({ value: v })} placeholder="hunt, help" />
-            <SwitchField label="Strict match" hint="Must match exact word boundary, not just a substring." value={keywords.exclude.strict} onChange={v => patchExclude({ strict: v })} />
+            <KeywordsInput label="Keywords" value={keywords.exclude.value} onChange={v => patchKeywords("exclude", { value: v })} placeholder="hunt, help" />
+            <SwitchField
+                label="Strict match"
+                hint={strictHint(keywords.exclude.value[0] ?? "hunt")}
+                value={keywords.exclude.strict}
+                onChange={v => patchKeywords("exclude", { strict: v })}
+            />
 
             <p style={S.sectionTitle}>Mention Roles</p>
-            <p style={S.sectionDescription}>Match if the message pings any of these roles. Leave empty to skip this check.<br />
-                <strong>If both keywords and roles are configured, either one is enough to match.</strong></p>
+            <p style={S.sectionDescription}>
+                Match if the message pings any of these roles. Leave empty to skip this check.<br />
+                <strong>If both keywords and roles are configured, either one is enough to match.</strong>
+            </p>
             <RoleChipInput roles={conditions.mentionRoles} onChange={roles => onChange({ ...conditions, mentionRoles: roles })} />
 
         </div>
@@ -660,19 +700,23 @@ function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions
 // ─── Tab: Biome ───────────────────────────────────────────────────────────────
 
 function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: TriggerBiome) => void; }) {
-    const { detectorEnabled, detectorAccounts } = settings.use([
-        "detectorEnabled", "detectorAccounts",
-    ]);
+    const { detectorEnabled, detectorAccounts } = settings.use(["detectorEnabled", "detectorAccounts"]);
+    const patch = (p: Partial<TriggerBiome>) => onChange({ ...biome, ...p });
 
-    const hasAccounts = !!detectorAccounts;
+    const globallyDisabled = !detectorEnabled;
+    const noAccounts = !detectorAccounts;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
-            {(!detectorEnabled || !hasAccounts) && (
+            {globallyDisabled && (
                 <p style={S.noteDanger}>
-                    You either have biome detection disabled in the plugin's settings, or you have no accounts configured.<br />
-                    Biome detection will not work.
+                    Biome detection is disabled in the plugin settings. Enable it there first.
+                </p>
+            )}
+            {!globallyDisabled && noAccounts && (
+                <p style={S.noteDanger}>
+                    No accounts configured. Biome detection will not work until you add one in the plugin settings.
                 </p>
             )}
 
@@ -682,7 +726,7 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
                 label="Enable biome detection"
                 hint="Verify the biome after joining by reading Roblox log files."
                 value={biome.detectionEnabled}
-                onChange={v => onChange({ ...biome, detectionEnabled: v })}
+                onChange={v => patch({ detectionEnabled: v })}
             />
 
             {biome.detectionEnabled ? (
@@ -692,7 +736,7 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
                         hint='Matches the BloxstrapRPC "hoverText" field in the Roblox log. Case-insensitive.'
                         value={biome.detectionKeyword}
                         placeholder="e.g. GLITCHED"
-                        onChange={v => onChange({ ...biome, detectionKeyword: v })}
+                        onChange={v => patch({ detectionKeyword: v })}
                     />
 
                     <p style={S.sectionTitle}>Behavior</p>
@@ -701,11 +745,11 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
                         label="Skip redundant join"
                         hint="If already in the detected biome, skip the join. Will still notify."
                         value={biome.skipRedundantJoin}
-                        onChange={v => onChange({ ...biome, skipRedundantJoin: v })}
+                        onChange={v => patch({ skipRedundantJoin: v })}
                     />
                 </>
             ) : (
-                <p style={S.note}>Enable biome detection above to configure the keyword and behavior options.</p>
+                <p style={S.note}>Enable biome detection above to configure keyword and behavior options.</p>
             )}
 
         </div>
@@ -716,77 +760,88 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
 
 function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
     const { conditions } = draft;
-    const { bypassMonitoredOnly, bypassIgnoredChannels, bypassIgnoredGuilds, bypassMatchAmbiguity, bypassLinkVerification, fromUser, ignoredChannels, ignoredGuilds, inChannel } = conditions;
+    const {
+        bypassMonitoredOnly, bypassIgnoredChannels, bypassIgnoredGuilds,
+        bypassMatchAmbiguity, bypassLinkVerification,
+        fromUser, ignoredChannels, ignoredGuilds, inChannel,
+    } = conditions;
+
+    const patchConditions = (p: Partial<typeof conditions>) =>
+        patch({ conditions: { ...conditions, ...p } });
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
+            {/* ── Filters ── */}
+            <p style={S.sectionTitle}>Filters</p>
+            <p style={S.sectionDescription}>
+                Narrow down when this trigger fires. All active filters must pass for a match.
+            </p>
+
+            <IdChipInput
+                kind="user"
+                label="Allowed Users"
+                hint="Only match messages from these users. Leave empty to allow any user."
+                ids={fromUser}
+                onChange={ids => patchConditions({ fromUser: ids })}
+            />
+            <IdChipInput
+                kind="channel"
+                label="Allowed Channels"
+                hint="Only match in these channels, in addition to monitored channels. Leave empty for any channel."
+                ids={inChannel}
+                onChange={ids => patchConditions({ inChannel: ids })}
+            />
+            <IdChipInput
+                kind="channel"
+                label="Ignored Channels"
+                hint="Never match in these channels, even if other conditions pass."
+                ids={ignoredChannels}
+                onChange={ids => patchConditions({ ignoredChannels: ids })}
+            />
+            <IdChipInput
+                kind="guild"
+                label="Ignored Guilds"
+                hint="Never match in these guilds. Useful for servers with no-sniper policies."
+                ids={ignoredGuilds}
+                onChange={ids => patchConditions({ ignoredGuilds: ids })}
+            />
+
+            {/* ── Bypasses ── */}
             <p style={S.sectionTitle}>Bypasses</p>
-            <p style={{ ...S.noteDanger, fontSize: 14 }}>These options disable safety checks. Only change them if you know what you're doing.</p>
+            <p style={{ ...S.noteDanger, fontSize: 14 }}>
+                These options disable global safety checks. Only enable them if you know what you're doing.
+            </p>
 
             <SwitchField
                 label="Bypass monitored channels"
-                hint="Ignore the monitored channels setting. This trigger matches in any channel."
+                hint="Ignore the monitored channels setting — match in any channel."
                 value={bypassMonitoredOnly}
-                onChange={v => patch({ conditions: { ...conditions, bypassMonitoredOnly: v } })}
+                onChange={v => patchConditions({ bypassMonitoredOnly: v })}
             />
             <SwitchField
                 label="Bypass ignored channels"
-                hint="Ignore the ignored channels setting. This trigger matches even in ignored channels."
+                hint="Ignore the ignored channels setting — match even in ignored channels."
                 value={bypassIgnoredChannels}
-                onChange={v => patch({ conditions: { ...conditions, bypassIgnoredChannels: v } })}
+                onChange={v => patchConditions({ bypassIgnoredChannels: v })}
             />
             <SwitchField
                 label="Bypass ignored guilds"
-                hint="Ignore the ignored guilds setting. This trigger matches even in ignored guilds."
+                hint="Ignore the ignored guilds setting — match even in ignored guilds."
                 value={bypassIgnoredGuilds}
-                onChange={v => patch({ conditions: { ...conditions, bypassIgnoredGuilds: v } })}
+                onChange={v => patchConditions({ bypassIgnoredGuilds: v })}
             />
             <SwitchField
                 label="Bypass match ambiguity"
-                hint="Always treat this trigger as unambiguous, even if multiple triggers match."
+                hint="Always treat this trigger as unambiguous, even if multiple triggers match simultaneously."
                 value={bypassMatchAmbiguity}
-                onChange={v => patch({ conditions: { ...conditions, bypassMatchAmbiguity: v } })}
+                onChange={v => patchConditions({ bypassMatchAmbiguity: v })}
             />
             <SwitchField
                 label="Bypass link verification"
                 hint="Skip Place ID verification for this trigger."
                 value={bypassLinkVerification}
-                onChange={v => patch({ conditions: { ...conditions, bypassLinkVerification: v } })}
-            />
-
-            <p style={S.sectionTitle}>User Filter</p>
-            <IdChipInput
-                kind="user"
-                label="Allowed Users"
-                hint="Only match messages from these users. Leave empty to match any user."
-                ids={fromUser}
-                onChange={ids => patch({ conditions: { ...conditions, fromUser: ids } })}
-            />
-
-            <p style={S.sectionTitle}>Channel Filter</p>
-            <IdChipInput
-                kind="channel"
-                label="Allowed Channels"
-                hint="In addition to monitored channels, only match this trigger in these channels. Leave empty for any channel."
-                ids={inChannel}
-                onChange={ids => patch({ conditions: { ...conditions, inChannel: ids } })}
-            />
-            <IdChipInput
-                kind="channel"
-                label="Ignored Channels"
-                hint="Never match this trigger in these channels, even if other conditions pass."
-                ids={ignoredChannels}
-                onChange={ids => patch({ conditions: { ...conditions, ignoredChannels: ids } })}
-            />
-
-            <p style={S.sectionTitle}>Guild Filter</p>
-            <IdChipInput
-                kind="guild"
-                label="Ignored Guilds"
-                hint="Never match this trigger in these guilds, even if other conditions pass. Useful for guilds with no-sniper policies."
-                ids={ignoredGuilds}
-                onChange={ids => patch({ conditions: { ...conditions, ignoredGuilds: ids } })}
+                onChange={v => patchConditions({ bypassLinkVerification: v })}
             />
 
         </div>
@@ -847,7 +902,7 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
 
             <SwitchField
                 label="Enabled"
-                hint="Fires when the trigger matches"
+                hint="Sends a message to the webhook when the trigger matches."
                 value={forwarding.onMatch.enabled}
                 onChange={v => patch({ onMatch: { ...forwarding.onMatch, enabled: v } })}
             />
@@ -867,7 +922,7 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
 
                 <SwitchField
                     label="Enabled"
-                    hint="Fires when your detection confirms the biome is real."
+                    hint="Sends a message to the webhook when the biome is detected."
                     value={forwarding.onDetection.enabled}
                     onChange={v => patch({ onDetection: { enabled: v } })}
                 />
@@ -882,6 +937,19 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
                     (Rare Biome, Event Biome, Biome, Weather, Custom).
                 </p>
             )}
+
+            {/* ── Forwarding Filters ── */}
+            <p style={S.sectionTitle}>Forwarding Filters</p>
+            <p style={S.sectionDescription}>
+                Messages originating from these servers will <strong>never</strong> be forwarded. Useful for guilds with no-sharing policies.
+            </p>
+            <IdChipInput
+                kind="guild"
+                label="Excluded Guilds"
+                hint="Add any server you don't want to forward matches from."
+                ids={forwarding.excludedGuilds ?? []}
+                onChange={ids => patch({ excludedGuilds: ids })}
+            />
 
         </div>
     );

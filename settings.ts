@@ -7,7 +7,16 @@
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
+import { OpenPluginButton } from "./components/buttons/OpenPluginButton";
+
 export const settings = definePluginSettings({
+
+    _openPlugin: {
+        type: OptionType.COMPONENT,
+        description: "Use this button to open the plugin's menu if the button is hidden or not showing up.",
+        component: OpenPluginButton,
+    },
+
     // main ui stuff
     pluginIconLocation: {
         type: OptionType.SELECT,
@@ -27,7 +36,8 @@ export const settings = definePluginSettings({
             { label: "Toggle global notifications", value: "toggle_notification" },
             { label: "Toggle both (default)", value: "toggle_both", default: true },
             { label: "Do nothing", value: "none" }
-        ]
+        ],
+        hidden: true,
     },
 
     // main behavior
@@ -35,23 +45,28 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Global auto-join state. Takes precedence over the trigger-specific setting.",
         default: false,
+        hidden: true,
     },
     notificationEnabled: {
         type: OptionType.BOOLEAN,
         description: "Global notification state. Takes precedence over the trigger-specific setting.",
-        default: false
+        default: false,
+        hidden: true,
     },
     closeGameBeforeJoin: {
         type: OptionType.BOOLEAN,
         description: "Close Roblox before attempting to join a server. Slightly increases join time (~100-200ms) but prevents joins from straight up failing.",
         default: true,
+        hidden: true,
     },
 
     // others
     flattenEmbeds: {
         type: OptionType.BOOLEAN,
         description: "Whether to merge embeds into the message content when checking for triggers. If you're monitoring a Macro server, you might want to enable this.",
-        default: true
+        default: true,
+        hidden: true,
+
     },
     // @NOTE
     // there is already forward-loop prevention for self-webhooks
@@ -59,17 +74,20 @@ export const settings = definePluginSettings({
     ignoreWebhookForwards: {
         type: OptionType.BOOLEAN,
         description: "With this enabled, if an embed footer contains the text 'solradar', it will be ignored. Only disable this if you know what you're doing!",
-        default: true
+        default: true,
+        hidden: true,
     },
     globalWebhookUrl: {
         type: OptionType.STRING,
-        description: "For any setting where you want to send notifications, this webhook URL will be used by default if one wasn't provided in the specific setting.",
-        default: ""
+        description: "Fallback webhook URL used when a trigger has forwarding enabled but no webhook configured. Triggers with their own webhook URL will use that instead.",
+        default: "",
+        hidden: true,
     },
     censorWebhooks: {
         type: OptionType.BOOLEAN,
         description: "If enabled, the fields 'Sent by' and 'Sent in' from webhook notifications will be redacted.",
-        default: false
+        default: false,
+        hidden: true,
     },
 
     // ui
@@ -77,6 +95,7 @@ export const settings = definePluginSettings({
         type: OptionType.BOOLEAN,
         description: "Whether to hide the red 'inactive' dot in menu button when joins are disabled.",
         default: true,
+        hidden: true,
     },
 
     // monitoring
@@ -84,21 +103,25 @@ export const settings = definePluginSettings({
         type: OptionType.STRING,
         description: "Comma-separated list of channel IDs that the plugin should monitor. If empty, no channel will be monitored. Example: `123456789012345678, 987654321098765432`",
         default: "",
+        hidden: true,
     },
     ignoredGuilds: {
         type: OptionType.STRING,
-        description: "Comma-separated list of guild IDs that the plugin should ignore. Useful if you want to use the plugin but avoid monitoring a specific guild. Created because of Glitch Hunting servers with a no-snipers policy. Example: `123456789012345678, 987654321098765432`",
+        description: "Comma-separated list of guild IDs that are always ignored, regardless of what any trigger says. Use this for servers with no-sniper policies. Example: `123456789012345678, 987654321098765432`",
         default: "",
+        hidden: true,
     },
     ignoredChannels: {
         type: OptionType.STRING,
         description: "Comma-separated list of channel IDs that the plugin should ignore. Example: `123456789012345678, 987654321098765432`",
         default: "",
+        hidden: true,
     },
     ignoredUsers: {
         type: OptionType.STRING,
         description: "Comma-separated list of user IDs that the plugin should ignore. Example: `123456789012345678, 987654321098765432`",
         default: "",
+        hidden: true,
     },
 
     // link check
@@ -109,7 +132,8 @@ export const settings = definePluginSettings({
             { label: "Disabled", value: "disabled", default: true },
             { label: "Before Joining (slower, safer)", value: "before" },
             { label: "After Joining", value: "after" },
-        ]
+        ],
+        hidden: true,
     },
     robloxToken: {
         type: OptionType.STRING,
@@ -123,12 +147,14 @@ export const settings = definePluginSettings({
             { label: "Nothing (not recommended)", value: "nothing" },
             { label: "Join a public server", value: "public", default: true },
             { label: "Close Roblox", value: "close" },
-        ]
+        ],
+        hidden: true,
     },
     allowedPlaceIds: {
         type: OptionType.STRING,
         description: "Comma-separated list of place IDs that are allowed to be joined. If empty, all place IDs are allowed. Example: `123456789012345678, 987654321098765432`",
         default: "",
+        hidden: true,
     },
 
     // detector

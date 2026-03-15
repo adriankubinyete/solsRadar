@@ -501,6 +501,13 @@ async function forwardSnipe(snipe: Snipe, log: Logger, kind: ForwardKind = "matc
         return;
     }
 
+    // ── Guild exclusion check ─────────────────────────────────────────────────
+    const excludedGuilds = snipe.trigger.forwarding.excludedGuilds ?? [];
+    if (excludedGuilds.includes(snipe.guild.id)) {
+        log.info(`[${snipe.trigger.name}] Skipping forward — guild ${snipe.guild.id} is excluded.`);
+        return;
+    }
+
     const isDetection = kind === "detection";
     const hasBiome = snipe.trigger.type !== "MERCHANT";
     const censor = settings.store.censorWebhooks;

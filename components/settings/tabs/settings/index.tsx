@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { React } from "@webpack/common";
+import { React, TextInput } from "@webpack/common";
 
 import { settings } from "../../../../settings";
 import { Setting } from "./Setting";
@@ -52,104 +52,144 @@ const warningNote: React.CSSProperties = {
     color: "var(--status-warning)",
     background: "hsl(38deg 95% 54% / 10%)",
 };
-
 // ─── SettingsTab ──────────────────────────────────────────────────────────────
+
+type SettingEntry = {
+    id: keyof typeof settings.store;
+    label: string;
+    description?: string;
+};
+
+type Section = {
+    title: string;
+    note?: React.ReactNode;
+    entries: SettingEntry[];
+};
 
 export function SettingsTab() {
     const { linkVerification, robloxToken } = settings.use([
         "linkVerification",
         "robloxToken",
     ]);
+    const [search, setSearch] = React.useState("");
 
     const verificationEnabled = linkVerification !== "disabled";
     const hasToken = !!robloxToken;
 
-    return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 20 }}>
-
-            {/* ── General ──────────────────────────────────────────────── */}
-            <p style={sectionTitle}>General</p>
-            <Setting id="autoJoinEnabled" description="Allow triggers to execute auto-joins. Disable to quickly stop all auto-joins." label="Auto-joins" />
-            <Setting id="notificationEnabled" description="Allow triggers to send notifications." label="Notifications" />
-            <Setting id="flattenEmbeds" label="Interpret Embeds"
-                description="Merge embed titles/descriptions into message content when matching triggers. Enable this if you intend to monitor macro servers." />
-
-            {/* ── Plugin Icon ───────────────────────────────────────────── */}
-            {/* <p style={sectionTitle}>Plugin Icon</p>
-            <Setting id="pluginIconShortcutAction" label="Right-click Shortcut" /> */}
-
-            {/* ── Game Launch ───────────────────────────────────────────── */}
-            <p style={sectionTitle}>Game Launch</p>
-            <Setting id="closeGameBeforeJoin" label="Close Game Before Joining" description="Adds ~200–400ms to your join time but prevents Roblox from silently failing to launch. Disable only if you always close your game manually before sniping." />
-            {/* <p style={note("default")}>
-                Adds ~200–400ms to your join time but prevents Roblox from silently failing to launch.
-                Disable only if you always close your game manually before sniping.
-            </p> */}
-
-            {/* ── Channel Monitoring ────────────────────────────────────── */}
-            <p style={sectionTitle}>Channel Monitoring</p>
-            <Setting id="monitoredChannels" label="Monitored Channels"
-                description="Comma-separated channel IDs. Leave empty to monitor all possible channels." />
-            <Setting id="ignoredGuilds" label="Ignored Guilds"
-                description="Comma-separated guild IDs. Messages from these guilds are always ignored." />
-            <Setting id="ignoredChannels" label="Ignored Channels"
-                description="Comma-separated channel IDs. Messages on these channels are always ignored." />
-            <Setting id="ignoredUsers" label="Ignored Users"
-                description="Comma-separated user IDs. Messages from these users are always ignored." />
-
-            {/* ── Link Verification ─────────────────────────────────────── */}
-            <p style={sectionTitle}>Link Verification</p>
-            <Setting id="linkVerification" label="Verification Mode" />
-
-            {verificationEnabled ? (
+    const sections: Section[] = [
+        {
+            title: "General",
+            entries: [
+                { id: "autoJoinEnabled", label: "Auto-joins", description: "Allow triggers to auto-join servers. Disable this to quickly pause all auto-joins without touching individual triggers." },
+                { id: "notificationEnabled", label: "Notifications", description: "Show a desktop notification when a trigger matches." },
+                { id: "flattenEmbeds", label: "Interpret Embeds", description: "Include embed titles and descriptions when matching triggers. Enable this if you monitor macro servers that post biomes inside embeds rather than plain messages." },
+            ],
+        },
+        {
+            title: "Game Launch",
+            entries: [
+                { id: "closeGameBeforeJoin", label: "Close Game Before Joining", description: "Closes any running Roblox instance before launching a new one. Adds ~200–400ms to join time, but prevents Roblox from silently failing to launch. Only disable this if you always close the game yourself before sniping." },
+            ],
+        },
+        {
+            title: "Interface",
+            entries: [
+                { id: "hideInactiveIndicator", label: "Hide Inactive Indicator", description: "Hide the red dot on the menu button when auto-join is disabled." },
+            ],
+        },
+        {
+            title: "Forwarding",
+            entries: [
+                { id: "globalWebhookUrl", label: "Global Webhook URL" },
+                { id: "censorWebhooks", label: "Censor Webhooks", description: "Redact sender and channel info from forwarded webhook messages." },
+            ],
+        },
+        {
+            title: "Channel Monitoring",
+            entries: [
+                { id: "monitoredChannels", label: "Monitored Channels", description: "Comma-separated channel IDs. When set, only messages in these channels are considered. Leave empty to watch all channels." },
+                { id: "ignoredGuilds", label: "Ignored Guilds", description: "Comma-separated guild IDs. Messages from these servers are always ignored, regardless of trigger settings." },
+                { id: "ignoredChannels", label: "Ignored Channels", description: "Comma-separated channel IDs. Messages in these channels are always ignored, regardless of trigger settings." },
+                { id: "ignoredUsers", label: "Ignored Users", description: "Comma-separated user IDs. Messages from these users are always ignored, regardless of trigger settings." },
+            ],
+        },
+        {
+            title: "Link Verification",
+            entries: [
+                { id: "linkVerification", label: "Verification Mode" },
+                ...(verificationEnabled ? [
+                    { id: "allowedPlaceIds" as const, label: "Allowed Place IDs", description: "Comma-separated. Only links pointing to these Place IDs will be accepted. Leave empty to allow any place." },
+                    { id: "onBadLink" as const, label: "Action on Bad Link" },
+                ] : []),
+            ],
+            note: verificationEnabled ? (
                 <>
-                    <Setting id="allowedPlaceIds" label="Allowed Place IDs"
-                        description="Comma-separated. If empty, all place IDs are allowed." />
-                    <Setting id="onBadLink" label="Action on Bad Link" />
-                    {!hasToken && <p style={note("danger")}>
-                        You don't have a roblox token configured.<br />You need a roblox token to verify links. Go to the plugin page in Vencord's plugin menu to manage it.
-                    </p>}
+                    {!hasToken && (
+                        <p style={note("danger")}>
+                            No Roblox token configured — link verification won't work without one.
+                            Open Vencord's plugin settings to add your token.
+                        </p>
+                    )}
                     <p style={note("warning")}>
-                        Reminder: Link verification requires a valid roblox token. Keep this private and never share it with anyone. It is strongly advised to create an alt account just to use it's token for this.
+                        Your Roblox token is sensitive — treat it like a password and never share it.
+                        It is strongly recommended to use an alt account's token instead of your main account's.
                     </p>
                 </>
             ) : (
                 <p style={note("danger")}>
-                    Link verification is disabled.
+                    Link verification is disabled. The plugin will join any link without checking if it's valid.
                 </p>
+            ),
+        },
+        {
+            title: "Biome Detection",
+            note: (
+                <p style={note("warning")}>
+                    Biome detection settings are managed on the plugin page in Vencord's plugin menu.
+                    Any changes there require a Discord restart to take effect.
+                </p>
+            ),
+            entries: [],
+        },
+        {
+            title: "Advanced",
+            note: <p style={note("danger")}>Do <strong>NOT</strong> change these unless you know what you're doing.</p>,
+            entries: [
+                { id: "ignoreWebhookForwards", label: "Ignore Webhook Forwards", description: 'Ignore any message whose embed footer contains "solradar". Prevents the plugin from acting on its own forwarded webhooks.' },
+            ],
+        },
+    ];
+
+    const q = search.trim().toLowerCase();
+    const filtered = q
+        ? sections
+            .map(s => ({ ...s, entries: s.entries.filter(e => e.label.toLowerCase().includes(q)) }))
+            .filter(s => s.entries.length > 0)
+        : sections;
+
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 20 }}>
+
+            <TextInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Search settings…"
+                style={{ marginBottom: 4 }}
+            />
+
+            {filtered.length === 0 && (
+                <p style={note("default")}>No settings found for "{search}".</p>
             )}
 
-            {/* ── Biome Detection ───────────────────────────────────────── */}
-            <p style={sectionTitle}>Biome Detection</p>
-            <p style={note("warning")}>
-                All biome detection settings require a Discord restart to take effect. Go to the plugin page in Vencord's plugin menu to manage it.
-            </p>
-            {/* <Setting id="detectorEnabled" label="Enable Biome Detector" />
-
-            {detectorEnabled ? (
-                <>
-                    <Setting id="detectorAccounts" label="Monitored Accounts"
-                        description="Comma-separated Roblox usernames. These accounts must be logged in on this machine." />
-                    <Setting id="detectorIntervalMs" label="Polling Interval (ms)"
-                        description="How often log files are read. Recommended: 2000. Keep above 1000." />
-                    <Setting id="detectorTimeoutMs" label="Detection Timeout (ms)"
-                        description="How long to wait for a biome after joining before giving up and releasing the join lock. Recommended: 30000." />
-                    <p style={note("warning")}>
-                        All detector settings require a Discord restart to take effect.
-                        Accounts that cannot be resolved to a Roblox user ID are silently skipped.
-                    </p>
-                </>
-            ) : (
-                <p style={note("default")}>
-                    Biome detection is disabled. When enabled, the plugin reads your Roblox log files
-                    to verify that the biome you joined matches what was announced.
-                </p>
-            )} */}
-            {/* ── Advanced Settings ───────────────────────────────────────────── */}
-            <p style={sectionTitle}>Advanced</p>
-            <p style={note("danger")}>Do <strong>NOT</strong> change these settings unless you know what you're doing.</p>
-            <Setting id="ignoreWebhookForwards" label="Ignore Webhook Forwards"
-                description="If an embed footer contains the text 'solradar', it will be ignored." />
+            {filtered.map(section => (
+                <React.Fragment key={section.title}>
+                    <p style={sectionTitle}>{section.title}</p>
+                    {section.note}
+                    {section.entries.map(e => (
+                        <Setting key={e.id} id={e.id} label={e.label} description={e.description} />
+                    ))}
+                </React.Fragment>
+            ))}
 
         </div>
     );
