@@ -66,6 +66,9 @@ export interface TriggerForwarding {
     /** If a message originates from one of these guilds, don't forward it. */
     excludedGuilds: string[];
 
+    /** If a message originates from one of these channels, don't forward it. */
+    excludedChannels: string[];
+
     onMatch: {
         enabled: boolean;
         /**
@@ -135,6 +138,7 @@ export const DEFAULT_BIOME: TriggerBiome = {
 export const DEFAULT_FORWARDING: TriggerForwarding = {
     webhookUrl: "",
     excludedGuilds: [],
+    excludedChannels: [],
     onMatch: {
         enabled: false,
         early: false,
@@ -208,6 +212,7 @@ function migrateTrigger(raw: any): Trigger {
         forwarding: {
             webhookUrl: raw.forwarding?.webhookUrl ?? DEFAULT_FORWARDING.webhookUrl,
             excludedGuilds: raw.forwarding?.excludedGuilds ?? DEFAULT_FORWARDING.excludedGuilds,
+            excludedChannels: raw.forwarding?.excludedChannels ?? DEFAULT_FORWARDING.excludedChannels,
             onMatch: {
                 enabled: raw.forwarding?.onMatch?.enabled ?? DEFAULT_FORWARDING.onMatch.enabled,
                 early: raw.forwarding?.onMatch?.early ?? DEFAULT_FORWARDING.onMatch.early,

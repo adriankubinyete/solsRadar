@@ -388,10 +388,61 @@ function IdChipInput({ kind, label, hint, ids, onChange }: {
             {hint && <span style={S.hint}>{hint}</span>}
 
             {ids.length > 0 && (
-                <div style={chip.list}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
                     {ids.map(id => {
                         const entry = resolveId(id, kind) ?? { kind, id, name: id } as ResolvedEntry;
-                        return <EntryChip key={id} entry={entry} onRemove={() => onChange(ids.filter(i => i !== id))} />;
+
+                        const avatarUrl = entry.kind === "user"
+                            ? (entry as ResolvedUser).avatarUrl
+                            : entry.kind === "guild"
+                                ? (entry as ResolvedGuild).iconUrl
+                                : (entry as ResolvedChannel).guildIcon;
+
+                        const isRound = entry.kind === "user";
+                        const avatarRadius = isRound ? "50%" : 6;
+
+                        const initial = (entry.kind === "channel"
+                            ? ((entry as ResolvedChannel).guildName ?? entry.name)
+                            : entry.name || "?"
+                        ).charAt(0).toUpperCase();
+
+                        const label = entry.kind === "user"
+                            ? ((entry as ResolvedUser).discriminator
+                                ? `${entry.name}#${(entry as ResolvedUser).discriminator}`
+                                : entry.name)
+                            : entry.kind === "guild"
+                                ? entry.name
+                                : `#${entry.name}`;
+
+                        const sub = entry.kind === "channel" && (entry as ResolvedChannel).guildName
+                            ? (entry as ResolvedChannel).guildName!
+                            : entry.id;
+
+                        return (
+                            <div key={id} style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                padding: "8px 12px",
+                                borderRadius: 6,
+                                background: "var(--background-mod-strong)",
+                            }}>
+                                {avatarUrl
+                                    ? <img src={avatarUrl} alt="" style={{ width: 28, height: 28, borderRadius: avatarRadius, objectFit: "cover", flexShrink: 0 }} />
+                                    : <div style={{ width: 28, height: 28, borderRadius: avatarRadius, background: "var(--brand-500)", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{initial}</div>
+                                }
+
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 13, color: "var(--text-default)", fontWeight: 500 }}>{label}</div>
+                                    <div style={{ fontSize: 11, color: "var(--text-muted)", fontFamily: "var(--font-code)" }}>{sub}</div>
+                                </div>
+
+                                <button
+                                    onClick={() => onChange(ids.filter(i => i !== id))}
+                                    style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 18, padding: 0, lineHeight: 1, flexShrink: 0 }}
+                                >×</button>
+                            </div>
+                        );
                     })}
                 </div>
             )}
@@ -941,7 +992,7 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
             {/* ── Forwarding Filters ── */}
             <p style={S.sectionTitle}>Forwarding Filters</p>
             <p style={S.sectionDescription}>
-                Messages originating from these servers will <strong>never</strong> be forwarded. Useful for guilds with no-sharing policies.
+                Messages originating from these will <strong>never</strong> be forwarded. Useful for guilds with no-sharing policies, or other reasons you might have to not want a forward.
             </p>
             <IdChipInput
                 kind="guild"
@@ -949,6 +1000,13 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
                 hint="Add any server you don't want to forward matches from."
                 ids={forwarding.excludedGuilds ?? []}
                 onChange={ids => patch({ excludedGuilds: ids })}
+            />
+            <IdChipInput
+                kind="channel"
+                label="Excluded Channels"
+                hint="Add any channel you don't want to forward matches from."
+                ids={forwarding.excludedChannels ?? []}
+                onChange={ids => patch({ excludedChannels: ids })}
             />
 
         </div>

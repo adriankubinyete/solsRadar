@@ -494,20 +494,32 @@ function isValidMessage(message: Message, log: Logger): boolean {
 
 type ForwardKind = "match" | "detection";
 
-async function forwardSnipe(snipe: Snipe, log: Logger, kind: ForwardKind = "match"): Promise<void> {
+function canForward(snipe: Snipe, log: Logger): boolean {
     const webhookUrl = snipe.trigger.forwarding.webhookUrl || settings.store.globalWebhookUrl;
     if (!webhookUrl) {
         log.warn(`[${snipe.trigger.name}] Forwarding enabled but no webhook URL configured (trigger or global).`);
-        return;
+        return false;
     }
 
-    // ── Guild exclusion check ─────────────────────────────────────────────────
     const excludedGuilds = snipe.trigger.forwarding.excludedGuilds ?? [];
     if (excludedGuilds.includes(snipe.guild.id)) {
         log.info(`[${snipe.trigger.name}] Skipping forward — guild ${snipe.guild.id} is excluded.`);
-        return;
+        return false;
     }
 
+    const excludedChannels = snipe.trigger.forwarding.excludedChannels ?? [];
+    if (excludedChannels.includes(snipe.channel.id)) {
+        log.info(`[${snipe.trigger.name}] Skipping forward — channel ${snipe.channel.id} is excluded.`);
+        return false;
+    }
+
+    return true;
+}
+
+async function forwardSnipe(snipe: Snipe, log: Logger, kind: ForwardKind = "match"): Promise<void> {
+    if (!canForward(snipe, log)) return;
+
+    const webhookUrl = snipe.trigger.forwarding.webhookUrl || settings.store.globalWebhookUrl;
     const isDetection = kind === "detection";
     const hasBiome = snipe.trigger.type !== "MERCHANT";
     const censor = settings.store.censorWebhooks;
