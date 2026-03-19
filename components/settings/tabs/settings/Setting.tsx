@@ -9,6 +9,7 @@ import { OptionType } from "@utils/types";
 import { React, Select, TextInput } from "@webpack/common";
 
 import { settings } from "../../../../settings";
+import { ChipKind, IdChipInput } from "../../../IdChipInput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ export type SettingProps = {
     description?: string; // shown below the control as a hint
     disabled?: boolean;
     style?: React.CSSProperties;
+    chipKind?: ChipKind;
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -127,6 +129,25 @@ const S = {
 // Lazy getter — não acessa settings.store no module scope, só em render time
 const s = () => settings.store as Record<string, any>;
 
+function IdChipControl({ id, kind, label, hint }: {
+    id: SettingsKey;
+    kind: ChipKind;
+    label: string;
+    hint?: string;
+}) {
+    const raw = settings.use([id])[id] as string ?? "";
+    const ids = raw.split(",").map(v => v.trim()).filter(Boolean);
+    return (
+        <IdChipInput
+            kind={kind}
+            label={label}
+            hint={hint}
+            ids={ids}
+            onChange={newIds => { s()[id] = newIds.join(", "); }}
+        />
+    );
+}
+
 function BooleanControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; }) {
     const value = settings.use([id])[id] as boolean;
     return (
@@ -140,31 +161,31 @@ function BooleanControl({ id, disabled }: { id: SettingsKey; disabled?: boolean;
     );
 }
 
-function SelectControl({ id, disabled }: { id: SettingsKey; disabled?: boolean }) {
-  const def = settings.def[id] as any;
-  const value = settings.use([id])[id];
-  const options = def.options ?? [];
+function SelectControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; }) {
+    const def = settings.def[id] as any;
+    const value = settings.use([id])[id];
+    const options = def.options ?? [];
 
-  const handleChange = (selectedValue: any) => {
-    s()[id] = selectedValue;
-  };
+    const handleChange = (selectedValue: any) => {
+        s()[id] = selectedValue;
+    };
 
-  const isSelected = (optionValue: any) => {
-    return optionValue === value;
-  };
+    const isSelected = (optionValue: any) => {
+        return optionValue === value;
+    };
 
-  return (
-    <Select
-      placeholder={def.placeholder ?? "Select an option"}
-      options={options}
-      maxVisibleItems={5}
-      closeOnSelect={true}
-      select={handleChange}
-      isSelected={isSelected}
-      serialize={v => String(v)}
-      {...def.componentProps}
-    />
-  );
+    return (
+        <Select
+            placeholder={def.placeholder ?? "Select an option"}
+            options={options}
+            maxVisibleItems={5}
+            closeOnSelect={true}
+            select={handleChange}
+            isSelected={isSelected}
+            serialize={v => String(v)}
+            {...def.componentProps}
+        />
+    );
 }
 
 function StringControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; }) {
@@ -237,7 +258,7 @@ function NumberControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; 
 
 // ─── Setting ──────────────────────────────────────────────────────────────────
 
-export function Setting({ id, label, description, disabled, style }: SettingProps) {
+export function Setting({ id, label, description, disabled, style, chipKind }: SettingProps) {
     const def = settings.def[id] as any;
     if (!def) return null;
 
@@ -255,7 +276,10 @@ export function Setting({ id, label, description, disabled, style }: SettingProp
     switch (def.type) {
         case OptionType.BOOLEAN: control = <BooleanControl id={id} disabled={disabled} />; break;
         case OptionType.SELECT: control = <SelectControl id={id} disabled={disabled} />; break;
-        case OptionType.STRING: control = <StringControl id={id} disabled={disabled} />; break;
+        case OptionType.STRING:
+            if (chipKind) return <IdChipControl id={id} kind={chipKind} label={label} hint={description} />;
+            control = <StringControl id={id} disabled={disabled} />;
+            break;
         case OptionType.NUMBER: control = <NumberControl id={id} disabled={disabled} />; break;
         default: return null;
     }

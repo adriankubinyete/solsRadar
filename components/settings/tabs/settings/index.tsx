@@ -7,6 +7,7 @@
 import { React, TextInput } from "@webpack/common";
 
 import { settings } from "../../../../settings";
+import { ChipKind } from "../../../IdChipInput";
 import { Setting } from "./Setting";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ type SettingEntry = {
     id: keyof typeof settings.store;
     label: string;
     description?: string;
+    chipKind?: ChipKind;
 };
 
 type Section = {
@@ -107,10 +109,10 @@ export function SettingsTab() {
         {
             title: "Channel Monitoring",
             entries: [
-                { id: "monitoredChannels", label: "Monitored Channels", description: "Comma-separated channel IDs. When set, only messages in these channels are considered. Leave empty to watch all channels." },
-                { id: "ignoredGuilds", label: "Ignored Guilds", description: "Comma-separated guild IDs. Messages from these servers are always ignored, regardless of trigger settings." },
-                { id: "ignoredChannels", label: "Ignored Channels", description: "Comma-separated channel IDs. Messages in these channels are always ignored, regardless of trigger settings." },
-                { id: "ignoredUsers", label: "Ignored Users", description: "Comma-separated user IDs. Messages from these users are always ignored, regardless of trigger settings." },
+                { id: "monitoredChannels", label: "Monitored Channels", chipKind: "channel", description: "Comma-separated channel IDs. When set, only messages in these channels are considered. Leave empty to watch all channels." },
+                { id: "ignoredGuilds", label: "Ignored Guilds", chipKind: "guild", description: "Comma-separated guild IDs. Messages from these servers are always ignored, regardless of trigger settings." },
+                { id: "ignoredChannels", label: "Ignored Channels", chipKind: "channel", description: "Comma-separated channel IDs. Messages in these channels are always ignored, regardless of trigger settings." },
+                { id: "ignoredUsers", label: "Ignored Users", chipKind: "user", description: "Comma-separated user IDs. Messages from these users are always ignored, regardless of trigger settings." },
             ],
         },
         {
@@ -186,7 +188,7 @@ export function SettingsTab() {
                     <p style={sectionTitle}>{section.title}</p>
                     {section.note}
                     {section.entries.map(e => (
-                        <Setting key={e.id} id={e.id} label={e.label} description={e.description} />
+                        <Setting key={e.id} id={e.id} label={e.label} description={e.description} chipKind={e.chipKind} />
                     ))}
                 </React.Fragment>
             ))}
