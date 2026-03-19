@@ -168,15 +168,50 @@ const S = {
 
 // ─── Primitive field components ───────────────────────────────────────────────
 
-function TextField({ label, hint, value, placeholder, onChange, type }: {
+function TextField({ label, hint, value, placeholder, onChange, type, maxLength }: {
     label: string; hint?: string; value: string;
-    placeholder?: string; onChange: (v: string) => void; type?: string;
+    placeholder?: string; onChange: (v: string) => void; type?: string; maxLength?: number;
 }) {
     return (
         <div style={S.rowStacked}>
             <span style={S.label}>{label}</span>
             {hint && <span style={S.hint}>{hint}</span>}
-            <TextInput value={value} placeholder={placeholder} onChange={onChange} type={type} style={{ marginTop: 8 }} />
+            <TextInput value={value} placeholder={placeholder} onChange={onChange} maxLength={maxLength} style={{ marginTop: 8 }} />
+        </div>
+    );
+}
+
+function TextAreaField({ label, hint, value, placeholder, onChange, maxLength }: {
+    label: string; hint?: string; value: string;
+    placeholder?: string; onChange: (v: string) => void; maxLength?: number;
+}) {
+    return (
+        <div style={S.rowStacked}>
+            <span style={S.label}>{label}</span>
+            {hint && <span style={S.hint}>{hint}</span>}
+            <textarea
+                value={value}
+                placeholder={placeholder}
+                onChange={e => onChange(e.target.value)}
+                maxLength={maxLength}
+                style={{
+                    marginTop: 8,
+                    width: "100%",
+                    resize: "vertical",
+                    padding: "8px 10px",
+                    borderRadius: 6,
+                    border: "1px solid var(--background-mod-subtle)",
+                    background: "var(--background-tertiary)",
+                    color: "var(--text-default)",
+                    fontSize: 13,
+                    fontFamily: "var(--font-primary)",
+                    lineHeight: 1.5,
+                    minHeight: 80,
+                    boxSizing: "border-box",
+                    outline: "none",
+                    scrollbarWidth: "thin",
+                }}
+            />
         </div>
     );
 }
@@ -571,6 +606,8 @@ function RoleChipInput({ roles, onChange }: {
     );
 }
 
+// ─── Tab: General ──────────────────────────────────────────────────────────
+
 function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
     const { name, description, iconUrl, type, state } = draft;
     const [iconAllowed, setIconAllowed] = useState<boolean | null>(null);
@@ -940,6 +977,22 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
                 value={forwarding.webhookUrl}
                 placeholder="https://discord.com/api/webhooks/…"
                 onChange={v => patch({ webhookUrl: v })}
+            />
+
+            <TextAreaField
+                label="Message content"
+                hint="Text sent outside the embed. Leave empty for none. Max 2000 characters."
+                value={forwarding.webhookContent}
+                onChange={v => patch({ webhookContent: v })}
+                maxLength={2000}
+            />
+
+            <TextAreaField
+                label="Embed description"
+                hint="Text to prepended to the embed description. Leave empty for default. Max 2000 characters."
+                value={forwarding.webhookEmbedDescription}
+                onChange={v => patch({ webhookEmbedDescription: v })}
+                maxLength={2000}
             />
 
             {!hasEffectiveWebhook && (

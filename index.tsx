@@ -584,14 +584,23 @@ async function forwardSnipe(snipe: Snipe, log: Logger, kind: ForwardKind = "matc
     const hasBiome = snipe.trigger.type !== "MERCHANT";
     const censor = settings.store.censorWebhooks;
 
+    const customMessageContent = snipe.trigger.forwarding.webhookContent;
+    const customEmbedDescription = snipe.trigger.forwarding.webhookEmbedDescription;
+
+    const serverLink = `[🔗 Server Link](${snipe.link.link})`;
+    const embedDescription = customEmbedDescription
+        ? `${customEmbedDescription}\n${serverLink}`
+        : serverLink;
+
     const body = JSON.stringify({
-        content: null,
+        content: customMessageContent || null,
         embeds: [{
             title: isDetection
                 ? `✅ ${snipe.trigger.name} — Biome Confirmed`
                 : `🎯 ${snipe.trigger.name} (click to join)`,
-            description: `[🔗 Server Link](${snipe.link.link})`,
+            description: embedDescription,
             url: snipe.link.link,
+            thumbnail: { url: snipe.trigger.iconUrl ?? undefined },
             fields: [
                 {
                     name: "Sent by",
