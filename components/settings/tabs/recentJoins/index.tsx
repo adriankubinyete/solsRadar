@@ -10,6 +10,7 @@ import { closeAllModals } from "@utils/modal";
 import { NavigationRouter, React, showToast, TextInput, Toasts, useState } from "@webpack/common";
 
 import { SnipeEntry, SnipeStore, SnipeTag, useSnipeHistory } from "../../../../stores/SnipeStore";
+import { UIState } from "../../../../stores/UIStateStore";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
 import { PillVariant } from "../../../Pill";
 import { JoinLockBanner } from "../../../ui/JoinLockBanner";
@@ -144,8 +145,20 @@ const FILTER_OPTIONS: { tagName: SnipeTag | "all"; label: string; variant: PillV
 
 export function RecentJoinsTab() {
     const entries = useSnipeHistory();
-    const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState("all" as SnipeTag | "all");
+
+    const saved = UIState.get("recentJoins");
+    const [search, setSearch] = useState(saved.search);
+    const [filter, setFilter] = useState<SnipeTag | "all">(saved.tagFilter);
+
+    const handleSearchChange = (v: string) => {
+        setSearch(v);
+        UIState.set("recentJoins", { search: v });
+    };
+
+    const handleFilterChange = (f: SnipeTag | "all") => {
+        setFilter(f);
+        UIState.set("recentJoins", { tagFilter: f });
+    };
 
     const filtered = React.useMemo(() => {
         let result = entries;
@@ -181,7 +194,7 @@ export function RecentJoinsTab() {
                 <div style={{ width: "100%", flex: 1 }}>
                     <TextInput
                         value={search}
-                        onChange={setSearch}
+                        onChange={handleSearchChange}
                         placeholder="Search by trigger, author, channel..."
                     />
                 </div>
@@ -192,7 +205,7 @@ export function RecentJoinsTab() {
                             label={f.label}
                             variant={f.variant}
                             active={filter === f.tagName}
-                            onClick={() => setFilter(f.tagName)}
+                            onClick={() => handleFilterChange(f.tagName)}
                         />
                     ))}
                 </div>
