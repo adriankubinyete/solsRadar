@@ -8,6 +8,7 @@ import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { Logger } from "@utils/Logger";
 import { Alerts, React, showToast, TextInput, Toasts, useEffect, useRef, useState } from "@webpack/common";
+import { UIState } from "userplugins/solsradar/stores/UIStateStore";
 
 import {
     deleteTrigger,
@@ -468,8 +469,19 @@ export function TriggersTab() {
     const triggers = useTriggers();
     const importRef = useRef<HTMLInputElement>(null);
     const [shiftHeld, setShiftHeld] = useState(false);
-    const [search, setSearch] = useState("");
-    const [typeFilter, setTypeFilter] = useState<TriggerType | "all">("all");
+    const saved = UIState.get("triggers");
+    const [search, setSearch] = useState(saved.search);
+    const [typeFilter, setTypeFilter] = useState<TriggerType | "all">(saved.typeFilter);
+
+    const handleSearchChange = (v: string) => {
+        setSearch(v);
+        UIState.set("triggers", { search: v });
+    };
+
+    const handleTypeFilterChange = (f: TriggerType | "all") => {
+        setTypeFilter(f);
+        UIState.set("triggers", { typeFilter: f });
+    };
 
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
@@ -610,7 +622,7 @@ export function TriggersTab() {
             <div style={s.filters}>
                 <TextInput
                     value={search}
-                    onChange={setSearch}
+                    onChange={handleSearchChange}
                     placeholder="Search or query: enabled:true  join:false  priority:>5  notify:true"
                 />
                 <div style={s.quickFilters}>
@@ -620,7 +632,7 @@ export function TriggersTab() {
                             label={f.label}
                             variant={f.variant}
                             active={typeFilter === f.type}
-                            onClick={() => setTypeFilter(f.type)}
+                            onClick={() => handleTypeFilterChange(f.type)}
                         />
                     ))}
                 </div>
