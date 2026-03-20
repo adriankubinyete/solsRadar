@@ -56,8 +56,8 @@ function Legend() {
     );
 }
 
-function BiomeBar({ agg, max }: { agg: BiomeStatAggregate; max: number; }) {
-    const pct = (n: number) => max === 0 ? 0 : (n / max) * 100;
+function BiomeBar({ agg }: { agg: BiomeStatAggregate }) {
+     const pct = (n: number) => agg.total === 0 ? 0 : (n / agg.total) * 100;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -108,7 +108,7 @@ function ChartView({ style, onBrowse }: { style?: React.CSSProperties; onBrowse:
     const since = periodToSince(period);
     const stats = useBiomeStats(since);
 
-    const max = stats.reduce((m, s) => Math.max(m, s.total), 0);
+    // const max = stats.reduce((m, s) => Math.max(m, s.total), 0);
     const totalReal = stats.reduce((s, e) => s + e.real, 0);
     const totalBait = stats.reduce((s, e) => s + e.bait, 0);
     const totalTimeout = stats.reduce((s, e) => s + e.timeout, 0);
@@ -192,7 +192,7 @@ function ChartView({ style, onBrowse }: { style?: React.CSSProperties; onBrowse:
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             <Legend />
                             {stats.map(agg => (
-                                <BiomeBar key={agg.trigger} agg={agg} max={max} />
+                                <BiomeBar key={agg.trigger} agg={agg} />
                             ))}
                         </div>
                     )

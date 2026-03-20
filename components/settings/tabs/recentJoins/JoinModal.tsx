@@ -35,6 +35,14 @@ function SnipeLog({ entries }: { entries: SnipeLogEntry[]; }) {
         if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
     }, [entries.length]);
 
+    const formatTime = (ts: number) => {
+        const d = new Date(ts);
+        const h = d.getHours().toString().padStart(2, "0");
+        const m = d.getMinutes().toString().padStart(2, "0");
+        const s = d.getSeconds().toString().padStart(2, "0");
+        return `${h}:${m}:${s}`;
+    };
+
     const levelColor = (level: SnipeLogEntry["level"]) => {
         switch (level) {
             case "error": return "var(--text-feedback-critical)";
@@ -46,7 +54,7 @@ function SnipeLog({ entries }: { entries: SnipeLogEntry[]; }) {
 
     const copyLog = () => {
         const text = entries
-            .map(l => `[${new Date(l.timestamp).toLocaleTimeString()}] ${l.level.toUpperCase()} ${l.message}`)
+            .map(l => `[${formatTime(l.timestamp)}] ${l.level.toUpperCase()} ${l.message}`)
             .join("\n");
         copyToClipboard(text);
         showToast("Log copied!", Toasts.Type.SUCCESS);
@@ -74,12 +82,12 @@ function SnipeLog({ entries }: { entries: SnipeLogEntry[]; }) {
                 {entries.map((line, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, lineHeight: 1.6 }}>
                         <span style={{ color: "var(--text-muted)", flexShrink: 0 }}>
-                            {new Date(line.timestamp).toLocaleTimeString()}
+                            {formatTime(line.timestamp)}
                         </span>
                         <span style={{ color: levelColor(line.level), flexShrink: 0, minWidth: 36 }}>
                             {line.level.toUpperCase()}
                         </span>
-                        <span style={{ color: "var(--text-default)", wordBreak: "break-word" }}>
+                        <span style={{ color: "var(--text-default)", flex: 1, minWidth: 0, wordBreak: "break-word" }}>
                             {line.message}
                         </span>
                     </div>
