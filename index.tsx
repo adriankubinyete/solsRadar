@@ -24,7 +24,7 @@ import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
 import { SnipeMetrics, SnipeStore } from "./stores/SnipeStore";
 import { getActiveTriggers, Trigger, TriggerType } from "./stores/TriggerStore";
-import { parseCsv, sendWebhook } from "./utils";
+import { formatElapsedTime, parseCsv, sendWebhook } from "./utils";
 
 const logger = new Logger("SolRadar");
 const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("./native")>;
@@ -219,9 +219,8 @@ function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
 
     const finish = (reason: string, to?: string) => {
         const duration = Math.round(performance.now() - biomeStartedAt);
-        const durationSec = (duration / 1000).toFixed(1);
-        log.info(`[${snipe.trigger.name}] Biome ended (${reason}) — duration: ${durationSec}s.`);
-        snipe.logInfo(`Biome lasted ${durationSec}s — ended by ${reason}${to ? ` (now "${to}")` : ""}.`);
+        const formattedDuration = formatElapsedTime(duration);
+        snipe.logInfo(`Biome ended (${reason}) - duration: ${formattedDuration}${to ? ` (now "${to}")` : ""}.`);
         JoinLockStore.release();
         unsubChange();
         unsubClear();
@@ -232,7 +231,7 @@ function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
             log.debug(`[${snipe.trigger.name}] Biome changed from "${from}" to "${to}" — skipping because it's not the expected trigger biome (${activeBiome}).`);
             return;
         }
-        finish(`changed to "${to}"`, to);
+        finish("biome changed", to);
     });
 
     const unsubClear = BiomeDetector.on("biomeCleared", ({ from }) => {
