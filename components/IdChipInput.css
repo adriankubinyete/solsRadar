@@ -77,23 +77,56 @@
     font-size: 13px;
     color: var(--text-default);
     font-weight: 500;
+    user-select: text;
 }
 
 .vc-sora-chip-sub {
     font-size: 11px;
     color: var(--text-muted);
     font-family: var(--font-code);
+    margin-top: 4px;
+    user-select: text;
+    cursor: text;
 }
 
+/* ─── Remove button (FIXED) ──────────────────────────────────────────────── */
+
 .vc-sora-chip-remove {
-    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     border: none;
+    border-radius: var(--radius-sm, 4px);
+    background: transparent;
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 18px;
-    padding: 0;
+    font-size: 16px;
     line-height: 1;
     flex-shrink: 0;
+    opacity: 0;
+    transition:
+        background 0.15s ease-out,
+        outline 0.15s ease-out,
+        color 0.15s ease-out,
+        opacity 0.15s ease-out;
+}
+
+.vc-sora-chip-entry:hover .vc-sora-chip-remove {
+    opacity: 0.65;
+}
+
+.vc-sora-chip-entry .vc-sora-chip-remove:hover {
+    background: color-mix(in srgb, var(--text-feedback-critical) 12%, transparent);
+    outline: 1.5px solid color-mix(in srgb, var(--text-feedback-critical) 30%, transparent);
+    color: var(--text-feedback-critical);
+    opacity: 1;
+}
+
+/* active */
+.vc-sora-chip-entry .vc-sora-chip-remove:active {
+    transform: scale(0.9);
 }
 
 /* ─── Input row ───────────────────────────────────────────────────────────── */
