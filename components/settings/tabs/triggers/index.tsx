@@ -8,7 +8,6 @@ import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { Logger } from "@utils/Logger";
 import { Alerts, React, showToast, TextInput, Toasts, useEffect, useRef, useState } from "@webpack/common";
-import { UIState } from "userplugins/solsradar/stores/UIStateStore";
 
 import {
     deleteTrigger,
@@ -20,6 +19,7 @@ import {
     TriggerType,
     useTriggers,
 } from "../../../../stores/TriggerStore";
+import { UIState } from "../../../../stores/UIStateStore";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
 import { Pill, PillBorder, PillRadius, PillVariant } from "../../../Pill";
 import { JoinLockBanner } from "../../../ui/JoinLockBanner";
