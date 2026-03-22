@@ -89,6 +89,12 @@ export const settings = definePluginSettings({
         default: false,
         hidden: true,
     },
+    forwardIgnoredGuilds: {
+        type: OptionType.STRING,
+        description: "Comma-separated list of guild IDs that are ignored when forwarding. Example: `123456789012345678, 987654321098765432`",
+        default: "",
+        hidden: true,
+    },
 
     // ui
     hideInactiveIndicator: {

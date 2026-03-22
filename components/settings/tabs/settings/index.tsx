@@ -104,6 +104,7 @@ export function SettingsTab() {
             entries: [
                 { id: "globalWebhookUrl", label: "Global Webhook URL" },
                 { id: "censorWebhooks", label: "Censor Webhooks", description: "Redact sender and channel info from forwarded webhook messages." },
+                { id: "forwardIgnoredGuilds", label: "Forward Ignored Guilds", chipKind: "guild", description: "Messages from these servers are NEVER forwarded." },
             ],
         },
         {

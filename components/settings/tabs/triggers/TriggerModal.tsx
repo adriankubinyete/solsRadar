@@ -618,12 +618,18 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
 // ─── Tab: Advanced ────────────────────────────────────────────────────────────
 
 function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
+    const { ignoredGuilds: settingIgnoredGuilds, ignoredChannels: settingIgnoredChannels } = settings.use([
+        "ignoredGuilds", "ignoredChannels"
+    ]);
     const { conditions } = draft;
     const {
-        bypassMonitoredOnly, bypassIgnoredChannels, bypassIgnoredGuilds,
+        bypassMonitoredOnly, bypassIgnoredChannels, bypassIgnoredGuilds, bypassForwardIgnoredGuilds,
         bypassMatchAmbiguity, bypassLinkVerification,
         fromUser, ignoredChannels, ignoredGuilds, inChannel,
     } = conditions;
+
+    const qtyIgnoredChannelsGlobal = settingIgnoredChannels.length;
+    const qtyIgnoredGuildsGlobal = settingIgnoredGuilds.length;
 
     const patchConditions = (p: Partial<typeof conditions>) =>
         patch({ conditions: { ...conditions, ...p } });
@@ -654,14 +660,14 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
             <IdChipInput
                 kind="channel"
                 label="Ignored Channels"
-                hint="Never match in these channels, even if other conditions pass."
+                hint={`Never match in these channels, even if other conditions pass.${qtyIgnoredChannelsGlobal ? ` (${qtyIgnoredChannelsGlobal} globally ignored)` : ""}`}
                 ids={ignoredChannels}
                 onChange={ids => patchConditions({ ignoredChannels: ids })}
             />
             <IdChipInput
                 kind="guild"
                 label="Ignored Guilds"
-                hint="Never match in these guilds. Useful for servers with no-sniper policies."
+                hint={`Never match in these guilds. Useful for servers with no-sniper policies.${qtyIgnoredGuildsGlobal ? ` (${qtyIgnoredGuildsGlobal} globally ignored)` : ""}`}
                 ids={ignoredGuilds}
                 onChange={ids => patchConditions({ ignoredGuilds: ids })}
             />
@@ -674,21 +680,27 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
 
             <SwitchField
                 label="Bypass monitored channels"
-                hint="Ignore the monitored channels setting — match in any channel."
+                hint="Allows this trigger to search for matches in any channel."
                 value={bypassMonitoredOnly}
                 onChange={v => patchConditions({ bypassMonitoredOnly: v })}
             />
             <SwitchField
                 label="Bypass ignored channels"
-                hint="Ignore the ignored channels setting — match even in ignored channels."
+                hint="Allows matching even in globally ignored channels."
                 value={bypassIgnoredChannels}
                 onChange={v => patchConditions({ bypassIgnoredChannels: v })}
             />
             <SwitchField
                 label="Bypass ignored guilds"
-                hint="Ignore the ignored guilds setting — match even in ignored guilds."
+                hint="Allows matching even in globally ignored guilds."
                 value={bypassIgnoredGuilds}
                 onChange={v => patchConditions({ bypassIgnoredGuilds: v })}
+            />
+            <SwitchField
+                label="Bypass forward ignored guilds"
+                hint="Allows forwarding even from globally forward-ignored guilds."
+                value={bypassForwardIgnoredGuilds}
+                onChange={v => patchConditions({ bypassForwardIgnoredGuilds: v })}
             />
             <SwitchField
                 label="Bypass match ambiguity"
@@ -714,11 +726,12 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
     onChange: (f: TriggerForwarding) => void;
     showBiome: boolean;
 }) {
-    const { globalWebhookUrl } = settings.use([
-        "globalWebhookUrl",
+    const { globalWebhookUrl, forwardIgnoredGuilds } = settings.use([
+        "globalWebhookUrl", "forwardIgnoredGuilds"
     ]);
 
     const globalWebhook = globalWebhookUrl || "";
+    const qtyIgnoredGuilds = forwardIgnoredGuilds.split(",").length;
 
     const patch = (p: Partial<TriggerForwarding>) => onChange({ ...forwarding, ...p });
     const hasEffectiveWebhook = forwarding.webhookUrl.trim() || globalWebhook.trim();
@@ -821,7 +834,7 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
             <IdChipInput
                 kind="guild"
                 label="Excluded Guilds"
-                hint="Add any server you don't want to forward matches from."
+                hint={`Add any server you don't want to forward matches from.${qtyIgnoredGuilds > 0 ? ` (${qtyIgnoredGuilds} globally ignored)` : ""}`}
                 ids={forwarding.excludedGuilds ?? []}
                 onChange={ids => patch({ excludedGuilds: ids })}
             />

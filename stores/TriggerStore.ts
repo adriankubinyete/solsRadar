@@ -49,6 +49,7 @@ export interface TriggerConditions {
     bypassMatchAmbiguity: boolean; // bypass the "multiple matches" check
     bypassMonitoredOnly: boolean; // bypass the "only in monitored channels" check
     bypassIgnoredGuilds: boolean; // bypass the global "ignore this guild" check
+    bypassForwardIgnoredGuilds: boolean; // bypass the global "ignore this guild" check for forwarding
     bypassIgnoredChannels: boolean; // bypass the global "ignore this channel" check
     bypassLinkVerification: boolean; // bypass the Place ID check
 }
@@ -127,6 +128,7 @@ export const DEFAULT_CONDITIONS: TriggerConditions = {
     bypassMatchAmbiguity: false,
     bypassMonitoredOnly: false,
     bypassIgnoredGuilds: false,
+    bypassForwardIgnoredGuilds: false,
     bypassIgnoredChannels: false,
     bypassLinkVerification: false,
 };
@@ -202,6 +204,7 @@ function migrateTrigger(raw: any): Trigger {
             bypassMatchAmbiguity: raw.conditions?.bypassMatchAmbiguity ?? false,
             bypassMonitoredOnly: raw.conditions?.bypassMonitoredOnly ?? false,
             bypassIgnoredGuilds: raw.conditions?.bypassIgnoredGuilds ?? false,
+            bypassForwardIgnoredGuilds: raw.conditions?.bypassForwardIgnoredGuilds ?? false,
             bypassIgnoredChannels: raw.conditions?.bypassIgnoredChannels ?? false,
             bypassLinkVerification: raw.conditions?.bypassLinkVerification ?? false,
         },

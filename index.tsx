@@ -577,6 +577,17 @@ function canForward(snipe: Snipe, log: Logger): boolean {
         return false;
     }
 
+    const bypassForwardIgnoredGuilds = snipe.trigger.conditions?.bypassForwardIgnoredGuilds ?? false;
+    if (!bypassForwardIgnoredGuilds) {
+        const ignoredGuilds = parseCsv(settings.store.forwardIgnoredGuilds);
+
+        if (ignoredGuilds.has(snipe.guild.id)) {
+            log.info(`[${snipe.trigger.name}] Skipping forward — guild ${snipe.guild.id} is globally ignored.`);
+            snipe.logInfo(`Forward skipped — guild "${snipe.guild.name}" is globally ignored.`);
+            return false;
+        }
+    }
+
     return true;
 }
 
