@@ -11,6 +11,7 @@ import { NavigationRouter, React, showToast, TextInput, Toasts, useState } from 
 
 import { SnipeEntry, SnipeStore, SnipeTag, useSnipeHistory } from "../../../../stores/SnipeStore";
 import { UIState } from "../../../../stores/UIStateStore";
+import { formatElapsedTime } from "../../../../utils";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
 import { PillVariant } from "../../../Pill";
 import { JoinLockBanner } from "../../../ui/JoinLockBanner";
@@ -121,11 +122,18 @@ function JoinCard({ entry, onClick, onContextMenu }: {
                     {extra > 0 && (
                         <span style={{ fontSize: 11, color: "var(--text-muted)" }}>+{extra}</span>
                     )}
-                    {entry.metrics && (
-                        <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
-                            ⚡ {entry.metrics.timeToJoinMs.toFixed(0)}ms
-                        </span>
-                    )}
+                    <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+                        {entry.biomeDurationMs != null && entry.tags.includes("biome-verified-real") && (
+                            <span style={{ fontSize: 11, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+                                🌿 Lasted {formatElapsedTime(entry.biomeDurationMs)}
+                            </span>
+                        )}
+                        {entry.metrics && (
+                            <span style={{ fontSize: 11, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+                                ⚡ Joined in {formatElapsedTime(entry.metrics.timeToJoinMs)}
+                            </span>
+                        )}
+                    </div>
                 </div>
             )}
         </div>

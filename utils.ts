@@ -42,7 +42,8 @@ export async function sendWebhook(url: string, body: string): Promise<void> {
  * (e.g., "1s 500ms" instead of "1s"). Also includes "0ms" when applicable.
  * @returns {string} Human-readable string, e.g. "2h 3m 4s" or "2h 3m 4s 500ms".
  */
-export function formatElapsedTime(ms: number, alwaysIncludeMs = false): string {
+export function formatElapsedTime(ms: number, { alwaysIncludeMs = false }: { alwaysIncludeMs?: boolean } = {}): string {
+    ms = Math.floor(ms);
     if (ms < 1000 && !alwaysIncludeMs) {
         return `${ms}ms`;
     }

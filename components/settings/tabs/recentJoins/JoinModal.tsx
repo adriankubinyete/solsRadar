@@ -13,6 +13,7 @@ import { NavigationRouter, React, showToast, Toasts } from "@webpack/common";
 
 import { joinUri } from "../../../../services/RobloxService";
 import { SnipeEntry, SnipeLogEntry, SnipeStore, useSnipeEntry } from "../../../../stores/SnipeStore";
+import { formatElapsedTime } from "../../../../utils";
 import { FallbackImage, formatTimeAgo, TagBadge } from "./components";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -153,6 +154,9 @@ function JoinModal({ entry: initialEntry, modalProps }: {
                             <DetailRow label="Priority" value={`${entry.triggerPriority}`} />
                             <DetailRow label="Type" value={entry.triggerType} />
                             <DetailRow label="Time" value={`${formatTimeAgo(entry.timestamp)} ⬝ ${new Date(entry.timestamp).toLocaleString()}`} />
+                            {entry.biomeDurationMs && (
+                                <DetailRow label="Biome duration" value={formatElapsedTime(entry.biomeDurationMs)} />
+                            )}
                             {entry.channelName && (
                                 <DetailRow label="Channel" value={`#${entry.channelName}${entry.guildName ? ` ⬝ ${entry.guildName}` : ""}`} />
                             )}

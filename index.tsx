@@ -220,6 +220,7 @@ function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
     const finish = (reason: string, to?: string) => {
         const duration = Math.round(performance.now() - biomeStartedAt);
         const formattedDuration = formatElapsedTime(duration);
+        snipe.setBiomeDuration(duration);
         snipe.logInfo(`Biome ended (${reason}) - duration: ${formattedDuration}${to ? ` (now "${to}")` : ""}.`);
         JoinLockStore.release();
         unsubChange();
@@ -329,6 +330,7 @@ function startBiomeDetection(snipe: Snipe, log: Logger): void {
     }, (settings.store.detectorTimeoutMs ?? 30_000) + startDelayMs);
 
     _unsubscribeBiomeDetection = () => {
+        snipe.logWarn("Biome detection cancelled... another snipe probably happened");
         detecting = false;
         clearTimeout(timer);
         unsubChange();

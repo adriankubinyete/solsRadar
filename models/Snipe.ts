@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Logger } from "@utils/Logger";
 import { Channel, Guild, Message } from "@vencord/discord-types";
 import { UserStore } from "@webpack/common";
 
@@ -11,6 +12,8 @@ import { buildJoinUri } from "../services/RobloxService";
 import { BiomeStatsStore } from "../stores/BiomeStatStore";
 import { SnipeMetrics, SnipeStore, SnipeTag } from "../stores/SnipeStore";
 import { RobloxLink, Trigger } from "../types";
+
+const logger = new Logger("SolRadar.Model/Snipe");
 
 // ─── Snipe ────────────────────────────────────────────────────────────────────
 //
@@ -141,6 +144,11 @@ export class Snipe {
 
     setJoinUri(uri: string) {
         SnipeStore.update(this.id, { joinUri: uri });
+    }
+
+    setBiomeDuration(durationMs: number) {
+        logger.debug(`Setting biome duration to ${durationMs}`);
+        SnipeStore.update(this.id, { biomeDurationMs: durationMs });
     }
 
     getJoinUri(): string | undefined {

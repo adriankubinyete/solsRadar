@@ -96,6 +96,8 @@ export interface SnipeEntry {
     link?: string;
 
     log: SnipeLogEntry[];
+
+    biomeDurationMs?: number;
 }
 
 export type NewSnipeData = Omit<SnipeEntry, "id" | "timestamp" | "tags" | "log"> & {
