@@ -628,8 +628,8 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
         fromUser, ignoredChannels, ignoredGuilds, inChannel,
     } = conditions;
 
-    const qtyIgnoredChannelsGlobal = settingIgnoredChannels.length;
-    const qtyIgnoredGuildsGlobal = settingIgnoredGuilds.length;
+    const qtyIgnoredChannelsGlobal = settingIgnoredChannels.split(",").length;
+    const qtyIgnoredGuildsGlobal = settingIgnoredGuilds.split(",").length;
 
     const patchConditions = (p: Partial<typeof conditions>) =>
         patch({ conditions: { ...conditions, ...p } });
