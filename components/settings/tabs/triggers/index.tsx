@@ -609,6 +609,15 @@ export function TriggersTab() {
         }
     };
 
+    const handlePublicExport = () => {
+        try {
+            downloadTriggersJsonRedacted();
+            showToast("Successfully exported triggers!", Toasts.Type.SUCCESS);
+        } catch (error) {
+            showToast(`Failed to export triggers: ${error}`, Toasts.Type.FAILURE);
+        }
+    };
+
     const move = (fromIndex: number, toIndex: number) => {
         if (toIndex < 0 || toIndex >= triggers.length) return;
         const newOrder = [...triggers];
@@ -686,20 +695,19 @@ export function TriggersTab() {
                 </Paragraph>
                 <div style={s.toolbarRight}>
                     {isDeveloper() && (
-                        <Button size="small" variant="none" onClick={() => {
-                            try {
-                                downloadTriggersJsonRedacted();
-                                showToast("Successfully exported triggers!", Toasts.Type.SUCCESS);
-                            } catch (error) {
-                                showToast(`Failed to export triggers: ${error}`, Toasts.Type.FAILURE);
-                            }
-                        }}>
-                            [DEV] Safe Export
+                        <Button size="small" variant="link" onClick={handlePublicExport}>
+                            Safe Export
                         </Button>
                     )}
-                    <Button size="small" variant="none" onClick={handleExport}>Export</Button>
-                    <Button size="small" variant="none" onClick={() => importRef.current?.click()}>Import</Button>
-                    <Button size="small" variant="positive" onClick={openAddTriggerModal}>+ New trigger</Button>
+                    <Button size="small" variant="link" onClick={handleExport}>
+                        Export
+                    </Button>
+                    <Button size="small" variant="link" onClick={() => importRef.current?.click()}>
+                        Import
+                    </Button>
+                    <Button size="small" variant="positive" onClick={openAddTriggerModal}>
+                        + New trigger
+                    </Button>
                 </div>
             </div>
 

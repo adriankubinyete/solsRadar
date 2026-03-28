@@ -234,7 +234,7 @@ function JoinModal({ entry: initialEntry, modalProps }: {
                         </Button>
                     )}
                     {entry.messageJumpUrl && (
-                        <Button variant="primary" size="small" onClick={jumpToMessage}>Go to message</Button>
+                        <Button variant="link" size="small" onClick={jumpToMessage}>Go to message</Button>
                     )}
                     <Button
                         size="small"

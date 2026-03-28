@@ -973,7 +973,7 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
                         <Button size="small" variant="dangerPrimary" onClick={handleDelete} style={{ marginLeft: "8px" }}>
                             Delete
                         </Button>
-                        <Button size="small" variant="link" onClick={handleCopy} style={{ marginLeft: "8px" }}>
+                        <Button size="small" variant="secondary" onClick={handleCopy} style={{ marginLeft: "8px" }}>
                             Copy to clipboard
                         </Button>
                         <Button size="small" variant="link" onClick={handleExportAsFile} style={{ marginLeft: "8px" }}>

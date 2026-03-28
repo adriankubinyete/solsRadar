@@ -9,7 +9,6 @@ import { Channel, Guild, Message } from "@vencord/discord-types";
 import { UserStore } from "@webpack/common";
 
 import { buildJoinUri } from "../services/RobloxService";
-import { BiomeStatsStore } from "../stores/BiomeStatStore";
 import { SnipeMetrics, SnipeStore, SnipeTag } from "../stores/SnipeStore";
 import { RobloxLink, Trigger } from "../types";
 
@@ -91,45 +90,9 @@ export class Snipe {
 
     // ── Biome ─────────────────────────────────────────────────────────────────
 
-    markAsBiomeReal() {
-        this._tag("biome-verified-real");
-        BiomeStatsStore.add({
-            t: Date.now(),
-            trigger: this.trigger.name,
-            result: "real",
-            authorId: this.message.author.id,
-            authorName: this.message.author.username,
-            guildName: this.guild.name,
-            channelName: this.channel.name,
-            messageJumpUrl: `https://discord.com/channels/${this.guild.id}/${this.channel.id}/${this.message.id}`,
-        });
-    }
-    markAsBiomeBait() {
-        this._tag("biome-verified-bait");
-        BiomeStatsStore.add({
-            t: Date.now(),
-            trigger: this.trigger.name,
-            result: "bait",
-            authorId: this.message.author.id,
-            authorName: this.message.author.username,
-            guildName: this.guild.name,
-            channelName: this.channel.name,
-            messageJumpUrl: `https://discord.com/channels/${this.guild.id}/${this.channel.id}/${this.message.id}`,
-        });
-    }
-    markAsBiomeTimeout() {
-        this._tag("biome-verified-timeout");
-        BiomeStatsStore.add({
-            t: Date.now(),
-            trigger: this.trigger.name,
-            result: "timeout",
-            authorId: this.message.author.id,
-            authorName: this.message.author.username,
-            guildName: this.guild.name,
-            channelName: this.channel.name,
-            messageJumpUrl: `https://discord.com/channels/${this.guild.id}/${this.channel.id}/${this.message.id}`,
-        });
-    }
+    markAsBiomeReal() { this._tag("biome-verified-real"); }
+    markAsBiomeBait() { this._tag("biome-verified-bait"); }
+    markAsBiomeTimeout() { this._tag("biome-verified-timeout"); }
     markAsBiomeNotVerified() { this._tag("biome-not-verified"); }
     markAsRedundantBiome() { this._tag("redundant-biome-ignored"); }
     markAsRedundancyBypassed() { this._tag("redundant-biome-bypassed"); }
