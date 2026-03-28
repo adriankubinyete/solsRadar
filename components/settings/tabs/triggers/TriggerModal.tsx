@@ -913,9 +913,29 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
     };
 
     const handleCopy = () => {
-        const { id, ...rest } = trigger!;
-        navigator.clipboard.writeText(JSON.stringify([rest], null, 2));
-        showToast("Trigger copied to clipboard!", Toasts.Type.SUCCESS);
+        try {
+            const { id, ...rest } = trigger!;
+            navigator.clipboard.writeText(JSON.stringify([rest], null, 2));
+            showToast("Trigger copied to clipboard!", Toasts.Type.SUCCESS);
+        } catch (e) {
+            showToast(`Failed to copy trigger: ${e}`, Toasts.Type.FAILURE);
+        }
+    };
+
+    const handleExportAsFile = () => {
+        try {
+            const { id, ...rest } = trigger!;
+            const blob = new Blob([JSON.stringify([rest], null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `solsradar-trigger-${draft.name.trim().replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("Trigger exported!", Toasts.Type.SUCCESS);
+        } catch (e) {
+            showToast(`Failed to export trigger: ${e}`, Toasts.Type.FAILURE);
+        }
     };
 
     return (
@@ -945,16 +965,19 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
             </ModalContent>
 
             <ModalFooter separator>
-                <Button variant="positive" disabled={!isValid} onClick={handleSave} style={{ marginLeft: "8px" }}>
-                    {isEditing ? "Save" : "Add"}
+                <Button size="small" variant="positive" disabled={!isValid} onClick={handleSave} style={{ marginLeft: "8px" }}>
+                    {isEditing ? "Save" : "Create"}
                 </Button>
                 {isEditing && (
                     <>
-                        <Button variant="dangerPrimary" onClick={handleDelete} style={{ marginLeft: "8px" }}>
+                        <Button size="small" variant="dangerPrimary" onClick={handleDelete} style={{ marginLeft: "8px" }}>
                             Delete
                         </Button>
-                        <Button variant="link" onClick={handleCopy} style={{ marginLeft: "8px" }}>
-                            Copy
+                        <Button size="small" variant="link" onClick={handleCopy} style={{ marginLeft: "8px" }}>
+                            Copy to clipboard
+                        </Button>
+                        <Button size="small" variant="link" onClick={handleExportAsFile} style={{ marginLeft: "8px" }}>
+                            Export as file
                         </Button>
                     </>
                 )}

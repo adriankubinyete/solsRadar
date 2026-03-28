@@ -686,7 +686,14 @@ export function TriggersTab() {
                 </Paragraph>
                 <div style={s.toolbarRight}>
                     {isDeveloper() && (
-                        <Button size="small" variant="none" onClick={downloadTriggersJsonRedacted}>
+                        <Button size="small" variant="none" onClick={() => {
+                            try {
+                                downloadTriggersJsonRedacted();
+                                showToast("Successfully exported triggers!", Toasts.Type.SUCCESS);
+                            } catch (error) {
+                                showToast(`Failed to export triggers: ${error}`, Toasts.Type.FAILURE);
+                            }
+                        }}>
                             [DEV] Safe Export
                         </Button>
                     )}
