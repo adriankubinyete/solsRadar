@@ -9,6 +9,7 @@ import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, Mod
 import { React } from "@webpack/common";
 
 import { UIState } from "../../stores/UIStateStore";
+import { isDeveloper } from "../../utils";
 import { AboutTab } from "./tabs/about";
 import { DeveloperTab } from "./tabs/developer";
 import { RecentJoinsTab } from "./tabs/recentJoins";
@@ -24,6 +25,8 @@ interface Tab {
     id: TabId;
     label: string;
     component: React.ComponentType;
+    /** Se true, a tab só aparece quando isDeveloper() retornar true */
+    devOnly?: boolean;
 }
 
 const TABS: Tab[] = [
@@ -32,8 +35,19 @@ const TABS: Tab[] = [
     { id: "settings", label: "Settings", component: SettingsTab },
     { id: "stats", label: "Stats", component: StatsTab },
     { id: "about", label: "About", component: AboutTab },
-    { id: "dev", label: "Developer", component: DeveloperTab },
+    { id: "dev", label: "Developer", component: DeveloperTab, devOnly: true },
 ];
+
+const FALLBACK_TAB: TabId = "recentJoins";
+
+function getVisibleTabs(): Tab[] {
+    return TABS.filter(tab => !tab.devOnly || isDeveloper());
+}
+
+function resolveTab(tab: TabId): TabId {
+    const visible = getVisibleTabs();
+    return visible.some(t => t.id === tab) ? tab : FALLBACK_TAB;
+}
 
 // ─── Estilos ──────────────────────────────────────────────────────────────────
 
@@ -78,9 +92,12 @@ interface SolsRadarModalProps {
 }
 
 export function SolsRadarModal({ modalProps, initialTab }: SolsRadarModalProps) {
-    const [activeTab, setActiveTab] = React.useState<TabId>(initialTab ?? UIState.get("activeTab"));
+    const [activeTab, setActiveTab] = React.useState<TabId>(() =>
+        resolveTab(initialTab ?? UIState.get("activeTab"))
+    );
 
-    const ActiveComponent = TABS.find(t => t.id === activeTab)!.component;
+    const visibleTabs = getVisibleTabs();
+    const ActiveComponent = visibleTabs.find(t => t.id === activeTab)!.component;
 
     const handleTabChange = (tab: TabId) => {
         setActiveTab(tab);
@@ -101,7 +118,7 @@ export function SolsRadarModal({ modalProps, initialTab }: SolsRadarModalProps) 
             </ModalHeader>
             {/* Tab bar */}
             <div style={styles.tabBar}>
-                {TABS.map(tab => (
+                {visibleTabs.map(tab => (
                     <button
                         key={tab.id}
                         style={styles.tabBtn(activeTab === tab.id)}
@@ -113,14 +130,12 @@ export function SolsRadarModal({ modalProps, initialTab }: SolsRadarModalProps) 
             </div>
             <ModalContent separator>
                 <div style={styles.root}>
-
-                    {/* Conteúdo da tab ativa */}
                     <div style={styles.content}>
                         <ActiveComponent />
                     </div>
                 </div>
             </ModalContent>
-        </ModalRoot >
+        </ModalRoot>
     );
 }
 

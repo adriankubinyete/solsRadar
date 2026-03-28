@@ -6,6 +6,7 @@
 
 import { classNameFactory } from "@utils/css";
 import { PluginNative } from "@utils/types";
+import { AuthenticationStore } from "@webpack/common";
 export const cl = classNameFactory("vc-sora-");
 
 const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("./native")>;
@@ -66,4 +67,17 @@ export function formatElapsedTime(ms: number, { alwaysIncludeMs = false }: { alw
     }
 
     return parts.join(" ");
+}
+
+
+export function isDeveloper(): boolean {
+    const id = AuthenticationStore.getId();
+    console.log("TEST AUTHENTICATED USER ID: ", id);
+    return (id === "188851299255713792");
+}
+
+
+// returns the userid of the current user
+export function whoAmI(): string {
+    return "";
 }

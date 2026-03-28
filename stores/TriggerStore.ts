@@ -332,6 +332,9 @@ export async function reorderTriggers(ordered: Trigger[]): Promise<void> {
 
 // ─── Export / Import ──────────────────────────────────────────────────────────
 
+
+// normal export
+
 export function exportTriggersJson(): string {
     return JSON.stringify(_triggers, null, 2);
 }
@@ -342,6 +345,39 @@ export function downloadTriggersJson(): void {
     const a = document.createElement("a");
     a.href = url;
     a.download = `solsradar-triggers-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// public export (redact sensitive fields)
+function redactTrigger(trigger: Trigger): Trigger | null {
+    if (trigger.type === "CUSTOM") return null;
+
+    return {
+        ...trigger,
+        forwarding: {
+            ...trigger.forwarding,
+            webhookUrl: "",
+            onMatch: { ...trigger.forwarding.onMatch, enabled: false },
+            onDetection: { ...trigger.forwarding.onDetection, enabled: false },
+        },
+    };
+}
+
+export function exportTriggersJsonRedacted(): string {
+    const redacted = _triggers
+        .map(redactTrigger)
+        .filter((t): t is Trigger => t !== null);
+
+    return JSON.stringify(redacted, null, 2);
+}
+
+export function downloadTriggersJsonRedacted(): void {
+    const blob = new Blob([exportTriggersJsonRedacted()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `solsradar-triggers-public-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
 }

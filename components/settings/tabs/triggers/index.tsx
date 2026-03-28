@@ -12,6 +12,7 @@ import { Alerts, React, showToast, TextInput, Toasts, useEffect, useRef, useStat
 import {
     deleteTrigger,
     downloadTriggersJson,
+    downloadTriggersJsonRedacted,
     importTriggersFromJson,
     reorderTriggers,
     toggleTrigger,
@@ -20,6 +21,7 @@ import {
     useTriggers,
 } from "../../../../stores/TriggerStore";
 import { UIState } from "../../../../stores/UIStateStore";
+import { isDeveloper } from "../../../../utils";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
 import { Pill, PillBorder, PillRadius, PillVariant } from "../../../Pill";
 import { JoinLockBanner } from "../../../ui/JoinLockBanner";
@@ -683,6 +685,11 @@ export function TriggersTab() {
                         : `${filtered.length} of ${triggers.length}`}
                 </Paragraph>
                 <div style={s.toolbarRight}>
+                    {isDeveloper() && (
+                        <Button size="small" variant="none" onClick={downloadTriggersJsonRedacted}>
+                            [DEV] Safe Export
+                        </Button>
+                    )}
                     <Button size="small" variant="none" onClick={handleExport}>Export</Button>
                     <Button size="small" variant="none" onClick={() => importRef.current?.click()}>Import</Button>
                     <Button size="small" variant="positive" onClick={openAddTriggerModal}>+ New trigger</Button>

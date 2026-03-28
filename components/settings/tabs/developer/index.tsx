@@ -13,6 +13,7 @@ import { React, RunningGameStore } from "@webpack/common";
 import { getRobloxProcess } from "../../../../services/RobloxService";
 import { JoinLockStore } from "../../../../stores/JoinLockStore";
 import { SnipeStore } from "../../../../stores/SnipeStore";
+import { isDeveloper } from "../../../../utils";
 import { Pill } from "../../../Pill";
 
 const logger = new Logger("SolRadar.Developer");
@@ -70,6 +71,10 @@ export function DeveloperTab() {
                 </Button>
 
                 <Button size="small" variant="positive" onClick={() => SnipeStore.addFakes(1)}>
+                    + add fake snipe
+                </Button>
+
+                <Button size="small" variant="positive" onClick={() => logger.debug(isDeveloper())}>
                     + add fake snipe
                 </Button>
             </div>
