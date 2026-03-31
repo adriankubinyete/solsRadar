@@ -63,8 +63,8 @@ export const settings = definePluginSettings({
         type: OptionType.SELECT,
         description: "How to close Roblox before joining. 'await' waits for the process to fully die before launching (reliable, slower). 'fire-and-forget' sends the kill signal and waits a fixed delay (faster, may fail if delay is too low).",
         options: [
-            { label: "Await", value: "await", default: true },
-            { label: "Fire and forget", value: "fire-and-forget" },
+            { label: "Await (default)", value: "await", default: true },
+            { label: "Fire and forget (faster, may fail if delay is too low)", value: "fire-and-forget" },
         ],
         hidden: true,
     },
