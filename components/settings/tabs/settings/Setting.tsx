@@ -242,14 +242,11 @@ function NumberControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; 
 
     return (
         <>
-            <input
-                type="number"
-                style={{ ...S.input, borderColor: errMsg ? "var(--control-critical-primary-text-default)" : undefined }}
+            <TextInput
                 value={raw}
+                placeholder={def.min != null ? String(def.min) : undefined}
                 disabled={disabled}
-                min={def.min}
-                max={def.max}
-                onChange={e => { setRaw(e.target.value); commit(e.target.value); }}
+                onChange={v => { setRaw(v); commit(v); }}
             />
             {errMsg && <span style={S.error}>{errMsg}</span>}
         </>
