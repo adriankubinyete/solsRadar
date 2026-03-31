@@ -137,8 +137,8 @@ export interface JoinResult {
 async function executeBadLinkAction(): Promise<void> {
     switch (settings.store.onBadLink) {
         case "nothing": return;
-        case "public": return await joinSolsPublicServer();
-        case "close": return await closeGameIfNeeded();
+        case "public": await joinSolsPublicServer(); return;
+        case "close": await closeGameIfNeeded(); return;
     }
 }
 
@@ -455,15 +455,34 @@ type JoinServerResult =
 async function joinServer(uri: string, tMessageReceived: number, log: Logger): Promise<JoinServerResult> {
     log.info(`Joining: ${uri}`);
 
+    const KILL_DELAY_MS = settings.store.closeGameDelay;
+
     const tJoinStart = performance.now();
+
+    const tKillStart = performance.now();
+    let killDurationMs: number | null = null;
     try {
-        await closeGameIfNeeded();
+        if (settings.store.closeGameBeforeJoin) {
+            Native.killProcess({ pname: "RobloxPlayerBeta.exe" }); // sem await
+            await new Promise(res => setTimeout(res, KILL_DELAY_MS));
+        }
+        killDurationMs = performance.now() - tKillStart;
+    } catch (err) {
+        const detail = (err as Error).message;
+        log.error(`killProcess failed: ${detail}`);
+        return { ok: false, reason: "native-failed", detail };
+    }
+
+    const tOpenStart = performance.now();
+    try {
         await Native.openUri(uri);
     } catch (err) {
         const detail = (err as Error).message;
         log.error(`Native.openUri failed: ${detail}`);
         return { ok: false, reason: "native-failed", detail };
     }
+    const openUriDurationMs = performance.now() - tOpenStart;
+
     const tJoinEnd = performance.now();
 
     return {
@@ -472,6 +491,8 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
             joinDurationMs: tJoinEnd - tJoinStart,
             timeToJoinMs: tJoinEnd - tMessageReceived,
             overheadMs: (tJoinEnd - tMessageReceived) - (tJoinEnd - tJoinStart),
+            killDurationMs,
+            openUriDurationMs,
         },
     };
 }

@@ -55,6 +55,8 @@ export interface SnipeMetrics {
     timeToJoinMs: number;
     joinDurationMs: number;
     overheadMs: number;
+    killDurationMs: number | null;
+    openUriDurationMs: number;
 }
 
 export interface SnipeLogEntry {
@@ -225,7 +227,7 @@ class SnipeHistoryStore {
                 triggerType: "fake",
                 triggerPriority: 0,
                 tags: choices[Math.floor(Math.random() * choices.length)],
-                metrics: { timeToJoinMs: 0, joinDurationMs: 0, overheadMs: 0 },
+                metrics: { timeToJoinMs: 0, joinDurationMs: 0, overheadMs: 0, killDurationMs: 0, openUriDurationMs: 0 },
                 processedMessageText: "Fake message",
                 log: [],
             });

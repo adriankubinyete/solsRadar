@@ -91,6 +91,7 @@ export function SettingsTab() {
             title: "Game Launch",
             entries: [
                 { id: "closeGameBeforeJoin", label: "Close Game Before Joining", description: "Closes any running Roblox instance before launching a new one. Adds ~200–400ms to join time, but prevents Roblox from silently failing to launch. Only disable this if you always close the game yourself before sniping." },
+                { id: "closeGameDelay", label: "Close Game Delay", description: "Delay to wait before naively launching Roblox. Only applies when closeGameBeforeJoin is enabled. If your game is failing to join, try increasing this value. Default: 100" },
             ],
         },
         {

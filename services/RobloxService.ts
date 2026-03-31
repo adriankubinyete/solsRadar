@@ -150,9 +150,15 @@ export async function getPlaceId(link: RobloxLink): Promise<number | null> {
  * Closes the Roblox process before joining, if the setting is enabled.
  * This can help prevent failed joins, at the cost of slightly increased join time (~100-200ms).
  */
-export async function closeGameIfNeeded(): Promise<void> {
-    if (!settings.store.closeGameBeforeJoin) return;
-    await closeGame();
+// export async function closeGameIfNeeded(): Promise<void> {
+//     if (!settings.store.closeGameBeforeJoin) return;
+//     await closeGame();
+// }
+
+// closeGameIfNeeded repassa o retorno
+export async function closeGameIfNeeded(): Promise<boolean | null> {
+    if (!settings.store.closeGameBeforeJoin) return null;
+    return await closeGame();
 }
 
 export async function closeGame(): Promise<boolean> {

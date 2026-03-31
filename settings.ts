@@ -59,6 +59,12 @@ export const settings = definePluginSettings({
         default: true,
         hidden: true,
     },
+    closeGameDelay: {
+        type: OptionType.NUMBER,
+        description: "Delay to wait before naively launching Roblox. Only applies when closeGameBeforeJoin is enabled. If your game is failing to join, try increasing this value. Default: 100",
+        default: 100,
+        hidden: true,
+    },
 
     // others
     flattenEmbeds: {

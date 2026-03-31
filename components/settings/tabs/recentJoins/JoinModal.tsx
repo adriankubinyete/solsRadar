@@ -203,9 +203,15 @@ function JoinModal({ entry: initialEntry, modalProps }: {
                         <section>
                             <Heading tag="h5" style={{ marginBottom: 8 }}>Performance</Heading>
                             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                <DetailRow label="Total (since message received)" value={`${entry.metrics.timeToJoinMs.toFixed(1)} ms`} />
-                                <DetailRow label="Launch Roblox" value={`${entry.metrics.joinDurationMs.toFixed(1)} ms`} />
-                                <DetailRow label="Overhead (plugin processing time)" value={`${entry.metrics.overheadMs.toFixed(1)} ms`} />
+                                <DetailRow label="Total processing time" value={`${entry.metrics.timeToJoinMs.toFixed(1)} ms`} />
+                                {/* <DetailRow label="Launch Roblox" value={`${entry.metrics.joinDurationMs.toFixed(1)} ms`} /> */}
+                                <DetailRow label="Plugin overhead" value={`${entry.metrics.overheadMs.toFixed(1)} ms`} />
+                                <DetailRow label="Roblox launch" value={`${entry.metrics.openUriDurationMs.toFixed(1)} ms`} />
+                                {entry.metrics.killDurationMs !== null && (
+                                    <>
+                                        <DetailRow label="Process kill" value={`${entry.metrics.killDurationMs.toFixed(1)} ms`} />
+                                    </>
+                                )}
                             </div>
                         </section>
                     </>}
