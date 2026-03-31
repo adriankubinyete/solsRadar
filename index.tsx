@@ -18,7 +18,7 @@ import { SolsRadarTitleBarButton } from "./components/buttons/SolsRadarTitleBarB
 import { SolsRadarIcon } from "./components/ui/SolsRadarIcon";
 import { Snipe } from "./models/Snipe";
 import { BiomeDetector } from "./services/BiomeDetector";
-import { closeGameIfNeeded, extractServerLink, getPlaceId, joinSolsPublicServer, joinUri, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
+import { closeGame, closeGameIfNeeded, extractServerLink, getPlaceId, joinSolsPublicServer, joinUri, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
 import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
@@ -455,16 +455,18 @@ type JoinServerResult =
 async function joinServer(uri: string, tMessageReceived: number, log: Logger): Promise<JoinServerResult> {
     log.info(`Joining: ${uri}`);
 
-    const KILL_DELAY_MS = settings.store.closeGameDelay;
-
     const tJoinStart = performance.now();
 
     const tKillStart = performance.now();
     let killDurationMs: number | null = null;
     try {
         if (settings.store.closeGameBeforeJoin) {
-            Native.killProcess({ pname: "RobloxPlayerBeta.exe" }); // sem await
-            await new Promise(res => setTimeout(res, KILL_DELAY_MS));
+            if (settings.store.killMode === "fire-and-forget") {
+                Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
+                await new Promise(res => setTimeout(res, settings.store.closeGameDelay));
+            } else {
+                await closeGame();
+            }
         }
         killDurationMs = performance.now() - tKillStart;
     } catch (err) {
@@ -475,10 +477,14 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
 
     const tOpenStart = performance.now();
     try {
-        await Native.openUri(uri);
+        if (settings.store.useBrowserLaunch) {
+            window.open(uri, "_blank", "noopener,noreferrer");
+        } else {
+            await Native.openUri(uri);
+        }
     } catch (err) {
         const detail = (err as Error).message;
-        log.error(`Native.openUri failed: ${detail}`);
+        log.error(`openUri failed: ${detail}`);
         return { ok: false, reason: "native-failed", detail };
     }
     const openUriDurationMs = performance.now() - tOpenStart;

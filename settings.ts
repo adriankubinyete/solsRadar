@@ -55,14 +55,31 @@ export const settings = definePluginSettings({
     },
     closeGameBeforeJoin: {
         type: OptionType.BOOLEAN,
-        description: "Close Roblox before attempting to join a server. Slightly increases join time (~100-200ms) but prevents joins from straight up failing.",
+        description: "Close Roblox before joining a server. Prevents silent join failures at the cost of extra latency.",
         default: true,
+        hidden: true,
+    },
+    killMode: {
+        type: OptionType.SELECT,
+        description: "How to close Roblox before joining. 'await' waits for the process to fully die before launching (reliable, slower). 'fire-and-forget' sends the kill signal and waits a fixed delay (faster, may fail if delay is too low).",
+        options: [
+            { label: "Await", value: "await", default: true },
+            { label: "Fire and forget", value: "fire-and-forget" },
+        ],
         hidden: true,
     },
     closeGameDelay: {
         type: OptionType.NUMBER,
-        description: "Delay to wait before naively launching Roblox. Only applies when closeGameBeforeJoin is enabled. If your game is failing to join, try increasing this value. Default: 100",
+        description: "Delay (ms) between kill signal and launch, when using fire-and-forget mode. Increase if joins are failing. Default: 100",
         default: 100,
+        min: 0,
+        max: 5000,
+        hidden: true,
+    },
+    useBrowserLaunch: {
+        type: OptionType.BOOLEAN,
+        description: "Launch the Roblox URI via window.open() instead of Native exec. Faster but metrics become unreliable (fire-and-forget).",
+        default: false,
         hidden: true,
     },
 

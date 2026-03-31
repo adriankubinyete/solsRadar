@@ -260,7 +260,10 @@ export function Setting({ id, label, description, disabled, style, chipKind }: S
     if (!def) return null;
 
     const restartNeeded = !!def.restartNeeded;
-    const isInline = def.type === OptionType.BOOLEAN || def.type === OptionType.SELECT;
+    const isInline =
+        def.type === OptionType.BOOLEAN
+        || (def.type === OptionType.SELECT && (!description
+            || description.split(/\s+/).filter(Boolean).join(" ").length < 50));
 
     const labelNode = (
         <span style={S.label}>
