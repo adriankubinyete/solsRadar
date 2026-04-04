@@ -18,6 +18,34 @@ interface StatTriggerDetailProps {
     compactBar?: boolean;
 }
 
+interface StatCellProps {
+    value: React.ReactNode;
+    label: string;
+    hint?: string;
+    color?: "green" | "red" | "yellow";
+    tooltip?: string;
+    onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
+    onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
+}
+
+function StatCell({ value, label, hint, color, onMouseEnter, onMouseLeave }: StatCellProps) {
+    return (
+        <div
+            className="vc-sora-triggerdetails-cell"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+        >
+            <div className="vc-sora-triggerdetails-cell-top">
+                <span className={`vc-sora-triggerdetails-cell-val${color ? ` vc-sora-triggerdetails-cell-val--${color}` : ""}`}>
+                    {value}
+                </span>
+                {hint && <span className="vc-sora-triggerdetails-cell-pct">({hint})</span>}
+            </div>
+            <span className="vc-sora-triggerdetails-cell-lbl">{label}</span>
+        </div>
+    );
+}
+
 export function StatTriggerDetail({
     trigger,
     total,
@@ -53,52 +81,17 @@ export function StatTriggerDetail({
             )}
 
             <div className="vc-sora-triggerdetails-grid">
+                <StatCell value={total} label="Total" />
+                <StatCell value={real} label="Real" hint={`${realPct}%`} color="green" />
+                <StatCell value={bait} label="Bait" hint={`${baitPct}%`} color="red" />
+                <StatCell value={timeout} label="Timeout" hint={`${timeoutPct}%`} color="yellow" />
 
-                <div className="vc-sora-triggerdetails-cell">
-                    <div className="vc-sora-triggerdetails-cell-top">
-                        <span className="vc-sora-triggerdetails-cell-val vc-sora-triggerdetails-cell-val">{total}</span>
-                    </div>
-                    <span className="vc-sora-triggerdetails-cell-lbl">Total</span>
-                </div>
-
-                <div className="vc-sora-triggerdetails-cell">
-                    <div className="vc-sora-triggerdetails-cell-top">
-                        <span className="vc-sora-triggerdetails-cell-val vc-sora-triggerdetails-cell-val--green">{real}</span>
-                        <span className="vc-sora-triggerdetails-cell-pct">({realPct}%)</span>
-                    </div>
-                    <span className="vc-sora-triggerdetails-cell-lbl">Real</span>
-                </div>
-
-                <div className="vc-sora-triggerdetails-cell">
-                    <div className="vc-sora-triggerdetails-cell-top">
-                        <span className="vc-sora-triggerdetails-cell-val vc-sora-triggerdetails-cell-val--red">{bait}</span>
-                        <span className="vc-sora-triggerdetails-cell-pct">({baitPct}%)</span>
-                    </div>
-                    <span className="vc-sora-triggerdetails-cell-lbl">Baits</span>
-                </div>
-
-                <div className="vc-sora-triggerdetails-cell">
-                    <div className="vc-sora-triggerdetails-cell-top">
-                        <span className="vc-sora-triggerdetails-cell-val vc-sora-triggerdetails-cell-val--yellow">{timeout}</span>
-                        <span className="vc-sora-triggerdetails-cell-pct">({timeoutPct}%)</span>
-                    </div>
-                    <span className="vc-sora-triggerdetails-cell-lbl">Timeouts</span>
-                </div>
-
-                <Tooltip text="How long does this biome last for, on average">
+                <Tooltip text={"Average duration of real biomes"}>
                     {({ onMouseEnter, onMouseLeave }) => (
-                        <div
-                            className="vc-sora-triggerdetails-cell"
-                            onMouseEnter={onMouseEnter}
-                            onMouseLeave={onMouseLeave}
-                        >
-                            <div className="vc-sora-triggerdetails-cell-top">
-                                <span className="vc-sora-triggerdetails-cell-val">{avgLabel}</span>
-                            </div>
-                            <span className="vc-sora-triggerdetails-cell-lbl">Duration (avg)</span>
-                        </div>
+                        <StatCell value={avgLabel} label="Duration (avg)" onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} />
                     )}
                 </Tooltip>
+
             </div>
         </div>
     );
