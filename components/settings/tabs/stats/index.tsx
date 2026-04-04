@@ -5,9 +5,12 @@
  */
 
 import { Button } from "@components/Button";
+import { Divider } from "@components/Divider";
 import { React } from "@webpack/common";
 
 import { SnipeEntry, SnipeStore, useSnipeHistory } from "../../../../stores/SnipeStore";
+import { StatCard } from "./StatCard";
+import { StatTriggerDetail } from "./StatTriggerDetail";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -170,93 +173,37 @@ export function StatsTab() {
             ) : (
                 <>
                     {/* Overall Stats */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-                        <div style={{
-                            background: "var(--background-secondary)",
-                            borderRadius: 12,
-                            padding: 16,
-                            textAlign: "center"
-                        }}>
-                            <div style={{ fontSize: 32, fontWeight: 700, color: "#4ade80" }}>{realPct}%</div>
-                            <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>Real</div>
-                        </div>
-
-                        <div style={{
-                            background: "var(--background-secondary)",
-                            borderRadius: 12,
-                            padding: 16,
-                            textAlign: "center"
-                        }}>
-                            <div style={{ fontSize: 32, fontWeight: 700, color: "#f87171" }}>{baitPct}%</div>
-                            <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>Bait</div>
-                        </div>
-
-                        <div style={{
-                            background: "var(--background-secondary)",
-                            borderRadius: 12,
-                            padding: 16,
-                            textAlign: "center"
-                        }}>
-                            <div style={{ fontSize: 32, fontWeight: 700, color: "#fbbf24" }}>{timeoutPct}%</div>
-                            <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>Timeout</div>
-                        </div>
-
-                        <div style={{
-                            background: "var(--background-secondary)",
-                            borderRadius: 12,
-                            padding: 16,
-                            textAlign: "center"
-                        }}>
-                            <div style={{ fontSize: 32, fontWeight: 700, color: "var(--text-default)" }}>{total}</div>
-                            <div style={{ color: "var(--text-muted)", fontSize: 13, marginTop: 4 }}>Total Snipes</div>
-                        </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 4 }}>
+                        <StatCard value={`${realPct}%`} title="Real" color="green" />
+                        <StatCard value={`${baitPct}%`} title="Bait" color="red" />
+                        <StatCard value={`${timeoutPct}%`} title="Timeout" color="yellow" />
+                        <StatCard value={total} title="Total Snipes" />
                     </div>
 
                     {/* Triggers List */}
+                    <Divider />
                     <div>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: "var(--header-secondary)", marginBottom: 12 }}>
-                            Triggers Performance
-                        </div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            {aggregates.map(agg => {
-                                const realPercent = agg.total > 0 ? Math.round((agg.real / agg.total) * 100) : 0;
-                                return (
-                                    <div key={agg.trigger} style={{
-                                        background: "var(--background-secondary)",
-                                        borderRadius: 12,
-                                        padding: 16,
-                                    }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                                            <span style={{ fontWeight: 600, color: "var(--text-default)" }}>
-                                                {agg.trigger}
-                                            </span>
-                                            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                                                {agg.total} total • {agg.avgDurationMs ? `${(agg.avgDurationMs / 1000).toFixed(1)}s avg` : "—"}
-                                            </span>
-                                        </div>
-
-                                        <div style={{
-                                            height: 6,
-                                            background: "var(--background-tertiary)",
-                                            borderRadius: 9999,
-                                            overflow: "hidden",
-                                            marginBottom: 10
-                                        }}>
-                                            <div style={{
-                                                height: "100%",
-                                                width: `${realPercent}%`,
-                                                background: "linear-gradient(90deg, #22c55e, #4ade80)",
-                                            }} />
-                                        </div>
-
-                                        <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
-                                            <span style={{ color: "#4ade80" }}>Real: <b>{agg.real}</b></span>
-                                            <span style={{ color: "#f87171" }}>Bait: <b>{agg.bait}</b></span>
-                                            <span style={{ color: "#fbbf24" }}>Timeout: <b>{agg.timeout}</b></span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                            <div>
+                                <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-default)" }}>
+                                    Trigger Stats
+                                </div>
+                                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                                    Per-trigger overview
+                                </div>
+                            </div>
+                            {aggregates.map(agg => (
+                                <StatTriggerDetail
+                                    key={agg.trigger}
+                                    trigger={agg.trigger}
+                                    total={agg.total}
+                                    real={agg.real}
+                                    bait={agg.bait}
+                                    timeout={agg.timeout}
+                                    avgDurationMs={agg.avgDurationMs}
+                                    // compactBar
+                                />
+                            ))}
                         </div>
                     </div>
 
@@ -265,7 +212,13 @@ export function StatsTab() {
 
             {/* Footer */}
             {total > 0 && (
-                <div style={{ marginTop: "auto", paddingTop: 12, textAlign: "right" }}>
+                <div style={{
+                    marginTop: "auto",
+                    paddingBottom: 12,
+                    borderTop: "1px solid var(--background-modifier-border)",
+                    display: "flex",
+                    justifyContent: "flex-end"
+                }}>
                     <Button size="small" variant="dangerPrimary" onClick={() => SnipeStore.clear()}>
                         Clear History
                     </Button>
