@@ -95,7 +95,7 @@ export function StatTriggerDetail({
                             <div className="vc-sora-triggerdetails-cell-top">
                                 <span className="vc-sora-triggerdetails-cell-val">{avgLabel}</span>
                             </div>
-                            <span className="vc-sora-triggerdetails-cell-lbl">Duration (avg.)</span>
+                            <span className="vc-sora-triggerdetails-cell-lbl">Duration (avg)</span>
                         </div>
                     )}
                 </Tooltip>
