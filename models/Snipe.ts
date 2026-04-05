@@ -82,6 +82,7 @@ export class Snipe {
     markAsLinkSafe() { this._tag("link-verified-safe"); }
     markAsLinkUnsafe() { this._tag("link-verified-unsafe"); }
     markAsLinkNotVerified() { this._tag("link-not-verified"); }
+    markAsIgnored() { this._tag("link-ignored"); }
 
     isSafe(): boolean {
         const tags = SnipeStore.getById(this.id)?.tags ?? [];

@@ -22,6 +22,7 @@ export type SnipeTag =
     | "link-verified-safe" // link resolveu para o jogo correto
     | "link-verified-unsafe" // link é bait (jogo diferente)
     | "link-not-verified" // verificação desativada
+    | "link-ignored" // for some reason, we decided to ignore it
     | "redundant-biome-ignored" // ignorado devido a redundancia
     | "redundant-biome-bypassed" // redundante, mas bateu no bypass keyword
     | "failed" // openUri falhou
@@ -43,6 +44,7 @@ export const TAG_CONFIGS: Record<SnipeTag, SnipeTagConfig> = {
     "link-verified-safe": { emoji: "✅", label: "Link", detail: "Link was verified, is allowed", priority: 60 },
     "link-verified-unsafe": { emoji: "❌", label: "Link", detail: "Link was verified, is not allowed", priority: 65 },
     "link-not-verified": { emoji: "⚠️", label: "Link", detail: "Link was not verified", priority: 20 },
+    "link-ignored": { emoji: "❌", label: "Ignored", detail: "This snipe was ignored. Check logs for details.", priority: 0 },
     "redundant-biome-ignored": { emoji: "❌", label: "Ignored", detail: "This snipe was ignored due to biome redundancy", priority: 0 },
     "redundant-biome-bypassed": { emoji: "➡️", label: "Bypassed", detail: "This biome was redundant, but a fresh-bypass keyword was detected.", priority: 0 },
     "failed": { emoji: "❌", label: "Join", detail: "Something went wrong trying to join this.", priority: 80 },

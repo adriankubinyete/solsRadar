@@ -82,6 +82,12 @@ export const settings = definePluginSettings({
         default: false,
         hidden: true,
     },
+    deduplicateLinks: {
+        type: OptionType.BOOLEAN,
+        description: "Prevent duplicate links within a short period from being processed.",
+        default: true,
+        hidden: true,
+    },
 
     // others
     flattenEmbeds: {

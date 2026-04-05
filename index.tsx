@@ -74,8 +74,6 @@ function resolveTrigger({ message, channel, guild }: { message: Message; channel
 
 // ─── channel validation ───────────────────────────────────────────────────────
 
-// ─── channel validation ───────────────────────────────────────────────────────
-
 function isMessageAllowed({ channel, message, trigger }: { channel: Channel; message: Message; trigger: Trigger; }, log: Logger): boolean {
     // Guild-level ignore (com bypass por trigger)
     if (!trigger.conditions.bypassIgnoredGuilds) {
@@ -128,6 +126,35 @@ function isMessageAllowed({ channel, message, trigger }: { channel: Channel; mes
 
 // ─── join ─────────────────────────────────────────────────────────────────────
 
+const lastSeenLink = new Map<string, { link: string; timestamp: number; }>();
+
+function isDuplicateLink(snipe: Snipe): boolean {
+    const now = Date.now();
+    const key = snipe.trigger.name;
+    const last = lastSeenLink.get(key);
+
+    const isDuplicate = !!(last && last.link === snipe.link.code && now - last.timestamp < 10 * 60 * 1000);
+
+    if (!isDuplicate) return false;
+
+    // É duplicata — agora decide se bypass ou bloqueia
+    if (!settings.store.deduplicateLinks || snipe.trigger.conditions.bypassLinkDeduplication) {
+        snipe.logInfo(`Duplicate link detected (from ${formatElapsedTime(now - last!.timestamp)} ago), but deduplication is bypassed. Executing anyways.`);
+        return false;
+    }
+
+    snipe.logInfo(`Duplicate link detected (from ${formatElapsedTime(now - last!.timestamp)} ago). This snipe will be ignored`);
+    snipe.markAsIgnored();
+
+    return true;
+}
+
+function markAsSeen(snipe: Snipe): void {
+    lastSeenLink.set(snipe.trigger.name, {
+        link: snipe.link.code,
+        timestamp: Date.now(),
+    });
+}
 export interface JoinResult {
     joined: boolean;
     metrics: SnipeMetrics | null;
@@ -702,7 +729,10 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
     if (isJoinLocked(trigger)) return;
 
     const snipe = Snipe.create(message, link, trigger, channel, guild, tMessageReceived);
-    snipe.logDebug("snipe created");
+    snipe.logDebug("-- Snipe created! --");
+
+    // duplicate checking
+    if (isDuplicateLink(snipe)) return;
 
     // early forward
     if (snipe.trigger.forwarding.onMatch.enabled && snipe.trigger.forwarding.onMatch.early) {
@@ -720,6 +750,9 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
         snipe.logInfo("Forwarding late...");
         await forwardSnipe(snipe, log);
     }
+
+    // mark this as our last link seen, so we can check for duplicate next time
+    markAsSeen(snipe);
 }
 
 // ─── plugin ───────────────────────────────────────────────────────────────────

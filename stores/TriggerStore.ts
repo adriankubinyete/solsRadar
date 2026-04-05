@@ -52,6 +52,7 @@ export interface TriggerConditions {
     bypassForwardIgnoredGuilds: boolean; // bypass the global "ignore this guild" check for forwarding
     bypassIgnoredChannels: boolean; // bypass the global "ignore this channel" check
     bypassLinkVerification: boolean; // bypass the Place ID check
+    bypassLinkDeduplication: boolean; // bypass the duplicate link check
 }
 
 export interface TriggerBiome {
@@ -131,6 +132,7 @@ export const DEFAULT_CONDITIONS: TriggerConditions = {
     bypassForwardIgnoredGuilds: false,
     bypassIgnoredChannels: false,
     bypassLinkVerification: false,
+    bypassLinkDeduplication: false,
 };
 
 export const DEFAULT_BIOME: TriggerBiome = {
@@ -207,6 +209,7 @@ function migrateTrigger(raw: any): Trigger {
             bypassForwardIgnoredGuilds: raw.conditions?.bypassForwardIgnoredGuilds ?? false,
             bypassIgnoredChannels: raw.conditions?.bypassIgnoredChannels ?? false,
             bypassLinkVerification: raw.conditions?.bypassLinkVerification ?? false,
+            bypassLinkDeduplication: raw.conditions?.bypassLinkDeduplication ?? false,
         },
         state: {
             enabled: raw.state?.enabled ?? DEFAULT_TRIGGER_STATE.enabled,

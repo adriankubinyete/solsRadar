@@ -624,7 +624,7 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
     const { conditions } = draft;
     const {
         bypassMonitoredOnly, bypassIgnoredChannels, bypassIgnoredGuilds, bypassForwardIgnoredGuilds,
-        bypassMatchAmbiguity, bypassLinkVerification,
+        bypassMatchAmbiguity, bypassLinkVerification, bypassLinkDeduplication,
         fromUser, ignoredChannels, ignoredGuilds, inChannel,
     } = conditions;
 
@@ -713,6 +713,12 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
                 hint="Skip Place ID verification for this trigger."
                 value={bypassLinkVerification}
                 onChange={v => patchConditions({ bypassLinkVerification: v })}
+            />
+            <SwitchField
+                label="Bypass link deduplication"
+                hint="Skip the duplication check for this trigger."
+                value={bypassLinkDeduplication}
+                onChange={v => patchConditions({ bypassLinkDeduplication: v })}
             />
 
         </div>
