@@ -65,6 +65,7 @@ export const settings = definePluginSettings({
         options: [
             { label: "Await (default)", value: "await", default: true },
             { label: "Fire and forget (faster, may fail if delay is too low)", value: "fire-and-forget" },
+            { label: "LDPlayer adb.exe (requires setup)", value: "ldp-adb" },
         ],
         hidden: true,
     },
@@ -82,12 +83,6 @@ export const settings = definePluginSettings({
         default: false,
         hidden: true,
     },
-    deduplicateLinks: {
-        type: OptionType.BOOLEAN,
-        description: "Prevent duplicate links within a short period from being processed.",
-        default: true,
-        hidden: true,
-    },
 
     // others
     flattenEmbeds: {
@@ -95,8 +90,35 @@ export const settings = definePluginSettings({
         description: "Whether to merge embeds into the message content when checking for triggers. If you're monitoring a Macro server, you might want to enable this.",
         default: true,
         hidden: true,
-
     },
+    deduplicateLinks: {
+        type: OptionType.BOOLEAN,
+        description: "Prevent duplicate links within a short period from being processed.",
+        default: true,
+        hidden: true,
+    },
+
+    // advanced, tryhard sniping stuff
+    ldpAdbPath: {
+        type: OptionType.STRING,
+        description: "Path to adb.exe (e.g. C:\\LDPlayer\\LDPlayer9\\adb.exe)",
+        default: "C:\\LDPlayer\\LDPlayer9\\adb.exe",
+        hidden: true,
+    },
+    ldpAdbDeviceSerial: {
+        type: OptionType.STRING,
+        description: "ADB device serial (run 'adb devices' to check). Default: emulator-5554",
+        default: "emulator-5554",
+        hidden: true,
+    },
+    ldpAdbPackageName: {
+        type: OptionType.STRING,
+        description: "Package name to force-stop on the emulator.",
+        default: "com.roblox.client",
+        hidden: true,
+    },
+
+
     // @NOTE
     // there is already forward-loop prevention for self-webhooks
     // but with this enabled, we EXPLICITLY ignore ANY forwards from solradar, just in case.

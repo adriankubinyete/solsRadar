@@ -224,6 +224,28 @@ export async function killProcess(
     }
 }
 
+export async function closeRobloxOnEmulator(
+    _: IpcMainInvokeEvent,
+    adbPath: string,
+    deviceSerial: string,
+    packageName: string = "com.roblox.client"
+): Promise<{ ok: boolean; error?: string }> {
+    if (process.platform !== "win32") {
+        return { ok: false, error: "Windows only." };
+    }
+
+    if (!adbPath || !fs.existsSync(adbPath)) {
+        return { ok: false, error: `adb.exe not found at: ${adbPath}` };
+    }
+
+    try {
+        await exec(`"${adbPath}" -s ${deviceSerial} shell am force-stop ${packageName}`);
+        return { ok: true };
+    } catch (err: any) {
+        return { ok: false, error: err.message };
+    }
+}
+
 // ─── Biome detection ──────────────────────────────────────────────────────────
 // As funções abaixo são responsabilidade do Detector.ts mas ficam aqui
 // pois requerem acesso ao Node/fs (native context).

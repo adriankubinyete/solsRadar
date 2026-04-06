@@ -90,12 +90,33 @@ export function SettingsTab() {
         },
         {
             title: "Game Launch",
+
             entries: [
                 { id: "closeGameBeforeJoin", label: "Close Game Before Joining", description: "Closes any running Roblox instance before launching a new one. Prevents silent join failures at the cost of extra latency. Only disable if you always close the game yourself before sniping." },
                 { id: "killMode", label: "Close Mode", description: "How to close Roblox before joining. 'Await' waits for the process to fully die before launching (reliable, slower). 'Fire and forget' sends the kill signal and waits a fixed delay (faster, may fail if delay is too low)." },
                 { id: "closeGameDelay", label: "Close Game Delay (ms)", description: "Delay between kill signal and launch when using fire-and-forget mode. Increase if joins are failing." },
                 { id: "useBrowserLaunch", label: "Browser Launch", description: "Launch the Roblox URI via window.open() instead of Native exec. May be faster, but openURI metrics become unreliable." },
             ],
+        },
+        {
+            title: "LDPlayer ADB",
+            note: (
+                <>
+                    {settings.store.killMode !== "ldp-adb" && (
+                        <p style={note("warning")}>
+                            "LDPlayer ADB" is not selected as the close mode. These settings will have no effect.
+                        </p>
+                    )}
+                    <p style={note("default")}>
+                        ADB launch is an advanced sniping method which you keep your game open on the home screen, and running on LDPlayer. When a snipe trigger is matched, the game, instantly start joining, while sending a close request to LDPlayer.
+                    </p>
+                </>
+            ),
+            entries: [
+                { id: "ldpAdbPath", label: "LDPlayer ADB Path", description: "Path to LDPlayer ADB executable." },
+                { id: "ldpAdbDeviceSerial", label: "LDPlayer ADB Device Serial", description: "Serial number of the device to use with LDPlayer. Default 'emulator-5554'" },
+                { id: "ldpAdbPackageName", label: "LDPlayer ADB Package Name", description: "Package name of LDPlayer on the device. Default 'com.roblox.client'" },
+            ]
         },
         {
             title: "Interface",

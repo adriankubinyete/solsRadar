@@ -488,7 +488,24 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
     let killDurationMs: number | null = null;
     try {
         if (settings.store.closeGameBeforeJoin) {
-            if (settings.store.killMode === "fire-and-forget") {
+            if (settings.store.killMode === "ldp-adb") {
+
+                if (!settings.store.ldpAdbPath?.trim()) {
+                    // no adb configured, fall back
+                    log.warn("LDPlayer adb path not configured! Falling back to normal close method");
+                    await closeGame();
+                } else {
+                    // fecha roblox no emulador via adb
+                    const adbResult = await Native.closeRobloxOnEmulator(
+                        settings.store.ldpAdbPath,
+                        settings.store.ldpAdbDeviceSerial || "emulator-5554",
+                        settings.store.ldpAdbPackageName || "com.roblox.client"
+                    );
+                    if (!adbResult.ok) {
+                        log.warn(`ADB close failed: ${adbResult.error} — continuing anyway.`);
+                    }
+                }
+            } else if (settings.store.killMode === "fire-and-forget") {
                 Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
                 await new Promise(res => setTimeout(res, settings.store.closeGameDelay));
             } else {
@@ -498,7 +515,7 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
         killDurationMs = performance.now() - tKillStart;
     } catch (err) {
         const detail = (err as Error).message;
-        log.error(`killProcess failed: ${detail}`);
+        log.error(`kill/close failed: ${detail}`);
         return { ok: false, reason: "native-failed", detail };
     }
 
