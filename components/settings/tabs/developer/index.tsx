@@ -10,13 +10,13 @@ import { Divider } from "@components/Divider";
 import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
 import { React, RunningGameStore } from "@webpack/common";
-import { EditableActionButton } from "userplugins/solsradar/components/EditableActionButton";
 
 import { getRobloxProcess, joinUri, prepareAdb } from "../../../../services/RobloxService";
 import { settings } from "../../../../settings";
 import { JoinLockStore } from "../../../../stores/JoinLockStore";
 import { SnipeStore } from "../../../../stores/SnipeStore";
 import { isDeveloper } from "../../../../utils";
+import { EditableActionButton } from "../../../EditableActionButton";
 import { Pill } from "../../../Pill";
 
 const logger = new Logger("SolRadar.Developer");
