@@ -368,6 +368,15 @@ function TriggerCard({
                     visible={hovered}
                     hint="Delete this trigger"
                 />}
+
+                <span style={{
+                    color: "var(--text-muted)",
+                    fontSize: 18,
+                    flexShrink: 0,
+                    alignSelf: "center"
+                }}>
+                    ›
+                </span>
             </div>
 
             {/* Footer — priority + estado */}
@@ -684,7 +693,7 @@ export function TriggersTab() {
                 }
             </div>
 
-            <CollapsibleTip title="Tips">Left click on a trigger to edit it. Right click to toggle between enabled/disabled. Hold Shift to show delete button.</CollapsibleTip>
+            {/* <CollapsibleTip title="Tips">Left click on a trigger to edit it. Right click to toggle between enabled/disabled. Hold Shift to show delete button.</CollapsibleTip> */}
             {/* Toolbar */}
             <div style={s.toolbar}>
                 <Paragraph>
