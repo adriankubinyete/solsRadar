@@ -8,16 +8,20 @@ import { Button } from "@components/Button";
 import { Card } from "@components/Card";
 import { Divider } from "@components/Divider";
 import { Logger } from "@utils/Logger";
+import { PluginNative } from "@utils/types";
 import { React, RunningGameStore } from "@webpack/common";
 import { EditableActionButton } from "userplugins/solsradar/components/EditableActionButton";
 
 import { getRobloxProcess, joinUri, prepareAdb } from "../../../../services/RobloxService";
+import { settings } from "../../../../settings";
 import { JoinLockStore } from "../../../../stores/JoinLockStore";
 import { SnipeStore } from "../../../../stores/SnipeStore";
 import { isDeveloper } from "../../../../utils";
 import { Pill } from "../../../Pill";
 
 const logger = new Logger("SolRadar.Developer");
+
+const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../../../../native")>;
 
 export function DeveloperTab() {
     const row: React.CSSProperties = {
@@ -83,6 +87,11 @@ export function DeveloperTab() {
             <Divider />
 
             <div style={row}>
+
+                <Button size="small" variant="dangerPrimary" onClick={() => Native.closeRobloxOnEmulator(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, settings.store.ldpAdbPackageName)}>
+                    kill emulator
+                </Button>
+
                 <Button size="small" onClick={() => logger.debug(getRobloxProcess())}>
                     getRobloxProcess
                 </Button>

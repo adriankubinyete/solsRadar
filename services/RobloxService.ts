@@ -211,13 +211,8 @@ export async function prepareAdb(data?: string): Promise<void> {
         return;
     }
 
-    logger.debug("MAIN: Closing game");
     await closeGame();
-
-    logger.debug("MAIN: Going to home");
     await Native.openUri("roblox://"); // hopefuilly goes to home...
-
-    logger.debug(`EMULATOR: Launching Roblox on emulator - Data: ${data}`);
     const adbResult = await Native.emulatorOpenUri(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, data ?? "roblox://experiences/start?placeId=15532962292");
     if (!adbResult.ok) {
         logger.warn(`Failed to launch Roblox on emulator via adb: ${adbResult.error}`);
