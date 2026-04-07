@@ -353,8 +353,14 @@ export function downloadTriggersJson(): void {
 }
 
 // public export (redact sensitive fields)
-function redactTrigger(trigger: Trigger): Trigger | null {
-    if (trigger.type === "CUSTOM") return null;
+type ExportOptions = {
+    omitCustomTriggers?: boolean;
+};
+
+function redactTrigger(trigger: Trigger, options: ExportOptions): Trigger | null {
+    if (options.omitCustomTriggers && trigger.type === "CUSTOM") {
+        return null;
+    }
 
     return {
         ...trigger,
@@ -367,16 +373,20 @@ function redactTrigger(trigger: Trigger): Trigger | null {
     };
 }
 
-export function exportTriggersJsonRedacted(): string {
+export function exportTriggersJsonRedacted(options: ExportOptions = {}): string {
     const redacted = _triggers
-        .map(redactTrigger)
+        .map(t => redactTrigger(t, options))
         .filter((t): t is Trigger => t !== null);
 
     return JSON.stringify(redacted, null, 2);
 }
 
-export function downloadTriggersJsonRedacted(): void {
-    const blob = new Blob([exportTriggersJsonRedacted()], { type: "application/json" });
+export function downloadTriggersJsonRedacted(options: ExportOptions = {}): void {
+    const blob = new Blob(
+        [exportTriggersJsonRedacted(options)],
+        { type: "application/json" }
+    );
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
