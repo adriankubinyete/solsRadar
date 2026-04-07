@@ -82,15 +82,15 @@ export function DeveloperTab() {
                     placeholder="roblox://experiences/start?placeId=..."
                     onAction={data => prepareAdb(data)}
                 />
+
+                <Button size="small" variant="dangerPrimary" onClick={() => Native.closeRobloxOnEmulator(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, settings.store.ldpAdbPackageName)}>
+                    kill emulator
+                </Button>
             </div>
 
             <Divider />
 
             <div style={row}>
-
-                <Button size="small" variant="dangerPrimary" onClick={() => Native.closeRobloxOnEmulator(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, settings.store.ldpAdbPackageName)}>
-                    kill emulator
-                </Button>
 
                 <Button size="small" onClick={() => logger.debug(getRobloxProcess())}>
                     getRobloxProcess
