@@ -7,12 +7,13 @@
 import { Button } from "@components/Button";
 import { Paragraph } from "@components/Paragraph";
 import { closeAllModals } from "@utils/modal";
-import { NavigationRouter, React, showToast, TextInput, Toasts, useState } from "@webpack/common";
+import { NavigationRouter, React, showToast, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 
 import { SnipeEntry, SnipeStore, SnipeTag, useSnipeHistory } from "../../../../stores/SnipeStore";
 import { UIState } from "../../../../stores/UIStateStore";
 import { formatElapsedTime } from "../../../../utils";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
+import { DeleteButton } from "../../../DeleteButton";
 import { PillVariant } from "../../../Pill";
 import { JoinLockBanner } from "../../../ui/JoinLockBanner";
 import { DANGER_TAGS, FallbackImage, formatTimeAgo, TagBadge } from "./components";
@@ -48,8 +49,9 @@ function cardBg(entry: SnipeEntry): string {
 
 // ─── JoinCard ─────────────────────────────────────────────────────────────────
 
-function JoinCard({ entry, onClick, onContextMenu }: {
+function JoinCard({ entry, shiftHeld, onClick, onContextMenu }: {
     entry: SnipeEntry;
+    shiftHeld: boolean;
     onClick: () => void;
     onContextMenu: () => void;
 }) {
@@ -73,8 +75,18 @@ function JoinCard({ entry, onClick, onContextMenu }: {
                 transition: "filter 0.1s",
                 filter: hovered ? "brightness(1.1)" : "none",
                 userSelect: "none",
+                position: "relative", // necessário pro botão
             }}
         >
+            {/* DELETE BUTTON */}
+            {shiftHeld && (
+                <DeleteButton
+                    visible={hovered}
+                    hint="Delete this entry"
+                    onClick={() => SnipeStore.delete(entry.id)}
+                />
+            )}
+
             {/* Main row */}
             <div style={{ padding: "10px 14px", display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <FallbackImage
@@ -84,23 +96,42 @@ function JoinCard({ entry, onClick, onContextMenu }: {
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                        fontWeight: 600, fontSize: 14, color: "var(--control-secondary-text-default)",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        fontWeight: 600,
+                        fontSize: 14,
+                        color: "var(--control-secondary-text-default)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                         marginBottom: 2,
                     }}>
                         {entry.triggerName}
                     </div>
+
                     <div style={{
-                        fontSize: 12, color: "var(--text-muted)",
-                        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        fontSize: 12,
+                        color: "var(--text-muted)",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                         marginBottom: 6,
                     }}>
-                        {[entry.channelName && `#${entry.channelName}`, entry.guildName].filter(Boolean).join(" · ")}
+                        {[entry.channelName && `#${entry.channelName}`, entry.guildName]
+                            .filter(Boolean)
+                            .join(" · ")}
                     </div>
 
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)" }}>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 12,
+                        color: "var(--text-muted)"
+                    }}>
                         {entry.authorName && <>
-                            <FallbackImage src={entry.authorAvatarUrl} style={{ width: 16, height: 16, borderRadius: "50%" }} />
+                            <FallbackImage
+                                src={entry.authorAvatarUrl}
+                                style={{ width: 16, height: 16, borderRadius: "50%" }}
+                            />
                             <span>{entry.authorName}</span>
                             <span>·</span>
                         </>}
@@ -108,7 +139,14 @@ function JoinCard({ entry, onClick, onContextMenu }: {
                     </div>
                 </div>
 
-                <span style={{ color: "var(--text-muted)", fontSize: 18, flexShrink: 0, alignSelf: "center" }}>›</span>
+                <span style={{
+                    color: "var(--text-muted)",
+                    fontSize: 18,
+                    flexShrink: 0,
+                    alignSelf: "center"
+                }}>
+                    ›
+                </span>
             </div>
 
             {/* Tags footer */}
@@ -116,20 +154,41 @@ function JoinCard({ entry, onClick, onContextMenu }: {
                 <div style={{
                     borderTop: "1px solid var(--background-mod-normal)",
                     padding: "6px 14px",
-                    display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center",
+                    display: "flex",
+                    gap: 6,
+                    flexWrap: "wrap",
+                    alignItems: "center",
                 }}>
                     {visibleTags.map(t => <TagBadge key={t} tag={t} />)}
+
                     {extra > 0 && (
-                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>+{extra}</span>
+                        <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                            +{extra}
+                        </span>
                     )}
-                    <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+
+                    <div style={{
+                        marginLeft: "auto",
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center"
+                    }}>
                         {entry.biomeDurationMs != null && entry.tags.includes("biome-verified-real") && (
-                            <span style={{ fontSize: 11, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+                            <span style={{
+                                fontSize: 11,
+                                color: "var(--text-muted)",
+                                fontVariantNumeric: "tabular-nums"
+                            }}>
                                 🌿 Lasted {formatElapsedTime(entry.biomeDurationMs)}
                             </span>
                         )}
+
                         {entry.metrics && (
-                            <span style={{ fontSize: 11, color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>
+                            <span style={{
+                                fontSize: 11,
+                                color: "var(--text-muted)",
+                                fontVariantNumeric: "tabular-nums"
+                            }}>
                                 ⚡ Joined in {formatElapsedTime(entry.metrics.timeToJoinMs)}
                             </span>
                         )}
@@ -139,7 +198,6 @@ function JoinCard({ entry, onClick, onContextMenu }: {
         </div>
     );
 }
-
 // ─── RecentJoinsTab ───────────────────────────────────────────────────────────
 
 const FILTER_OPTIONS: { tagName: SnipeTag | "all"; label: string; variant: PillVariant; }[] = [
@@ -155,8 +213,25 @@ export function RecentJoinsTab() {
     const entries = useSnipeHistory();
 
     const saved = UIState.get("recentJoins");
+    const [shiftHeld, setShiftHeld] = useState(false);
     const [search, setSearch] = useState(saved.search);
     const [filter, setFilter] = useState<SnipeTag | "all">(saved.tagFilter);
+
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Shift") setShiftHeld(true);
+        };
+        const onKeyUp = (e: KeyboardEvent) => { if (e.key === "Shift") setShiftHeld(false); };
+        const onBlur = () => setShiftHeld(false);
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+        window.addEventListener("blur", onBlur);
+        return () => {
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
+            window.removeEventListener("blur", onBlur);
+        };
+    }, []);
 
     const handleSearchChange = (v: string) => {
         setSearch(v);
@@ -238,6 +313,7 @@ export function RecentJoinsTab() {
                                 <JoinCard
                                     key={e.id}
                                     entry={e}
+                                    shiftHeld={shiftHeld}
                                     onClick={() => openJoinModal(e)}
                                     onContextMenu={() => jumpToMessage(e)}
                                 />

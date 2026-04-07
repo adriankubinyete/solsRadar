@@ -23,6 +23,7 @@ import {
 import { UIState } from "../../../../stores/UIStateStore";
 import { isDeveloper } from "../../../../utils";
 import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
+import { DeleteButton } from "../../../DeleteButton";
 import { Pill, PillBorder, PillRadius, PillVariant } from "../../../Pill";
 import { JoinLockBanner } from "../../../ui/JoinLockBanner";
 import { openAddTriggerModal, openEditTriggerModal } from "./TriggerModal";
@@ -362,13 +363,11 @@ function TriggerCard({
                 </div>
 
                 {/* Delete (só com shift) */}
-                {shiftHeld && (
-                    <div onClick={stopPropagation} onContextMenu={stopPropagation}>
-                        <button style={s.deleteBtn()} onClick={() => deleteTrigger(trigger.id)} title="Delete trigger (no confirmation!)">
-                            Delete
-                        </button>
-                    </div>
-                )}
+                {shiftHeld && <DeleteButton
+                    onClick={() => deleteTrigger(trigger.id)}
+                    visible={hovered}
+                    hint="Delete this trigger"
+                />}
             </div>
 
             {/* Footer — priority + estado */}
