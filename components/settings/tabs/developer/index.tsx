@@ -9,8 +9,9 @@ import { Card } from "@components/Card";
 import { Divider } from "@components/Divider";
 import { Logger } from "@utils/Logger";
 import { React, RunningGameStore } from "@webpack/common";
+import { EditableActionButton } from "userplugins/solsradar/components/EditableActionButton";
 
-import { getRobloxProcess } from "../../../../services/RobloxService";
+import { getRobloxProcess, joinUri, prepareAdb } from "../../../../services/RobloxService";
 import { JoinLockStore } from "../../../../stores/JoinLockStore";
 import { SnipeStore } from "../../../../stores/SnipeStore";
 import { isDeveloper } from "../../../../utils";
@@ -58,6 +59,30 @@ export function DeveloperTab() {
 
             {/* Actions */}
             <div style={row}>
+                <EditableActionButton
+                    id="dev_openUri_one"
+                    defaultLabel="openUri()"
+                    defaultValue="roblox://experiences/start?placeId=15532962292"
+                    onAction={data => joinUri(data)}
+                />
+                <EditableActionButton
+                    id="dev_openUri_two"
+                    defaultLabel="openUri()"
+                    defaultValue="roblox://experiences/start?placeId=15532962292"
+                    onAction={data => joinUri(data)}
+                />
+                <EditableActionButton
+                    id="dev_prepareAdb"
+                    defaultLabel="prepareAdb()"
+                    defaultValue="roblox://experiences/start?placeId=15532962292"
+                    placeholder="roblox://experiences/start?placeId=..."
+                    onAction={data => prepareAdb(data)}
+                />
+            </div>
+
+            <Divider />
+
+            <div style={row}>
                 <Button size="small" onClick={() => logger.debug(getRobloxProcess())}>
                     getRobloxProcess
                 </Button>
@@ -67,15 +92,15 @@ export function DeveloperTab() {
                 </Button>
 
                 <Button size="small" variant="positive" onClick={() => JoinLockStore.activate(10, 30, "fakeLock")}>
-                    + add fake lock (p10, 30s)
+                    JoinLockStore.activate(10, 30, "fakeLock")
                 </Button>
 
                 <Button size="small" variant="positive" onClick={() => SnipeStore.addFakes(1)}>
-                    + add fake snipe
+                    SnipeStore.addFake(1)
                 </Button>
 
                 <Button size="small" variant="positive" onClick={() => logger.debug(isDeveloper())}>
-                    + add fake snipe
+                    isDeveloper()
                 </Button>
             </div>
 

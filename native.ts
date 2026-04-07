@@ -17,7 +17,7 @@
  */
 
 import { Logger } from "@utils/Logger";
-import { exec as execCb } from "child_process";
+import { exec as execCb, spawn } from "child_process";
 import { IpcMainInvokeEvent } from "electron";
 import * as fs from "fs";
 import * as os from "os";
@@ -76,6 +76,7 @@ export async function openUri(_: IpcMainInvokeEvent, uri: string): Promise<void>
     }
 
     try {
+        // could be exploited...?
         await exec(`start "" "${uri}"`);
     } catch (error) {
         throw new Error(`Failed to open URI "${uri}": ${(error as Error).message}`);
@@ -239,8 +240,52 @@ export async function closeRobloxOnEmulator(
     }
 
     try {
+        // this exec could be exploited... lets hope the user doesnt do anything stupid :clueless:
         await exec(`"${adbPath}" -s ${deviceSerial} shell am force-stop ${packageName}`);
         return { ok: true };
+    } catch (err: any) {
+        return { ok: false, error: err.message };
+    }
+}
+
+export async function emulatorOpenUri(
+    _: IpcMainInvokeEvent,
+    adbPath: string,
+    deviceSerial: string,
+    uri: string
+): Promise<{ ok: boolean; error?: string }> {
+    if (process.platform !== "win32") {
+        return { ok: false, error: "Windows only." };
+    }
+
+    if (!adbPath || !fs.existsSync(adbPath)) {
+        return { ok: false, error: `adb.exe not found at: ${adbPath}` };
+    }
+
+    try {
+        // could be exploited... hope the user doesnt do anything stupid :clueless:
+        const proc = spawn(adbPath, [
+            "-s", deviceSerial,
+            "shell",
+            "am", "start",
+            "-a", "android.intent.action.VIEW",
+            "-d", `'${uri}'`,
+            "com.roblox.client"
+        ], {
+            shell: false
+        });
+
+        return await new Promise(resolve => {
+            proc.on("exit", code => {
+                if (code === 0) resolve({ ok: true });
+                else resolve({ ok: false, error: `Exit code ${code}` });
+            });
+
+            proc.on("error", err => {
+                resolve({ ok: false, error: err.message });
+            });
+        });
+
     } catch (err: any) {
         return { ok: false, error: err.message };
     }

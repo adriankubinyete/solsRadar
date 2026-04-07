@@ -186,9 +186,40 @@ export async function joinLink(link: RobloxLink): Promise<void> {
     return await Native.openUri(buildJoinUri(link));
 }
 
-
 export async function joinUri(uri: string | undefined): Promise<void> {
     if (!uri) return;
     await closeGameIfNeeded();
     return await Native.openUri(uri);
+}
+
+// the adb join method needs a specific scenario to work:
+// on main, be on homepage
+// on emulator, be on your private server (so you dont stop rolling)
+// this function basically automates that
+export async function prepareAdb(data?: string): Promise<void> {
+    // close roblox
+    // open roblox with uri "roblox://"
+    // launch adb with {adb_path} -s emulator-5554 shell am start -a android.intent.action.VIEW -d "roblox://experiences/start?placeId=15532962292" com.roblox.client
+
+    if (!settings.store.ldpAdbPath) {
+        logger.error("No adb.exe path set. Cannot prepare ADB.");
+        return;
+    }
+
+    if (!settings.store.ldpAdbDeviceSerial) {
+        logger.error("No adb.exe device serial set. Cannot prepare ADB.");
+        return;
+    }
+
+    logger.debug("MAIN: Closing game");
+    await closeGame();
+
+    logger.debug("MAIN: Going to home");
+    await Native.openUri("roblox://"); // hopefuilly goes to home...
+
+    logger.debug(`EMULATOR: Launching Roblox on emulator - Data: ${data}`);
+    const adbResult = await Native.emulatorOpenUri(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, data ?? "roblox://experiences/start?placeId=15532962292");
+    if (!adbResult.ok) {
+        logger.warn(`Failed to launch Roblox on emulator via adb: ${adbResult.error}`);
+    }
 }

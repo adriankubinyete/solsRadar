@@ -495,14 +495,24 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
                     log.warn("LDPlayer adb path not configured! Falling back to normal close method");
                     await closeGame();
                 } else {
-                    // fecha roblox no emulador via adb
+                    // @NOTE(masutty)!IMPORTANT:
+                    // if the emulator IS OPEN but NOT RUNNING ROBLOX. this signal will get sent
+                    // and do nothing, and because the signal DID NOT FAIL, we will try to launch roblox straight up
+                    // if an instance is running on the machine, and is not on the ready state, it COULD lead to a silent fail
+                    // Main: on roblox, playing - Emulator: open but not running roblox -> Could fail
+                    // Main: on roblox, home    - Emulator: open but not running roblox -> Will (probably) work properly
+                    // Main: not on roblox      - Emulator: open but not running roblox -> Will work properly
+                    // Main: any state          - Emulator: closed                      -> Will work the same 'killMode: await', with a slight delay
+
+                    // request the roblox app to close from the emulator
                     const adbResult = await Native.closeRobloxOnEmulator(
                         settings.store.ldpAdbPath,
                         settings.store.ldpAdbDeviceSerial || "emulator-5554",
                         settings.store.ldpAdbPackageName || "com.roblox.client"
                     );
-                    if (!adbResult.ok) {
-                        log.warn(`ADB close failed: ${adbResult.error} — continuing anyway.`);
+                    if (!adbResult.ok) { // the emulator is not running
+                        log.warn(`ADB close failed: ${adbResult.error} — proceeding the normal way.`);
+                        await closeGame();
                     }
                 }
             } else if (settings.store.killMode === "fire-and-forget") {
