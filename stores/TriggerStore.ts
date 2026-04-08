@@ -29,6 +29,8 @@ export interface TriggerState {
      * triggers 4+ são bloqueados.
      */
     priority: number;
+    notificationSound?: string; // data URI ("data:audio/mp3;base64,...")
+    notificationSoundVolume?: number; // 0-100, default 100
 }
 
 export interface KeywordSet {

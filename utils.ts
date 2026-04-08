@@ -81,3 +81,13 @@ export function isDeveloper(): boolean {
 export function whoAmI(): string {
     return "";
 }
+
+export function playAudio(dataUri: string, volume: number = 100): void {
+    try {
+        const audio = new Audio(dataUri);
+        audio.volume = Math.max(0, Math.min(1, volume / 100));
+        audio.play().catch(err => console.error("[SoRa] Failed to play audio:", err));
+    } catch (err) {
+        console.error("[SoRa] Error creating audio element:", err);
+    }
+}

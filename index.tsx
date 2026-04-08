@@ -24,7 +24,7 @@ import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
 import { SnipeMetrics, SnipeStore } from "./stores/SnipeStore";
 import { getActiveTriggers, Trigger, TriggerType } from "./stores/TriggerStore";
-import { formatElapsedTime, parseCsv, sendWebhook } from "./utils";
+import { formatElapsedTime, parseCsv, playAudio, sendWebhook } from "./utils";
 
 const logger = new Logger("SolRadar");
 const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("./native")>;
@@ -565,6 +565,14 @@ function shouldNotify(snipe: Snipe): boolean {
     return true;
 }
 
+function playNotificationSound(snipe: Snipe): void {
+    const { notificationSound, notificationSoundVolume } = snipe.trigger.state;
+    if (!notificationSound) return;
+
+    snipe.logInfo("Playing custom notification sound...");
+    playAudio(notificationSound, notificationSoundVolume);
+}
+
 function notify(snipe: Snipe, log: Logger): void {
     const entry = SnipeStore.getById(snipe.id)!;
     const tags = new Set(entry.tags);
@@ -601,8 +609,9 @@ function notify(snipe: Snipe, log: Logger): void {
         icon: snipe.trigger.iconUrl,
         onClick,
     });
-
     snipe.logInfo("Notification sent.");
+    playNotificationSound(snipe); // NOTE: only when a valid match happens
+
     log.info(`[${snipe.trigger.name}] Notified: #${snipe.channel.name} @ ${snipe.guild.name}`);
 }
 

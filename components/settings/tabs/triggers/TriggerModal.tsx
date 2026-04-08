@@ -8,7 +8,7 @@ import { Button } from "@components/Button";
 import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
-import { React, Select, showToast, TextInput, Toasts, useEffect, useState } from "@webpack/common";
+import { React, Select, showToast, Slider, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 
 import { settings } from "../../../../settings";
 import {
@@ -23,6 +23,7 @@ import {
     TriggerType,
     updateTrigger,
 } from "../../../../stores/TriggerStore";
+import { playAudio } from "../../../../utils";
 import { IdChipInput } from "../../../IdChipInput";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -377,6 +378,95 @@ function RoleChipInput({ roles, onChange }: {
     );
 }
 
+interface AudioFieldProps {
+    label: string;
+    hint?: string;
+    value: string | undefined;
+    volume: number | undefined;
+    onChangeAudio: (dataUri: string | undefined) => void;
+    onChangeVolume: (volume: number) => void;
+}
+
+export function AudioField({ label, hint, value, volume, onChangeAudio, onChangeVolume }: AudioFieldProps) {
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => onChangeAudio(ev.target?.result as string);
+        reader.readAsDataURL(file);
+        e.target.value = "";
+    }
+
+    return (
+        <div style={S.rowStacked}>
+            <span style={S.label}>{label}</span>
+            {hint && <span style={S.hint}>{hint}</span>}
+
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                style={{ display: "none" }}
+                onChange={handleFileChange}
+            />
+
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginTop: 8,
+                    width: "100%",
+                }}
+            >
+                <div style={{ display: "flex", gap: 8 }}>
+                    {value && (
+                        <Button
+                            size="small"
+                            variant="secondary"
+                            onClick={() => playAudio(value, volume)}
+                        >
+                            Preview 🔊
+                        </Button>
+                    )}
+
+                    <Button
+                        size="small"
+                        variant="link"
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        {value ? "Replace" : "Choose File"}
+                    </Button>
+                </div>
+
+                {value && (
+                    <Button
+                        size="small"
+                        variant="dangerPrimary"
+                        style={{ marginLeft: "auto" }}
+                        onClick={() => onChangeAudio(undefined)}
+                    >
+                        Remove
+                    </Button>
+                )}
+            </div>
+
+            {value && (
+                <>
+                    <span style={{ ...S.hint, marginTop: 10 }}>Volume ({volume ?? 100}%)</span>
+                    <Slider
+                        minValue={0}
+                        maxValue={100}
+                        initialValue={volume ?? 100}
+                        onValueChange={v => onChangeVolume(Math.round(v))}
+                    />
+                </>
+            )}
+        </div>
+    );
+}
+
 // ─── Tab: General ──────────────────────────────────────────────────────────
 
 function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: Partial<Omit<Trigger, "id">>) => void; }) {
@@ -472,6 +562,16 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
                 value={state.notify}
                 onChange={v => patchState({ notify: v })}
             />
+            {state.notify && (
+                <AudioField
+                    label="Notification Sound"
+                    hint="Optional. Play a custom sound when this trigger fires."
+                    value={state.notificationSound}
+                    volume={state.notificationSoundVolume}
+                    onChangeAudio={v => patchState({ notificationSound: v })}
+                    onChangeVolume={v => patchState({ notificationSoundVolume: v })}
+                />
+            )}
 
             {/* ── Join Lock ── */}
             <p style={S.sectionTitle}>Join Lock</p>
