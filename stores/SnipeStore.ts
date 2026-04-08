@@ -10,7 +10,10 @@ import { React } from "@webpack/common";
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "solsRadar_snipeHistory";
-const MAX_ENTRIES = 50;
+const MAX_ENTRIES = 100; // 1 entry is about 5kb
+
+// @TODO(masutty):
+// use IDB instead of localstorage
 
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
