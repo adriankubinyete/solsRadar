@@ -97,6 +97,14 @@ export const settings = definePluginSettings({
         default: true,
         hidden: true,
     },
+    customNotificationSoundDelay: {
+        type: OptionType.NUMBER,
+        description: "Delay in milliseconds before playing the trigger's defined custom notification sound. Default: 0",
+        default: 0,
+        min: 0,
+        max: 5000,
+        hidden: true,
+    },
 
     // advanced, tryhard sniping stuff
     ldpAdbPath: {

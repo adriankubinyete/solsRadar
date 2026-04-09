@@ -90,7 +90,6 @@ export function SettingsTab() {
         },
         {
             title: "Game Launch",
-
             entries: [
                 { id: "closeGameBeforeJoin", label: "Close Game Before Joining", description: "Closes any running Roblox instance before launching a new one. Prevents silent join failures at the cost of extra latency. Only disable if you always close the game yourself before sniping." },
                 { id: "killMode", label: "Close Mode", description: "How to close Roblox before joining. 'Await' waits for the process to fully die before launching (reliable, slower). 'Fire and forget' sends the kill signal and waits a fixed delay (faster, may fail if delay is too low)." },
@@ -184,6 +183,7 @@ export function SettingsTab() {
             note: <p style={note("danger")}>Do <strong>NOT</strong> change these unless you know what you're doing.</p>,
             entries: [
                 { id: "ignoreWebhookForwards", label: "Ignore Webhook Forwards", description: 'Ignore any message whose embed footer contains "solradar". Prevents the plugin from acting on its own forwarded webhooks.' },
+                { id: "customNotificationSoundDelay", label: "Custom Notification Sound Delay (ms)", description: "Delay in milliseconds before playing the trigger's defined custom notification sound." },
             ],
         },
     ];

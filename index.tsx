@@ -567,10 +567,21 @@ function shouldNotify(snipe: Snipe): boolean {
 
 function playNotificationSound(snipe: Snipe): void {
     const { notificationSound, notificationSoundVolume } = snipe.trigger.state;
+
     if (!notificationSound) return;
 
-    snipe.logInfo("Playing custom notification sound...");
-    playAudio(notificationSound, notificationSoundVolume);
+    const rawDelay = settings.store.customNotificationSoundDelay;
+    const delay = Number.isFinite(+rawDelay) ? Math.max(0, +rawDelay) : 0;
+
+    snipe.logInfo(`Playing custom notification sound${delay ? ` (delay: ${delay}ms)` : ""}...`);
+
+    const play = () => playAudio(notificationSound, notificationSoundVolume);
+
+    if (delay > 0) {
+        setTimeout(play, delay);
+    } else {
+        play();
+    }
 }
 
 function notify(snipe: Snipe, log: Logger): void {
