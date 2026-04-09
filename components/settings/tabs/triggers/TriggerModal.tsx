@@ -7,6 +7,7 @@
 import { Button } from "@components/Button";
 import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
+import { Logger } from "@utils/Logger";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { React, Select, showToast, Slider, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 
@@ -25,6 +26,8 @@ import {
 } from "../../../../stores/TriggerStore";
 import { playAudio } from "../../../../utils";
 import { IdChipInput } from "../../../IdChipInput";
+
+const logger = new Logger("SolRadar.TriggerModal");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1005,6 +1008,7 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
 
     const handleSave = async () => {
         if (!isValid) return;
+        // logger.debug("saving draft.state: ", draft.state);
         if (isEditing) await updateTrigger(trigger.id, draft);
         else await addTrigger(draft);
         showToast(isEditing ? `Trigger "${draft.name}" updated!` : "Trigger added!", Toasts.Type.SUCCESS);

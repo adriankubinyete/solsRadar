@@ -220,6 +220,8 @@ function migrateTrigger(raw: any): Trigger {
             joinlock: raw.state?.joinlock ?? DEFAULT_TRIGGER_STATE.joinlock,
             joinlockDuration: raw.state?.joinlockDuration ?? DEFAULT_TRIGGER_STATE.joinlockDuration,
             priority: raw.state?.priority ?? DEFAULT_TRIGGER_STATE.priority,
+            notificationSound: raw.state?.notificationSound ?? "",
+            notificationSoundVolume: raw.state?.notificationSoundVolume ?? "",
         },
         forwarding: {
             webhookUrl: raw.forwarding?.webhookUrl ?? DEFAULT_FORWARDING.webhookUrl,
