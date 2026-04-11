@@ -16,10 +16,11 @@ import { RecentJoinsTab } from "./tabs/recentJoins";
 import { SettingsTab } from "./tabs/settings";
 import { StatsTab } from "./tabs/stats";
 import { TriggersTab } from "./tabs/triggers";
+import { UtilsTab } from "./tabs/utils";
 
 // ─── Definição das tabs ────────────────────────────────────────────────────────
 
-type TabId = "recentJoins" | "triggers" | "settings" | "about" | "dev" | "stats";
+type TabId = "recentJoins" | "triggers" | "settings" | "about" | "dev" | "stats" | "utilities";
 
 interface Tab {
     id: TabId;
@@ -35,6 +36,7 @@ const TABS: Tab[] = [
     { id: "settings", label: "Settings", component: SettingsTab },
     { id: "stats", label: "Stats", component: StatsTab },
     { id: "about", label: "About", component: AboutTab },
+    { id: "utilities", label: "Utilities", component: UtilsTab },
     { id: "dev", label: "Developer", component: DeveloperTab, devOnly: true },
 ];
 

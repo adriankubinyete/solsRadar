@@ -188,9 +188,14 @@ export async function joinSolsPublicServer(): Promise<void> {
     return await joinPublicServer(15532962292);
 }
 
-export async function joinLink(link: RobloxLink | string): Promise<void> {
-    await closeGameIfNeeded();
-    return await Native.openUri(buildJoinUri(link));
+export async function goToHome(): Promise<boolean> {
+    try {
+        await closeGame();
+        await Native.openUri("roblox://");
+        return true;
+    } catch (error) {
+        return false;
+    }
 }
 
 export async function joinUri(uri: string | undefined): Promise<void> {
@@ -199,24 +204,48 @@ export async function joinUri(uri: string | undefined): Promise<void> {
     return await Native.openUri(uri);
 }
 
+export async function joinLink(link: RobloxLink | string): Promise<void> {
+    await closeGameIfNeeded();
+    return await Native.openUri(buildJoinUri(link));
+}
+
+export type EmulatorJoinResult =
+    | { ok: true; }
+    | { ok: false; error: string; };
+
+export async function emulatorJoinUri(uri: string | undefined): Promise<EmulatorJoinResult> {
+    if (!uri) return { ok: true };
+
+    const adbResult = await Native.emulatorOpenUri(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, uri);
+    if (!adbResult.ok) {
+        const error = adbResult.error || "Unknown error";
+        logger.error("Failed to launch Roblox on emulator via adb:", error);
+        return { ok: false, error };
+    }
+
+    return { ok: true };
+}
+
+export async function emulatorJoinLink(link: RobloxLink | string): Promise<EmulatorJoinResult> {
+    return emulatorJoinUri(buildJoinUri(link));
+}
+
 // the adb join method needs a specific scenario to work:
 // on main, be on homepage
 // on emulator, be on your private server (so you dont stop rolling)
 // this function basically automates that
-export async function prepareAdb(data?: string): Promise<void> {
-    // close roblox
-    // open roblox with uri "roblox://"
-    // launch adb with {adb_path} -s emulator-5554 shell am start -a android.intent.action.VIEW -d "roblox://experiences/start?placeId=15532962292" com.roblox.client
+export type PrepareAdbResult =
+    | { ok: true; }
+    | { ok: false; error: string; };
 
+export async function prepareAdb(data?: string): Promise<{ ok: true; }| { ok: false; error: string; }> {
     try {
         if (!settings.store.ldpAdbPath) {
-            logger.error("No adb.exe path set. Cannot prepare ADB.");
-            return;
+            return { ok: false, error: "No adb.exe path set." };
         }
 
         if (!settings.store.ldpAdbDeviceSerial) {
-            logger.error("No adb.exe device serial set. Cannot prepare ADB.");
-            return;
+            return { ok: false, error: "No adb.exe device serial set." };
         }
 
         const uri = data == null
@@ -225,18 +254,23 @@ export async function prepareAdb(data?: string): Promise<void> {
                 ? data
                 : buildJoinUri(data);
 
-        await closeGame();
-        await Native.openUri("roblox://"); // hopefuilly goes to home...
+        await goToHome();
         const adbResult = await Native.emulatorOpenUri(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, uri);
+
         if (!adbResult.ok) {
+            const error = adbResult.error === "Exit code 1" ? "LDPlayer might be closed" : adbResult.error || "Unknown error";
             showNotification({
                 title: "⚠️ Failed to launch Roblox on emulator via adb",
-                body: adbResult.error === "Exit code 1" ? "LDPlayer might be closed" : adbResult.error || "Unknown error",
+                body: error,
             });
             logger.error("Failed to launch Roblox on emulator via adb:", adbResult.error);
+            return { ok: false, error };
         }
+
+        return { ok: true };
     } catch (error) {
         logger.error("Failed to prepare ADB:", error);
+        return { ok: false, error: String(error) };
     }
 }
 

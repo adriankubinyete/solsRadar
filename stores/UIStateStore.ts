@@ -12,7 +12,7 @@ const STORAGE_KEY = "vc-sora-ui-state";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
-export type ModalTab = "recentJoins" | "triggers" | "settings" | "dev" | "about" | "stats";
+export type ModalTab = "recentJoins" | "triggers" | "settings" | "dev" | "about" | "stats" | "utilities";
 export type TriggerFilter = "all" | "RARE_BIOME" | "EVENT_BIOME" | "BIOME" | "WEATHER" | "MERCHANT" | "CUSTOM";
 export type JoinFilter = SnipeTag | "all";
 
