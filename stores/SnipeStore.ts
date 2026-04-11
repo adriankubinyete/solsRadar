@@ -4,38 +4,35 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { localStorage } from "@utils/localStorage";
+import { DataStore } from "@api/index";
 import { React } from "@webpack/common";
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = "solsRadar_snipeHistory";
+const LEGACY_LS_KEY = "solsRadar_snipeHistory";
 const MAX_ENTRIES = 100; // 1 entry is about 5kb
-
-// @TODO(masutty):
-// use IDB instead of localstorage
 
 // ─── Tags ─────────────────────────────────────────────────────────────────────
 
 export type SnipeTag =
-    | "biome-verified-real" // biome confirmado pelo detector
-    | "biome-verified-bait" // biome detectado ≠ esperado
-    | "biome-verified-timeout" // detector não respondeu a tempo
-    | "biome-not-verified" // detecção desativada
-    | "link-verified-safe" // link resolveu para o jogo correto
-    | "link-verified-unsafe" // link é bait (jogo diferente)
-    | "link-not-verified" // verificação desativada
-    | "link-ignored" // for some reason, we decided to ignore it
-    | "redundant-biome-ignored" // ignorado devido a redundancia
-    | "redundant-biome-bypassed" // redundante, mas bateu no bypass keyword
-    | "failed" // openUri falhou
-    | "unknown"; // estado inicial
+    | "biome-verified-real"
+    | "biome-verified-bait"
+    | "biome-verified-timeout"
+    | "biome-not-verified"
+    | "link-verified-safe"
+    | "link-verified-unsafe"
+    | "link-not-verified"
+    | "link-ignored"
+    | "redundant-biome-ignored"
+    | "redundant-biome-bypassed"
+    | "failed"
+    | "unknown";
 
 export interface SnipeTagConfig {
     label: string;
     emoji?: string;
     detail?: string;
-    /** Maior = mais importante. Usado para eleger a tag primária no card. */
     priority: number;
 }
 
@@ -74,15 +71,12 @@ export interface SnipeEntry {
     id: number;
     timestamp: number;
 
-    // Trigger que disparou o snipe
     triggerName: string;
     triggerType: string;
     triggerPriority: number;
 
-    // Servidor
     iconUrl?: string;
 
-    // Mensagem original
     authorName?: string;
     authorAvatarUrl?: string;
     authorId?: string;
@@ -91,15 +85,11 @@ export interface SnipeEntry {
     messageJumpUrl?: string;
     processedMessageText?: string;
 
-    // Status (adicionados progressivamente)
     tags: SnipeTag[];
 
-    // Performance
     metrics?: SnipeMetrics;
 
-    // URI para rejoin via UI ou notificação clicável
     joinUri?: string;
-    // link do servidor privado
     link?: string;
 
     log: SnipeLogEntry[];
@@ -120,8 +110,45 @@ class SnipeHistoryStore {
     private _entries: SnipeEntry[] = [];
     private _listeners = new Set<Listener>();
 
+    /**
+     * Resolves after the initial load from IDB (+ optional LS migration) completes.
+     * Await this before reading or mutating entries in contexts outside React hooks.
+     */
+    readonly ready: Promise<void>;
+
     constructor() {
-        this._load();
+        this.ready = this._init();
+    }
+
+    // ── Inicialização ────────────────────────────────────────────────────────
+
+    private async _init(): Promise<void> {
+        await this._load();
+        await this._migrateLegacy();
+    }
+
+    /**
+     * One-time migration: if IDB is still empty but localStorage has data from
+     * the old version, import it and remove the localStorage entry.
+     */
+    private async _migrateLegacy(): Promise<void> {
+        if (this._entries.length > 0) return;
+
+        try {
+            const raw = globalThis.localStorage?.getItem(LEGACY_LS_KEY);
+            if (!raw) return;
+
+            const parsed: SnipeEntry[] = JSON.parse(raw);
+            if (!Array.isArray(parsed) || parsed.length === 0) return;
+
+            this._entries = parsed.slice(0, MAX_ENTRIES);
+            await this._persist();
+
+            globalThis.localStorage.removeItem(LEGACY_LS_KEY);
+            console.info("[SnipeStore] Migrated", this._entries.length, "entries from localStorage → IDB");
+        } catch (e) {
+            console.error("[SnipeStore] Legacy migration failed:", e);
+        }
     }
 
     // ── Leitura ──────────────────────────────────────────────────────────────
@@ -165,7 +192,7 @@ class SnipeHistoryStore {
             this._entries.length = MAX_ENTRIES;
         }
 
-        this._commit();
+        void this._commit();
         return entry.id;
     }
 
@@ -185,7 +212,7 @@ class SnipeHistoryStore {
             : current.tags;
 
         this._entries[idx] = { ...current, ...patch, tags };
-        this._commit();
+        void this._commit();
         return true;
     }
 
@@ -204,13 +231,13 @@ class SnipeHistoryStore {
         const before = this._entries.length;
         this._entries = this._entries.filter(e => e.id !== id);
         if (this._entries.length === before) return false;
-        this._commit();
+        void this._commit();
         return true;
     }
 
     clear(): void {
         this._entries = [];
-        this._commit();
+        void this._commit();
     }
 
     addFakes(count: number): void {
@@ -263,19 +290,23 @@ class SnipeHistoryStore {
 
     // ── Persistência ─────────────────────────────────────────────────────────
 
-    private _commit(): void {
+    private _commit(): Promise<void> {
         this._notify();
+        return this._persist();
+    }
+
+    private async _persist(): Promise<void> {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this._entries));
+            await DataStore.set(STORAGE_KEY, this._entries);
         } catch (e) {
             console.error("[SnipeStore] Failed to persist:", e);
         }
     }
 
-    private _load(): void {
+    private async _load(): Promise<void> {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            this._entries = raw ? JSON.parse(raw) : [];
+            const stored = await DataStore.get<SnipeEntry[]>(STORAGE_KEY);
+            this._entries = Array.isArray(stored) ? stored : [];
         } catch (e) {
             console.error("[SnipeStore] Failed to load history:", e);
             this._entries = [];
@@ -289,14 +320,24 @@ export const SnipeStore = new SnipeHistoryStore();
 
 export function useSnipeHistory(): SnipeEntry[] {
     const [entries, setEntries] = React.useState<SnipeEntry[]>(SnipeStore.all);
-    React.useEffect(() => SnipeStore.subscribe(setEntries), []);
+
+    React.useEffect(() => {
+        // Sync once IDB finishes loading (covers the window between
+        // SnipeStore construction and the first subscribe call)
+        SnipeStore.ready.then(() => setEntries(SnipeStore.all));
+        return SnipeStore.subscribe(setEntries);
+    }, []);
+
     return entries;
 }
 
 export function useSnipeEntry(id: number): SnipeEntry | undefined {
     const [entry, setEntry] = React.useState(() => SnipeStore.getById(id));
-    React.useEffect(() => SnipeStore.subscribe(entries => {
-        setEntry(entries.find(e => e.id === id));
-    }), [id]);
+
+    React.useEffect(() => {
+        SnipeStore.ready.then(() => setEntry(SnipeStore.getById(id)));
+        return SnipeStore.subscribe(entries => setEntry(entries.find(e => e.id === id)));
+    }, [id]);
+
     return entry;
 }
