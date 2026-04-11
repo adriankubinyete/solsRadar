@@ -72,8 +72,10 @@ export function formatElapsedTime(ms: number, { alwaysIncludeMs = false }: { alw
 
 export function isDeveloper(): boolean {
     const id = AuthenticationStore.getId();
-    console.log("TEST AUTHENTICATED USER ID: ", id);
-    return (id === "188851299255713792");
+    const SORA_DEVELOPERS = [
+        "188851299255713792",
+    ];
+    return (SORA_DEVELOPERS.includes(id));
 }
 
 
