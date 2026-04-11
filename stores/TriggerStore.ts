@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+/* eslint-disable @stylistic/no-multi-spaces */
+
 import { DataStore } from "@api/index";
 import { Logger } from "@utils/Logger";
 import { React } from "@webpack/common";
@@ -64,30 +66,15 @@ export interface TriggerBiome {
 }
 
 export interface TriggerForwarding {
-    /** Per-trigger webhook URL. Leave empty to fall back to the global webhook. */
     webhookUrl: string;
     webhookContent: string;
     webhookEmbedDescription: string;
-
-    /** If a message originates from one of these guilds, don't forward it. */
     excludedGuilds: string[];
-
-    /** If a message originates from one of these channels, don't forward it. */
     excludedChannels: string[];
-
     onMatch: {
         enabled: boolean;
-        /**
-         * Forward as early as possible (before joining).
-         * Can slightly impact join speed.
-         */
         early: boolean;
     };
-
-    /**
-     * Only available for trigger types that support biome detection.
-     * Fires after the Roblox log confirms the biome.
-     */
     onDetection: {
         enabled: boolean;
     };
@@ -236,7 +223,7 @@ function migrateTrigger(raw: any): Trigger {
             onDetection: {
                 enabled: raw.forwarding?.onDetection?.enabled ?? DEFAULT_FORWARDING.onDetection.enabled,
             },
-        }
+        },
     };
 }
 
@@ -245,33 +232,39 @@ function migrateTrigger(raw: any): Trigger {
 let _triggers: Trigger[] = [];
 const _listeners = new Set<() => void>();
 
-function notifyListeners() {
+function notifyListeners(): void {
     _listeners.forEach(fn => fn());
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
+// Uma única Promise é criada no carregamento do módulo.
+// Qualquer código que precise dos triggers deve fazer `await triggerStoreReady`.
+// Chamadas a addTrigger / updateTrigger / etc. também awaitsam antes de mutarem.
 
-let _initialized = false;
+let _resolveReady!: () => void;
 
-export async function initTriggerStore(): Promise<void> {
-    logger.info("Initializing TriggerStore...");
-    if (_initialized) return;
-    _initialized = true;
+/**
+ * Resolved when the initial IDB load (+ migration) is complete.
+ * Await this before reading triggers outside React hooks.
+ */
+export const triggerStoreReady: Promise<void> = new Promise(res => {
+    _resolveReady = res;
+});
 
-    const stored = await DataStore.get<any[]>(DATASTORE_KEY);
-    logger.debug("Stored triggers:", stored);
+// ─── Persistência com fila ────────────────────────────────────────────────────
+// Writes são serializados: o próximo só começa quando o anterior termina.
+// Isso evita que dois DataStore.set concorrentes se sobrescrevam fora de ordem.
 
-    if (stored && Array.isArray(stored)) {
-        _triggers = stored.map(migrateTrigger);
-        logger.info(`Loaded and migrated ${_triggers.length} triggers.`);
-        // Persiste versão migrada imediatamente
-        await DataStore.set(DATASTORE_KEY, _triggers);
-    } else {
-        _triggers = [];
-        logger.info("No stored triggers found, starting empty.");
-    }
+let _writeQueue: Promise<void> = Promise.resolve();
 
-    notifyListeners();
+function persist(): void {
+    _writeQueue = _writeQueue.then(async () => {
+        try {
+            await DataStore.set(DATASTORE_KEY, _triggers);
+        } catch (e) {
+            logger.error("Failed to persist triggers:", e);
+        }
+    });
 }
 
 // ─── Leitura ──────────────────────────────────────────────────────────────────
@@ -297,104 +290,107 @@ export function getTriggersWithOnDetectionForwarding(): Trigger[] {
 }
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
-
-async function persist() {
-    await DataStore.set(DATASTORE_KEY, _triggers);
-}
+// Todas as mutações aguardam triggerStoreReady para garantir que o init
+// terminou antes de qualquer escrita.
 
 export async function addTrigger(data: Omit<Trigger, "id">): Promise<Trigger> {
+    await triggerStoreReady;
     const trigger: Trigger = { id: crypto.randomUUID(), ...data };
     _triggers = [..._triggers, trigger];
     notifyListeners();
-    await persist();
+    persist();
     return trigger;
 }
 
 export async function updateTrigger(id: string, patch: Partial<Omit<Trigger, "id">>): Promise<void> {
+    await triggerStoreReady;
     _triggers = _triggers.map(t => t.id === id ? { ...t, ...patch } : t);
     notifyListeners();
-    await persist();
+    persist();
 }
 
 export async function deleteTrigger(id: string): Promise<void> {
+    await triggerStoreReady;
     _triggers = _triggers.filter(t => t.id !== id);
     notifyListeners();
-    await persist();
+    persist();
 }
 
 export async function toggleTrigger(id: string): Promise<void> {
+    await triggerStoreReady;
     _triggers = _triggers.map(t =>
         t.id === id ? { ...t, state: { ...t.state, enabled: !t.state.enabled } } : t
     );
     notifyListeners();
-    await persist();
+    persist();
 }
 
-/** Salva nova ordem após drag & drop */
 export async function reorderTriggers(ordered: Trigger[]): Promise<void> {
+    await triggerStoreReady;
     _triggers = ordered;
     notifyListeners();
-    await persist();
+    persist();
 }
 
 // ─── Export / Import ──────────────────────────────────────────────────────────
 
+export type RedactField =
+    | "enabled"             // desativa o trigger
+    | "webhookUrl"          // zera forwarding.webhookUrl
+    | "webhookForwarding"   // desativa onMatch/onDetection
+    | "notificationSound"   // remove o data URI do state
+    | "customTriggers";     // remove triggers do tipo CUSTOM inteiro
 
-// normal export
+export type ExportOptions = {
+    redact?: RedactField[];
+};
 
 export function exportTriggersJson(): string {
     return JSON.stringify(_triggers, null, 2);
 }
 
 export function downloadTriggersJson(): void {
-    const blob = new Blob([exportTriggersJson()], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `solsradar-triggers-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    _downloadJson(exportTriggersJson(), `solsradar-triggers-${Date.now()}.json`);
 }
 
-// public export (redact sensitive fields)
-type ExportOptions = {
-    omitCustomTriggers?: boolean;
-};
-
-function redactTrigger(trigger: Trigger, options: ExportOptions): Trigger | null {
-    if (options.omitCustomTriggers && trigger.type === "CUSTOM") {
-        return null;
-    }
+function redactTrigger(trigger: Trigger, redact: Set<RedactField>): Trigger | null {
+    if (redact.has("customTriggers") && trigger.type === "CUSTOM") return null;
 
     return {
         ...trigger,
+        state: {
+            ...trigger.state,
+            ...(redact.has("notificationSound") && { notificationSound: "", notificationSoundVolume: 100 }),
+            ...(redact.has("enabled") && { enabled: false }),
+        },
         forwarding: {
             ...trigger.forwarding,
-            webhookUrl: "",
-            onMatch: { ...trigger.forwarding.onMatch, enabled: false },
-            onDetection: { ...trigger.forwarding.onDetection, enabled: false },
+            webhookUrl: redact.has("webhookUrl") ? "" : trigger.forwarding.webhookUrl,
+            onMatch: redact.has("webhookForwarding")
+                ? { ...trigger.forwarding.onMatch, enabled: false }
+                : trigger.forwarding.onMatch,
+            onDetection: redact.has("webhookForwarding")
+                ? { ...trigger.forwarding.onDetection, enabled: false }
+                : trigger.forwarding.onDetection,
         },
     };
 }
 
 export function exportTriggersJsonRedacted(options: ExportOptions = {}): string {
-    const redacted = _triggers
-        .map(t => redactTrigger(t, options))
+    const redact = new Set(options.redact ?? []);
+    const result = _triggers
+        .map(t => redactTrigger(t, redact))
         .filter((t): t is Trigger => t !== null);
-
-    return JSON.stringify(redacted, null, 2);
+    return JSON.stringify(result, null, 2);
 }
 
 export function downloadTriggersJsonRedacted(options: ExportOptions = {}): void {
-    const blob = new Blob(
-        [exportTriggersJsonRedacted(options)],
-        { type: "application/json" }
-    );
+    _downloadJson(exportTriggersJsonRedacted(options), `solsradar-triggers-public-${Date.now()}.json`);
+}
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `solsradar-triggers-public-${Date.now()}.json`;
+function _downloadJson(content: string, filename: string): void {
+    const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -404,6 +400,8 @@ export type ImportResult =
     | { ok: false; error: string; };
 
 export async function importTriggersFromJson(json: string, mode: "merge" | "replace" = "merge"): Promise<ImportResult> {
+    await triggerStoreReady;
+
     let parsed: unknown;
     try {
         parsed = JSON.parse(json);
@@ -426,12 +424,10 @@ export async function importTriggersFromJson(json: string, mode: "merge" | "repl
         return { ok: false, error: "No valid triggers found in the file." };
     }
 
-    // Migra também os importados — garante que campos novos sejam preenchidos
-    const incoming: Trigger[] = valid.map(t => migrateTrigger({ ...t, id: crypto.randomUUID() }));
-
+    const incoming = valid.map(t => migrateTrigger({ ...t, id: crypto.randomUUID() }));
     _triggers = mode === "replace" ? incoming : [..._triggers, ...incoming];
     notifyListeners();
-    await persist();
+    persist();
     return { ok: true, imported: incoming.length };
 }
 
@@ -441,7 +437,9 @@ export function useTriggers(): Trigger[] {
     const [triggers, setTriggers] = React.useState<Trigger[]>(_triggers);
 
     React.useEffect(() => {
-        setTriggers(_triggers);
+        // Sync inicial: garante que o estado reflete o IDB após o init async
+        triggerStoreReady.then(() => setTriggers([..._triggers]));
+
         const update = () => setTriggers([..._triggers]);
         _listeners.add(update);
         return () => { _listeners.delete(update); };
@@ -450,4 +448,28 @@ export function useTriggers(): Trigger[] {
     return triggers;
 }
 
-initTriggerStore();
+// Executa imediatamente ao importar o módulo — não há segunda chamada.
+(async () => {
+    logger.info("Initializing TriggerStore…");
+
+    try {
+        const stored = await DataStore.get<any[]>(DATASTORE_KEY);
+        logger.debug("Stored triggers:", stored);
+
+        if (Array.isArray(stored) && stored.length > 0) {
+            _triggers = stored.map(migrateTrigger);
+            logger.info(`Loaded and migrated ${_triggers.length} triggers.`);
+            // Persiste versão migrada imediatamente (novos campos preenchidos).
+            await DataStore.set(DATASTORE_KEY, _triggers);
+        } else {
+            _triggers = [];
+            logger.info("No stored triggers found, starting empty.");
+        }
+    } catch (e) {
+        logger.error("Failed to load triggers from DataStore:", e);
+        _triggers = [];
+    } finally {
+        _resolveReady();
+        notifyListeners();
+    }
+})();

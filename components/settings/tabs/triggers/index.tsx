@@ -14,6 +14,7 @@ import {
     downloadTriggersJson,
     downloadTriggersJsonRedacted,
     importTriggersFromJson,
+    RedactField,
     reorderTriggers,
     toggleTrigger,
     Trigger,
@@ -26,6 +27,7 @@ import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
 import { DeleteButton } from "../../../DeleteButton";
 import { Pill, PillBorder, PillRadius, PillVariant } from "../../../Pill";
 import { JoinLockBanner } from "../../../ui/JoinLockBanner";
+import { PublicExportOptions } from "./PublicExportOptions";
 import { openAddTriggerModal, openEditTriggerModal } from "./TriggerModal";
 
 const logger = new Logger("SolRadar");
@@ -618,58 +620,21 @@ export function TriggersTab() {
     };
 
     const handlePublicExport = () => {
+        let currentFields = new Set<RedactField>(["webhookUrl", "webhookForwarding", "notificationSound", "enabled", "customTriggers"]);
+
         Alerts.show({
             title: "Public Export",
-            body: (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <Paragraph>
-                        This will export all your triggers in a JSON format, except the "forwarding" fields.<br />
-                        <br />
-                        Would you like to omit custom triggers from the export?<br />
-                        <br />
-                        <br />
-                    </Paragraph>
-
-                    <div style={{ display: "flex", flexDirection: "row", gap: 8, width: "100%" }}>
-                        <Button
-                            variant="positive"
-                            style={{ flex: 1 }}
-                            onClick={() => {
-                                Alerts.close();
-                                try {
-                                    downloadTriggersJsonRedacted({
-                                        omitCustomTriggers: true
-                                    });
-                                    showToast("Successfully exported triggers!", Toasts.Type.SUCCESS);
-                                } catch (error) {
-                                    showToast(`Failed to export triggers: ${error}`, Toasts.Type.FAILURE);
-                                }
-                            }}
-                        >
-                            Yes, omit them
-                        </Button>
-
-                        <Button
-                            variant="dangerPrimary"
-                            style={{ flex: 1 }}
-                            onClick={() => {
-                                Alerts.close();
-                                try {
-                                    downloadTriggersJsonRedacted({
-                                        omitCustomTriggers: false
-                                    });
-                                    showToast("Successfully exported triggers!", Toasts.Type.SUCCESS);
-                                } catch (error) {
-                                    showToast(`Failed to export triggers: ${error}`, Toasts.Type.FAILURE);
-                                }
-                            }}
-                        >
-                            No, include them
-                        </Button>
-                    </div>
-                </div>
-            ),
-            confirmText: "Cancel",
+            body: <PublicExportOptions onChange={fields => { currentFields = fields; }} />,
+            confirmText: "Export",
+            cancelText: "Cancel",
+            onConfirm: () => {
+                try {
+                    downloadTriggersJsonRedacted({ redact: [...currentFields] });
+                    showToast("Successfully exported triggers!", Toasts.Type.SUCCESS);
+                } catch (error) {
+                    showToast(`Failed to export triggers: ${error}`, Toasts.Type.FAILURE);
+                }
+            },
         });
     };
 
