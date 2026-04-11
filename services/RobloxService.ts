@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { showNotification } from "@api/Notifications";
 import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
 import type { RunningGame } from "@vencord/discord-types";
@@ -93,7 +94,13 @@ export function stripRobloxLinks(content: string): string {
 //
 // Referência: https://devforum.roblox.com/t/parsing-deeplink-information-from-a-private-server-link-with-the-newer-format/3464724
 
-export function buildJoinUri(link: RobloxLink): string {
+export function buildJoinUri(link: RobloxLink | string): string {
+    if (typeof link === "string") {
+        const { ok, result } = extractServerLink(link);
+        if (!ok || !result) throw new Error(`Invalid Roblox link: ${link}`);
+        link = result;
+    }
+
     if (link.type === "share") {
         return `roblox://navigation/share_links?code=${link.code}&type=Server`;
     }
@@ -181,7 +188,7 @@ export async function joinSolsPublicServer(): Promise<void> {
     return await joinPublicServer(15532962292);
 }
 
-export async function joinLink(link: RobloxLink): Promise<void> {
+export async function joinLink(link: RobloxLink | string): Promise<void> {
     await closeGameIfNeeded();
     return await Native.openUri(buildJoinUri(link));
 }
@@ -201,20 +208,48 @@ export async function prepareAdb(data?: string): Promise<void> {
     // open roblox with uri "roblox://"
     // launch adb with {adb_path} -s emulator-5554 shell am start -a android.intent.action.VIEW -d "roblox://experiences/start?placeId=15532962292" com.roblox.client
 
-    if (!settings.store.ldpAdbPath) {
-        logger.error("No adb.exe path set. Cannot prepare ADB.");
+    try {
+        if (!settings.store.ldpAdbPath) {
+            logger.error("No adb.exe path set. Cannot prepare ADB.");
+            return;
+        }
+
+        if (!settings.store.ldpAdbDeviceSerial) {
+            logger.error("No adb.exe device serial set. Cannot prepare ADB.");
+            return;
+        }
+
+        const uri = data == null
+            ? "roblox://experiences/start?placeId=15532962292"
+            : data.startsWith("roblox://")
+                ? data
+                : buildJoinUri(data);
+
+        await closeGame();
+        await Native.openUri("roblox://"); // hopefuilly goes to home...
+        const adbResult = await Native.emulatorOpenUri(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, uri);
+        if (!adbResult.ok) {
+            showNotification({
+                title: "⚠️ Failed to launch Roblox on emulator via adb",
+                body: adbResult.error === "Exit code 1" ? "LDPlayer might be closed" : adbResult.error || "Unknown error",
+            });
+            logger.error("Failed to launch Roblox on emulator via adb:", adbResult.error);
+        }
+    } catch (error) {
+        logger.error("Failed to prepare ADB:", error);
+    }
+}
+
+export async function joinOwnPrivateServer(): Promise<void> {
+    const link = settings.store.privateServerLink?.trim();
+    if (!link) {
+        logger.error("Private server link is not set. Cannot join own private server.");
         return;
     }
 
-    if (!settings.store.ldpAdbDeviceSerial) {
-        logger.error("No adb.exe device serial set. Cannot prepare ADB.");
-        return;
-    }
-
-    await closeGame();
-    await Native.openUri("roblox://"); // hopefuilly goes to home...
-    const adbResult = await Native.emulatorOpenUri(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, data ?? "roblox://experiences/start?placeId=15532962292");
-    if (!adbResult.ok) {
-        logger.warn(`Failed to launch Roblox on emulator via adb: ${adbResult.error}`);
+    try {
+        await joinLink(link);
+    } catch (error) {
+        logger.error("Failed to join own private server:", error);
     }
 }

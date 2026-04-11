@@ -70,6 +70,12 @@ const CREDITS: CreditEntry[] = [
         url: "https://github.com/cresqnt-sys/MultiScope-V1/blob/94f1f06114a3e7cbff64e5fd0bf31ced99b0af79/detection.py"
     },
     {
+        name: "MonaSync",
+        role: "(Thanks)",
+        note: "LDPlayer Method; testing and debugging",
+        url: ""
+    },
+    {
         name: "Vencord",
         role: "(Framework)",
         note: "This plugin wouldn't exist without it!",

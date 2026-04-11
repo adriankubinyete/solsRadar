@@ -18,7 +18,7 @@ import { SolsRadarTitleBarButton } from "./components/buttons/SolsRadarTitleBarB
 import { SolsRadarIcon } from "./components/ui/SolsRadarIcon";
 import { Snipe } from "./models/Snipe";
 import { BiomeDetector } from "./services/BiomeDetector";
-import { closeGame, closeGameIfNeeded, extractServerLink, getPlaceId, joinSolsPublicServer, joinUri, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
+import { closeGame, closeGameIfNeeded, extractServerLink, getPlaceId, joinLink, joinSolsPublicServer, joinUri, prepareAdb, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
 import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
@@ -166,6 +166,30 @@ async function executeBadLinkAction(): Promise<void> {
         case "nothing": return;
         case "public": await joinSolsPublicServer(); return;
         case "close": await closeGameIfNeeded(); return;
+        case "private": {
+            if (!settings.store.privateServerLink.trim()) {
+                showNotification({
+                    title: "⚠️ SoRa :: Plugin issues!",
+                    body: "Bad link action triggered, but you don't have a private server link set\nJoining a public server instead!",
+                });
+                await joinSolsPublicServer();
+                return;
+            }
+            await joinLink(settings.store.privateServerLink);
+            return;
+        }
+        case "prep-adb": {
+            if (!settings.store.privateServerLink.trim()) {
+                showNotification({
+                    title: "⚠️ SoRa :: Plugin issues!",
+                    body: "Bad link action triggered, but you don't have a private server link set\nJoining a public server instead!",
+                });
+                await joinSolsPublicServer();
+                return;
+            }
+            await prepareAdb(settings.store.privateServerLink);
+            return;
+        }
     }
 }
 
@@ -489,32 +513,7 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
     try {
         if (settings.store.closeGameBeforeJoin) {
             if (settings.store.killMode === "ldp-adb") {
-
-                if (!settings.store.ldpAdbPath?.trim()) {
-                    // no adb configured, fall back
-                    log.warn("LDPlayer adb path not configured! Falling back to normal close method");
-                    await closeGame();
-                } else {
-                    // @NOTE(masutty)!IMPORTANT:
-                    // if the emulator IS OPEN but NOT RUNNING ROBLOX. this signal will get sent
-                    // and do nothing, and because the signal DID NOT FAIL, we will try to launch roblox straight up
-                    // if an instance is running on the machine, and is not on the ready state, it COULD lead to a silent fail
-                    // Main: on roblox, playing - Emulator: open but not running roblox -> Could fail
-                    // Main: on roblox, home    - Emulator: open but not running roblox -> Will (probably) work properly
-                    // Main: not on roblox      - Emulator: open but not running roblox -> Will work properly
-                    // Main: any state          - Emulator: closed                      -> Will work the same 'killMode: await', with a slight delay
-
-                    // request the roblox app to close from the emulator
-                    const adbResult = await Native.closeRobloxOnEmulator(
-                        settings.store.ldpAdbPath,
-                        settings.store.ldpAdbDeviceSerial || "emulator-5554",
-                        settings.store.ldpAdbPackageName || "com.roblox.client"
-                    );
-                    if (!adbResult.ok) { // the emulator is not running
-                        log.warn(`ADB close failed: ${adbResult.error} — proceeding the normal way.`);
-                        await closeGame();
-                    }
-                }
+                log.info("closeGameBeforeJoin has no effect in ldp method");
             } else if (settings.store.killMode === "fire-and-forget") {
                 Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
                 await new Promise(res => setTimeout(res, settings.store.closeGameDelay));
@@ -544,6 +543,34 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
     const openUriDurationMs = performance.now() - tOpenStart;
 
     const tJoinEnd = performance.now();
+
+
+    if (settings.store.killMode === "ldp-adb") {
+        if (!settings.store.ldpAdbPath?.trim()) {
+            // no adb configured, fall back
+            log.warn("LDPlayer adb path not configured!");
+        } else {
+            // @NOTE(masutty)!IMPORTANT:
+            // if the emulator IS OPEN but NOT RUNNING ROBLOX. this signal will get sent
+            // and do nothing
+
+            // request the roblox app to close from the emulator
+            log.info("Time took until it hit adb:", performance.now() - tMessageReceived);
+            const adbResult = await Native.closeRobloxOnEmulator(
+                settings.store.ldpAdbPath,
+                settings.store.ldpAdbDeviceSerial || "emulator-5554",
+                settings.store.ldpAdbPackageName || "com.roblox.client"
+            );
+            log.info("Time after adb:", performance.now() - tMessageReceived);
+            if (!adbResult.ok) { // the emulator is not running
+                showNotification({
+                    title: "⚠️ SoRa :: Plugin issues!",
+                    body: `Emulator failed to process close signal.\n> ${adbResult.error}`,
+                });
+                log.warn(`ADB close failed: ${adbResult.error}`);
+            }
+        }
+    }
 
     return {
         ok: true,

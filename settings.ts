@@ -105,6 +105,12 @@ export const settings = definePluginSettings({
         max: 5000,
         hidden: true,
     },
+    privateServerLink: {
+        type: OptionType.STRING,
+        description: "Your private server URL, for actions which require it.",
+        default: "",
+        hidden: true,
+    },
 
     // advanced, tryhard sniping stuff
     ldpAdbPath: {
@@ -212,6 +218,8 @@ export const settings = definePluginSettings({
             { label: "Nothing (not recommended)", value: "nothing" },
             { label: "Join a public server", value: "public", default: true },
             { label: "Close Roblox", value: "close" },
+            { label: "Go to private server", value: "private" },
+            { label: "Prepare ADB (for LDP method)", value: "prep-adb" },
         ],
         hidden: true,
     },

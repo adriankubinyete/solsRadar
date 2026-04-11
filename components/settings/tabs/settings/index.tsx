@@ -86,6 +86,7 @@ export function SettingsTab() {
                 { id: "notificationEnabled", label: "Notifications", description: "Show a desktop notification when a trigger matches." },
                 { id: "flattenEmbeds", label: "Interpret Embeds", description: "Include embed titles and descriptions when matching triggers. Enable this if you monitor macro servers that post biomes inside embeds rather than plain messages." },
                 { id: "deduplicateLinks", label: "Deduplicate Links", description: "Prevents duplicate links from being sniped. If a link is seen twice within 10 minutes, the second snipe will be ignored." },
+                { id: "privateServerLink", label: "Private Server Link", description: "Your private server link. Some actions require a private server link to use." },
             ],
         },
         {
