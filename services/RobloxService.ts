@@ -147,7 +147,15 @@ export async function getPlaceId(link: RobloxLink): Promise<number | null> {
 
     if (link.type === "share") {
         const res = await Native.resolveShareLink(settings.store.robloxToken, link.code);
-        if (res.ok) return Number(res.placeId);
+        if (res.ok) {
+            if (res.updatedToken) {
+                logger.info("Roblox rotated the .ROBLOSECURITY token, updating token in settings...");
+                settings.store.robloxToken = res.updatedToken;
+                logger.debug("Token successfully updated.");
+            }
+            logger.debug(`Share link resolved: placeId=${res.placeId}, serverId=${res.serverId}, ownerId=${res.ownerId}`);
+            return Number(res.placeId);
+        }
         logger.warn("Failed to resolve share link:", res);
     }
 

@@ -39,7 +39,7 @@ export type ProcessInfo = {
 };
 
 export type ResolvedShareLink =
-    | { ok: true; placeId: string; serverId: string; ownerId: string; isValid: boolean; }
+    | { ok: true; placeId: string; serverId: string; ownerId: string; isValid: boolean; updatedToken: string | null; }
     | { ok: false; status: number; error: string; };
 
 /** Entrada de log do Roblox — definida aqui pra evitar import circular com BiomeDetector. */
@@ -106,6 +106,17 @@ export async function resolveShareLink(
         ...(csrf ? { "X-CSRF-TOKEN": csrf } : {}),
     });
 
+    function extractUpdatedToken(response: Response): string | null {
+        const setCookies = response.headers.getSetCookie?.() ??
+            [response.headers.get("set-cookie")].filter(Boolean) as string[];
+
+        for (const cookie of setCookies) {
+            const match = cookie.match(/\.ROBLOSECURITY=([^;]+)/);
+            if (match && match[1] !== token) return match[1];
+        }
+        return null;
+    }
+
     try {
         // Passo 1 — obtém CSRF (o endpoint sempre retorna 403 na primeira chamada sem CSRF)
         const csrfRes = await fetch(RESOLVE_URL, {
@@ -118,12 +129,16 @@ export async function resolveShareLink(
             return { ok: false, status: csrfRes.status, error: "CSRF token not returned by server." };
         }
 
+        const updatedToken = extractUpdatedToken(csrfRes);
+
         // Passo 2 — resolução real
         const resolveRes = await fetch(RESOLVE_URL, {
             method: "POST",
             headers: headers(csrf),
             body: JSON.stringify({ linkId: shareCode, linkType: "Server" }),
         });
+
+        const updatedTokenFromResolve = extractUpdatedToken(resolveRes);
 
         if (!resolveRes.ok) {
             return { ok: false, status: resolveRes.status, error: `Resolve request failed with HTTP ${resolveRes.status}.` };
@@ -156,7 +171,7 @@ export async function resolveShareLink(
             return { ok: false, status: resolveRes.status, error: `placeId: ${placeId}, serverId: ${serverId}, ownerId: ${ownerId}, isValid: ${isValid} | Unexpected response shape: ${JSON.stringify(data)}` };
         }
 
-        return { ok: true, placeId, serverId, ownerId, isValid };
+        return { ok: true, placeId, serverId, ownerId, isValid, updatedToken: updatedTokenFromResolve ?? updatedToken ?? null };
 
     } catch (error) {
         return { ok: false, status: -1, error: (error as Error).message };
