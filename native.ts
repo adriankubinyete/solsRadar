@@ -225,6 +225,48 @@ export async function killProcess(
     }
 }
 
+export async function gracefullyKillProcess(
+    _: IpcMainInvokeEvent,
+    target: { pid: number } | { pname: string },
+    timeoutMs: number = 3000
+): Promise<void> {
+    if (process.platform !== "win32") return;
+
+    const softCommand = "pid" in target
+        ? `taskkill /PID ${target.pid}`
+        : `taskkill /IM "${target.pname}"`;
+
+    const hardCommand = "pid" in target
+        ? `taskkill /PID ${target.pid} /F`
+        : `taskkill /IM "${target.pname}" /F`;
+
+    try {
+        await exec(softCommand);
+    } catch {
+        // Process may already be gone — skip straight to done
+        return;
+    }
+
+    // Give the process time to exit gracefully
+    await new Promise(resolve => setTimeout(resolve, timeoutMs));
+
+    // Check if it's still alive; if so, force-kill
+    try {
+        const checkCommand = "pid" in target
+            ? `tasklist /FI "PID eq ${target.pid}" /NH`
+            : `tasklist /FI "IMAGENAME eq ${(target as { pname: string }).pname}" /NH`;
+
+        const { stdout } = await exec(checkCommand);
+        const isAlive = stdout.trim().length > 0 && !stdout.includes("No tasks");
+
+        if (isAlive) {
+            await exec(hardCommand).catch(() => { /* already dead */ });
+        }
+    } catch {
+        // tasklist failure means the process is gone — nothing to do
+    }
+}
+
 export async function closeRobloxOnEmulator(
     _: IpcMainInvokeEvent,
     adbPath: string,

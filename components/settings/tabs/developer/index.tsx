@@ -11,7 +11,7 @@ import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
 import { React, RunningGameStore } from "@webpack/common";
 
-import { getRobloxProcess, joinUri, prepareAdb } from "../../../../services/RobloxService";
+import { getRobloxProcess, joinUri, prepareAdb, rejoinUntilBiome, RejoinUntilBiomeHandle } from "../../../../services/RobloxService";
 import { settings } from "../../../../settings";
 import { JoinLockStore } from "../../../../stores/JoinLockStore";
 import { SnipeStore } from "../../../../stores/SnipeStore";
@@ -22,6 +22,58 @@ import { Pill } from "../../../Pill";
 const logger = new Logger("SolRadar.Developer");
 
 const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../../../../native")>;
+
+
+// @TODO fix this
+// this is flaky dont use
+// if we close the plugin modal this breaks and rejoins infinitely
+// make isAutoRejoin save somewhere
+// same to biome target so user doesnt have to type it again every time they reopen the ui
+// also (kinda obvious) if you snipe with this running, you'll get kicked off your snipes
+function BiomeFarmer() {
+    const [biomeTarget, setBiomeTarget] = React.useState("glitch");
+    const [handle, setHandle] = React.useState<RejoinUntilBiomeHandle | null>(null);
+    const isAutoRejoining = handle !== null;
+
+    async function toggle() {
+        if (isAutoRejoining) {
+            handle.cancel();
+            setHandle(null);
+        } else {
+            const h = await rejoinUntilBiome(biomeTarget, () => setHandle(null));
+            setHandle(h);
+        }
+    }
+
+    return (
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <input
+                type="text"
+                value={biomeTarget}
+                onChange={e => setBiomeTarget(e.currentTarget.value)}
+                placeholder="biome name..."
+                disabled={isAutoRejoining}
+                style={{
+                    padding: "0.4rem 0.6rem",
+                    borderRadius: "4px",
+                    border: "1px solid var(--background-modifier-accent)",
+                    background: "var(--input-background)",
+                    color: "var(--text-normal)",
+                    fontSize: "0.875rem",
+                    opacity: isAutoRejoining ? 0.5 : 1,
+                }}
+            />
+            <Button
+                size="small"
+                variant={isAutoRejoining ? "dangerPrimary" : "primary"}
+                onClick={toggle}
+                disabled={!biomeTarget.trim()}
+            >
+                {isAutoRejoining ? "stop rejoins" : "start rejoins"}
+            </Button>
+        </div>
+    );
+}
 
 export function DeveloperTab() {
     const row: React.CSSProperties = {
@@ -86,6 +138,8 @@ export function DeveloperTab() {
                 <Button size="small" variant="dangerPrimary" onClick={() => Native.closeRobloxOnEmulator(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, settings.store.ldpAdbPackageName)}>
                     kill emulator
                 </Button>
+
+                <BiomeFarmer />
             </div>
 
             <Divider />

@@ -11,6 +11,7 @@ import type { RunningGame } from "@vencord/discord-types";
 import { RunningGameStore } from "@webpack/common";
 
 import { settings } from "../settings";
+import { BiomeDetector } from "./BiomeDetector";
 
 const logger = new Logger("SolRadar.RobloxService");
 
@@ -168,10 +169,15 @@ export async function closeGameIfNeeded(): Promise<boolean | null> {
     return await closeGame();
 }
 
-export async function closeGame(): Promise<boolean> {
+export async function closeGame({ graceful = false } = {}): Promise<boolean> {
     try {
-        await Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
-        logger.debug("Closed Roblox process.");
+        if (graceful) {
+            await Native.gracefullyKillProcess({ pname: "RobloxPlayerBeta.exe" });
+            logger.debug("Closed Roblox process gracefully.");
+        } else {
+            await Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
+            logger.debug("Closed Roblox process.");
+        }
         return true;
     } catch (err) {
         logger.warn(`Failed to close Roblox process: ${(err as Error).message}`);
@@ -188,9 +194,9 @@ export async function joinSolsPublicServer(): Promise<void> {
     return await joinPublicServer(15532962292);
 }
 
-export async function goToHome(): Promise<boolean> {
+export async function goToHome({ graceful = false } = {}): Promise<boolean> {
     try {
-        await closeGame();
+        await closeGame({ graceful: graceful });
         await Native.openUri("roblox://");
         return true;
     } catch (error) {
@@ -238,7 +244,7 @@ export type PrepareAdbResult =
     | { ok: true; }
     | { ok: false; error: string; };
 
-export async function prepareAdb(data?: string): Promise<{ ok: true; }| { ok: false; error: string; }> {
+export async function prepareAdb(data?: string): Promise<{ ok: true; } | { ok: false; error: string; }> {
     try {
         if (!settings.store.ldpAdbPath) {
             return { ok: false, error: "No adb.exe path set." };
@@ -254,7 +260,7 @@ export async function prepareAdb(data?: string): Promise<{ ok: true; }| { ok: fa
                 ? data
                 : buildJoinUri(data);
 
-        await goToHome();
+        await goToHome({ graceful: false });
         const adbResult = await Native.emulatorOpenUri(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, uri);
 
         if (!adbResult.ok) {
@@ -286,4 +292,59 @@ export async function joinOwnPrivateServer(): Promise<void> {
     } catch (error) {
         logger.error("Failed to join own private server:", error);
     }
+}
+
+// testing stuff below here, clean it up for next update, currently only on dev page
+
+const NORMAL_BIOME = "EGGLAND";
+
+export interface RejoinUntilBiomeHandle {
+    cancel(): void;
+}
+
+export async function rejoinUntilBiome(
+    targetBiome: string,
+    onFinish?: () => void
+): Promise<RejoinUntilBiomeHandle> {
+    const target = targetBiome.toUpperCase();
+    let cancelled = false;
+    let currentUnsub: (() => void) | null = null;
+
+    const handle: RejoinUntilBiomeHandle = {
+        cancel() {
+            logger.info("RejoinUntilBiome cancelled.");
+            cancelled = true;
+            currentUnsub?.();
+            currentUnsub = null;
+        }
+    };
+
+    function attempt(): void {
+        if (cancelled) return;
+
+        logger.info("Attempting to rejoin until biome is", targetBiome);
+
+        currentUnsub = BiomeDetector.on("biomeChanged", ({ to }) => {
+            if (cancelled) return;
+
+            const detected = to.toUpperCase();
+            logger.info("Detected biome changed to", detected);
+
+            if (detected === NORMAL_BIOME) return;
+
+            currentUnsub?.();
+            currentUnsub = null;
+
+            if (detected === target) {
+                onFinish?.();
+                logger.info("Detected target biome", targetBiome);
+            } else {
+                joinOwnPrivateServer().then(attempt);
+                logger.info("Detected wrong biome, rejoining...");
+            }
+        });
+    }
+
+    attempt();
+    return handle;
 }

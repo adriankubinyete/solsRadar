@@ -10,7 +10,7 @@ import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
 import { React, showToast, Toasts } from "@webpack/common";
 
-import { emulatorJoinLink, goToHome, joinLink, prepareAdb } from "../../../../services/RobloxService";
+import { closeGame, emulatorJoinLink, goToHome, joinLink, prepareAdb } from "../../../../services/RobloxService";
 import { settings } from "../../../../settings";
 
 const logger = new Logger("SolRadar.Utils");
@@ -57,6 +57,12 @@ export function UtilsTab() {
                     </Button>
                     <Button size="small" onClick={() => goToHome()}>
                         Go to home page
+                    </Button>
+                    <Button size="small" onClick={async () => {
+                        await closeGame({ graceful: true });
+                        await joinLink(privateServerLink);
+                    }}>
+                        Graceful rejoin
                     </Button>
                 </div>
                 {!hasPrivateServerLink && (
