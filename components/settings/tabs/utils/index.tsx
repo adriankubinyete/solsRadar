@@ -52,17 +52,14 @@ export function UtilsTab() {
                 <span style={sectionTitle}>General</span>
                 <Divider />
                 <div style={row}>
-                    <Button size="small" disabled={!hasPrivateServerLink} onClick={() => joinLink(privateServerLink)}>
-                        Join private server
-                    </Button>
-                    <Button size="small" onClick={() => goToHome()}>
-                        Go to home page
-                    </Button>
                     <Button size="small" onClick={async () => {
                         await closeGame({ graceful: true });
                         await joinLink(privateServerLink);
                     }}>
-                        Graceful rejoin
+                        Join private server
+                    </Button>
+                    <Button size="small" onClick={() => goToHome()}>
+                        Go to home page
                     </Button>
                 </div>
                 {!hasPrivateServerLink && (
