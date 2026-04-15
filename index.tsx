@@ -563,11 +563,13 @@ async function joinServer(uri: string, tMessageReceived: number, log: Logger): P
             );
             log.info("Time after adb:", performance.now() - tMessageReceived);
             if (!adbResult.ok) { // the emulator is not running
-                showNotification({
-                    title: "⚠️ SoRa :: Plugin issues!",
-                    body: `Emulator failed to process close signal.\n> ${adbResult.error}`,
-                });
                 log.warn(`ADB close failed: ${adbResult.error}`);
+                if (!settings.store.omitAdbErrorNotifications) {
+                    showNotification({
+                        title: "⚠️ SoRa :: Plugin issues!",
+                        body: `Emulator failed to process close signal.\n> ${adbResult.error}`,
+                    });
+                }
             }
         }
     }

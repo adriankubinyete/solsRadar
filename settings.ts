@@ -84,7 +84,7 @@ export const settings = definePluginSettings({
         hidden: true,
     },
 
-    // others
+    // specialized settings
     flattenEmbeds: {
         type: OptionType.BOOLEAN,
         description: "Whether to merge embeds into the message content when checking for triggers. If you're monitoring a Macro server, you might want to enable this.",
@@ -97,6 +97,23 @@ export const settings = definePluginSettings({
         default: true,
         hidden: true,
     },
+    privateServerLink: {
+        type: OptionType.STRING,
+        description: "Your private server URL, for actions which require it.",
+        default: "",
+        hidden: true,
+    },
+
+    // advanced settings (users shouldnt generally mess with these, best keep as default)
+    ignoreWebhookForwards: {
+        // @NOTE
+        // there is already forward-loop prevention for self-webhooks
+        // but with this enabled, we EXPLICITLY ignore ANY forwards from solradar, just in case.
+        type: OptionType.BOOLEAN,
+        description: "With this enabled, if an embed footer contains the text 'solradar', it will be ignored. Only disable this if you know what you're doing!",
+        default: true,
+        hidden: true,
+    },
     customNotificationSoundDelay: {
         type: OptionType.NUMBER,
         description: "Delay in milliseconds before playing the trigger's defined custom notification sound. Default: 0",
@@ -105,14 +122,14 @@ export const settings = definePluginSettings({
         max: 5000,
         hidden: true,
     },
-    privateServerLink: {
-        type: OptionType.STRING,
-        description: "Your private server URL, for actions which require it.",
-        default: "",
+    omitAdbErrorNotifications: {
+        type: OptionType.BOOLEAN,
+        description: "Omits the notification sent when an ADB kill signal fails. Will still get logged to the console. Default: false",
+        default: false,
         hidden: true,
     },
 
-    // advanced, tryhard sniping stuff
+    // adb emulator stuff
     ldpAdbPath: {
         type: OptionType.STRING,
         description: "Path to adb.exe (e.g. C:\\LDPlayer\\LDPlayer9\\adb.exe)",
@@ -132,16 +149,7 @@ export const settings = definePluginSettings({
         hidden: true,
     },
 
-
-    // @NOTE
-    // there is already forward-loop prevention for self-webhooks
-    // but with this enabled, we EXPLICITLY ignore ANY forwards from solradar, just in case.
-    ignoreWebhookForwards: {
-        type: OptionType.BOOLEAN,
-        description: "With this enabled, if an embed footer contains the text 'solradar', it will be ignored. Only disable this if you know what you're doing!",
-        default: true,
-        hidden: true,
-    },
+    // webhook stuff
     globalWebhookUrl: {
         type: OptionType.STRING,
         description: "Fallback webhook URL used when a trigger has forwarding enabled but no webhook configured. Triggers with their own webhook URL will use that instead.",

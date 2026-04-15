@@ -185,6 +185,7 @@ export function SettingsTab() {
             entries: [
                 { id: "ignoreWebhookForwards", label: "Ignore Webhook Forwards", description: 'Ignore any message whose embed footer contains "solradar". Prevents the plugin from acting on its own forwarded webhooks.' },
                 { id: "customNotificationSoundDelay", label: "Custom Notification Sound Delay (ms)", description: "Delay in milliseconds before playing the trigger's defined custom notification sound." },
+                { id: "omitAdbErrorNotifications", label: "Omit ADB error notifications", description: "Omits the notification sent when an ADB kill signal fails. Will still get logged to the console." },
             ],
         },
     ];
