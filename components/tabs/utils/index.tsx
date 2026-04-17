@@ -10,12 +10,12 @@ import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
 import { React, showToast, Toasts } from "@webpack/common";
 
-import { closeGame, emulatorJoinLink, goToHome, joinLink, prepareAdb } from "../../../../services/RobloxService";
-import { settings } from "../../../../settings";
+import { closeGame, emulatorJoinLink, goToHome, joinLink, prepareAdb } from "../../../services/RobloxService";
+import { settings } from "../../../settings";
 
 const logger = new Logger("SolRadar.Utils");
 
-const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../../../../native")>;
+const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../../../native")>;
 
 export function UtilsTab() {
     const { privateServerLink } = settings.use(["privateServerLink"]);
@@ -25,7 +25,7 @@ export function UtilsTab() {
     const section: React.CSSProperties = {
         display: "flex",
         flexDirection: "column",
-        gap: "0.5rem",
+        gap: "0.25rem",
         width: "100%",
     };
 

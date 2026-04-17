@@ -8,7 +8,7 @@ import { FormSwitch } from "@components/FormSwitch";
 import { Paragraph } from "@components/Paragraph";
 import { React } from "@webpack/common";
 
-import { RedactField } from "../../../../stores/TriggerStore";
+import { RedactField } from "../../../stores/TriggerStore";
 
 export function PublicExportOptions({ onChange }: { onChange: (fields: Set<RedactField>) => void; }) {
     const [redactFields, setRedactFields] = React.useState<Set<RedactField>>(

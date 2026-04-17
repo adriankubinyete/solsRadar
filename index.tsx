@@ -13,9 +13,9 @@ import { ChannelType } from "@vencord/discord-types/enums";
 import { ChannelStore, GuildStore } from "@webpack/common";
 import { PropsWithChildren } from "react";
 
-import { SolsRadarChatBarButton } from "./components/buttons/SolsRadarChatBarButton";
-import { SolsRadarTitleBarButton } from "./components/buttons/SolsRadarTitleBarButton";
-import { SolsRadarIcon } from "./components/ui/SolsRadarIcon";
+import { SolsRadarIcon } from "./components/icons/SolsRadarIcon";
+import { SolsRadarChatBarButton } from "./components/ui/buttons/SolsRadarChatBarButton";
+import { SolsRadarTitleBarButton } from "./components/ui/buttons/SolsRadarTitleBarButton";
 import { Snipe } from "./models/Snipe";
 import { BiomeDetector } from "./services/BiomeDetector";
 import { closeGame, closeGameIfNeeded, extractServerLink, getPlaceId, joinLink, joinSolsPublicServer, joinUri, prepareAdb, RobloxLink, stripRobloxLinks } from "./services/RobloxService";

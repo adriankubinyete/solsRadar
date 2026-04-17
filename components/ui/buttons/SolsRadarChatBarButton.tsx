@@ -7,9 +7,9 @@
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
 import { React, showToast, Toasts } from "@webpack/common";
 
-import { settings } from "../../settings";
-import { openSolsRadarModal } from "../settings/SolsRadarModal";
-import { SolsRadarIcon } from "../ui/SolsRadarIcon";
+import { settings } from "../../../settings";
+import { SolsRadarIcon } from "../../icons/SolsRadarIcon";
+import { openSolsRadarModal } from "../../SolsRadarModal";
 
 const STATE_COLORS = {
     ACTIVE: "#43a25a",

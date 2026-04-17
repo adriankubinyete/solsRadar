@@ -11,9 +11,9 @@ import { copyToClipboard } from "@utils/clipboard";
 import { closeAllModals, ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, openModal } from "@utils/modal";
 import { NavigationRouter, React, showToast, Toasts } from "@webpack/common";
 
-import { joinUri } from "../../../../services/RobloxService";
-import { SnipeEntry, SnipeLogEntry, SnipeStore, useSnipeEntry } from "../../../../stores/SnipeStore";
-import { formatElapsedTime } from "../../../../utils";
+import { joinUri } from "../../../services/RobloxService";
+import { SnipeEntry, SnipeLogEntry, SnipeStore, useSnipeEntry } from "../../../stores/SnipeStore";
+import { formatElapsedTime } from "../../../utils";
 import { FallbackImage, formatTimeAgo, TagBadge } from "./components";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

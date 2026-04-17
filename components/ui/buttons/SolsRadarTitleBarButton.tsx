@@ -7,9 +7,9 @@
 import { findComponentByCodeLazy } from "@webpack";
 import { React, showToast, Toasts, useState } from "@webpack/common";
 
-import { settings } from "../../settings";
-import { openSolsRadarModal } from "../settings/SolsRadarModal";
-import { SolsRadarIcon } from "../ui/SolsRadarIcon";
+import { settings } from "../../../settings";
+import { SolsRadarIcon } from "../../icons/SolsRadarIcon";
+import { openSolsRadarModal } from "../../SolsRadarModal";
 
 const HeaderBarIcon = findComponentByCodeLazy(".HEADER_BAR_BADGE_BOTTOM,", 'position:"bottom"');
 

@@ -8,7 +8,7 @@ import { Button } from "@components/Button";
 import { Divider } from "@components/Divider";
 import { React } from "@webpack/common";
 
-import { SnipeEntry, SnipeStore, useSnipeHistory } from "../../../../stores/SnipeStore";
+import { SnipeEntry, SnipeStore, useSnipeHistory } from "../../../stores/SnipeStore";
 import { StatCard } from "./StatCard";
 import { StatTriggerDetail } from "./StatTriggerDetail";
 
@@ -201,7 +201,7 @@ export function StatsTab() {
                                     bait={agg.bait}
                                     timeout={agg.timeout}
                                     avgDurationMs={agg.avgDurationMs}
-                                    // compactBar
+                                // compactBar
                                 />
                             ))}
                         </div>

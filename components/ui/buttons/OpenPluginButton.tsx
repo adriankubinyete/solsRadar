@@ -8,7 +8,7 @@ import { Button } from "@components/Button";
 import { IPluginOptionComponentProps } from "@utils/types";
 import { React } from "@webpack/common";
 
-import { openSolsRadarModal } from "../settings/SolsRadarModal";
+import { openSolsRadarModal } from "../../SolsRadarModal";
 
 export function OpenPluginButton(_props: IPluginOptionComponentProps) {
     return (

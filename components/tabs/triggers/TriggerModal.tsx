@@ -11,7 +11,7 @@ import { Logger } from "@utils/Logger";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { React, Select, showToast, Slider, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 
-import { settings } from "../../../../settings";
+import { settings } from "../../../settings";
 import {
     addTrigger,
     DEFAULT_BIOME,
@@ -23,9 +23,9 @@ import {
     TriggerForwarding,
     TriggerType,
     updateTrigger,
-} from "../../../../stores/TriggerStore";
-import { playAudio } from "../../../../utils";
-import { IdChipInput } from "../../../IdChipInput";
+} from "../../../stores/TriggerStore";
+import { playAudio } from "../../../utils";
+import { IdChipInput } from "../../ui/IdChipInput";
 
 const logger = new Logger("SolRadar.TriggerModal");
 

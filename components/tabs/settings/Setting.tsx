@@ -8,8 +8,8 @@ import { FormSwitch } from "@components/FormSwitch";
 import { OptionType } from "@utils/types";
 import { React, Select, TextInput } from "@webpack/common";
 
-import { settings } from "../../../../settings";
-import { ChipKind, IdChipInput } from "../../../IdChipInput";
+import { settings } from "../../../settings";
+import { ChipKind, IdChipInput } from "../../ui/IdChipInput";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

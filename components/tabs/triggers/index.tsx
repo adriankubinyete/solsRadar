@@ -20,13 +20,13 @@ import {
     Trigger,
     TriggerType,
     useTriggers,
-} from "../../../../stores/TriggerStore";
-import { UIState } from "../../../../stores/UIStateStore";
-import { isDeveloper } from "../../../../utils";
-import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
-import { DeleteButton } from "../../../DeleteButton";
-import { Pill, PillBorder, PillRadius, PillVariant } from "../../../Pill";
-import { JoinLockBanner } from "../../../ui/JoinLockBanner";
+} from "../../../stores/TriggerStore";
+import { UIState } from "../../../stores/UIStateStore";
+import { isDeveloper } from "../../../utils";
+import { JoinLockBanner } from "../../JoinLockBanner";
+import { DeleteButton } from "../../ui/buttons/DeleteButton";
+import { QuickFilterBtn } from "../../ui/buttons/QuickFilterBtn";
+import { Pill, PillBorder, PillRadius, PillVariant } from "../../ui/Pill";
 import { PublicExportOptions } from "./PublicExportOptions";
 import { openAddTriggerModal, openEditTriggerModal } from "./TriggerModal";
 

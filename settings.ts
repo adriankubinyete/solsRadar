@@ -7,7 +7,7 @@
 import { definePluginSettings } from "@api/Settings";
 import { OptionType } from "@utils/types";
 
-import { OpenPluginButton } from "./components/buttons/OpenPluginButton";
+import { OpenPluginButton } from "./components/ui/buttons/OpenPluginButton";
 
 export const settings = definePluginSettings({
 

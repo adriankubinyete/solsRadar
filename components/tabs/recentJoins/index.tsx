@@ -9,13 +9,13 @@ import { Paragraph } from "@components/Paragraph";
 import { closeAllModals } from "@utils/modal";
 import { NavigationRouter, React, showToast, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 
-import { SnipeEntry, SnipeStore, SnipeTag, useSnipeHistory } from "../../../../stores/SnipeStore";
-import { UIState } from "../../../../stores/UIStateStore";
-import { formatElapsedTime } from "../../../../utils";
-import { QuickFilterBtn } from "../../../buttons/QuickFilterBtn";
-import { DeleteButton } from "../../../DeleteButton";
-import { PillVariant } from "../../../Pill";
-import { JoinLockBanner } from "../../../ui/JoinLockBanner";
+import { SnipeEntry, SnipeStore, SnipeTag, useSnipeHistory } from "../../../stores/SnipeStore";
+import { UIState } from "../../../stores/UIStateStore";
+import { formatElapsedTime } from "../../../utils";
+import { JoinLockBanner } from "../../JoinLockBanner";
+import { DeleteButton } from "../../ui/buttons/DeleteButton";
+import { QuickFilterBtn } from "../../ui/buttons/QuickFilterBtn";
+import { PillVariant } from "../../ui/Pill";
 import { DANGER_TAGS, FallbackImage, formatTimeAgo, TagBadge } from "./components";
 import {
     openJoinModal,

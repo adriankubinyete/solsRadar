@@ -11,17 +11,17 @@ import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
 import { React, RunningGameStore } from "@webpack/common";
 
-import { getRobloxProcess, joinUri, prepareAdb, rejoinUntilBiome, RejoinUntilBiomeHandle } from "../../../../services/RobloxService";
-import { settings } from "../../../../settings";
-import { JoinLockStore } from "../../../../stores/JoinLockStore";
-import { SnipeStore } from "../../../../stores/SnipeStore";
-import { isDeveloper } from "../../../../utils";
-import { EditableActionButton } from "../../../EditableActionButton";
-import { Pill } from "../../../Pill";
+import { getRobloxProcess, joinUri, prepareAdb, rejoinUntilBiome, RejoinUntilBiomeHandle } from "../../../services/RobloxService";
+import { settings } from "../../../settings";
+import { JoinLockStore } from "../../../stores/JoinLockStore";
+import { SnipeStore } from "../../../stores/SnipeStore";
+import { isDeveloper } from "../../../utils";
+import { EditableActionButton } from "../../ui/EditableActionButton";
+import { Pill } from "../../ui/Pill";
 
 const logger = new Logger("SolRadar.Developer");
 
-const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../../../../native")>;
+const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../../../native")>;
 
 
 // @TODO fix this

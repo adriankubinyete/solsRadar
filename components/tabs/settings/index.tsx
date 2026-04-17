@@ -6,8 +6,8 @@
 
 import { React, TextInput } from "@webpack/common";
 
-import { settings } from "../../../../settings";
-import { ChipKind } from "../../../IdChipInput";
+import { settings } from "../../../settings";
+import { ChipKind } from "../../ui/IdChipInput";
 import { Setting } from "./Setting";
 
 // ─── Shared styles ────────────────────────────────────────────────────────────

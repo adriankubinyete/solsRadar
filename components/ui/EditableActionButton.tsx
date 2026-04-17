@@ -11,7 +11,7 @@ import { Heading } from "@components/Heading";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { React, TextInput } from "@webpack/common";
 
-import { UIState } from "../stores/UIStateStore";
+import { UIState } from "../../stores/UIStateStore";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
