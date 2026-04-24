@@ -5,11 +5,13 @@
  */
 
 import { classNameFactory } from "@utils/css";
+import { Logger } from "@utils/Logger";
 import { PluginNative } from "@utils/types";
-import { AuthenticationStore } from "@webpack/common";
+import { AuthenticationStore, showToast as defaultShowToast } from "@webpack/common";
 export const cl = classNameFactory("vc-sora-");
 
 const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("./native")>;
+const logger = new Logger("SolRadar");
 
 /**
  * Converts a CSV string to a Set of strings
@@ -43,7 +45,7 @@ export async function sendWebhook(url: string, body: string): Promise<void> {
  * (e.g., "1s 500ms" instead of "1s"). Also includes "0ms" when applicable.
  * @returns {string} Human-readable string, e.g. "2h 3m 4s" or "2h 3m 4s 500ms".
  */
-export function formatElapsedTime(ms: number, { alwaysIncludeMs = false }: { alwaysIncludeMs?: boolean } = {}): string {
+export function formatElapsedTime(ms: number, { alwaysIncludeMs = false }: { alwaysIncludeMs?: boolean; } = {}): string {
     ms = Math.floor(ms);
     if (ms < 1000 && !alwaysIncludeMs) {
         return `${ms}ms`;
@@ -69,7 +71,6 @@ export function formatElapsedTime(ms: number, { alwaysIncludeMs = false }: { alw
     return parts.join(" ");
 }
 
-
 export function isDeveloper(): boolean {
     const id = AuthenticationStore.getId();
     const SORA_DEVELOPERS = [
@@ -90,6 +91,19 @@ export function playAudio(dataUri: string, volume: number = 100): void {
         audio.volume = Math.max(0, Math.min(1, volume / 100));
         audio.play().catch(err => console.error("[SoRa] Failed to play audio:", err));
     } catch (err) {
-        console.error("[SoRa] Error creating audio element:", err);
+        logger.error("Something went wrong while playing audio:", err);
+
+    }
+}
+
+// this is insanely stupid
+export function showToast(...args: Parameters<typeof defaultShowToast>): void {
+    try {
+        defaultShowToast(...args);
+    } catch (e) {
+        logger.error("Failed to show toast", {
+            error: e,
+            args
+        });
     }
 }

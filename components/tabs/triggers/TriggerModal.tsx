@@ -9,7 +9,7 @@ import { FormSwitch } from "@components/FormSwitch";
 import { Heading } from "@components/Heading";
 import { Logger } from "@utils/Logger";
 import { ModalCloseButton, ModalContent, ModalFooter, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
-import { React, Select, showToast, Slider, TextInput, Toasts, useEffect, useState } from "@webpack/common";
+import { React, Select, Slider, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 
 import { settings } from "../../../settings";
 import {
@@ -24,7 +24,7 @@ import {
     TriggerType,
     updateTrigger,
 } from "../../../stores/TriggerStore";
-import { playAudio } from "../../../utils";
+import { playAudio, showToast } from "../../../utils";
 import { IdChipInput } from "../../ui/IdChipInput";
 
 const logger = new Logger("SolRadar.TriggerModal");
@@ -1008,17 +1008,25 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
 
     const handleSave = async () => {
         if (!isValid) return;
-        // logger.debug("saving draft.state: ", draft.state);
-        if (isEditing) await updateTrigger(trigger.id, draft);
-        else await addTrigger(draft);
-        showToast(isEditing ? `Trigger "${draft.name}" updated!` : "Trigger added!", Toasts.Type.SUCCESS);
-        modalProps.onClose();
+        try {
+            // logger.debug("saving draft.state: ", draft.state);
+            if (isEditing) await updateTrigger(trigger.id, draft);
+            else await addTrigger(draft);
+            showToast(isEditing ? `Trigger "${draft.name}" updated!` : "Trigger added!", Toasts.Type.SUCCESS);
+            modalProps.onClose();
+        } catch (error) {
+            showToast(`Failed to save trigger: ${error}`, Toasts.Type.FAILURE);
+        }
     };
 
     const handleDelete = async () => {
         if (!isEditing) return;
-        await deleteTrigger(trigger.id);
-        showToast("Trigger deleted.", Toasts.Type.MESSAGE);
+        try {
+            await deleteTrigger(trigger.id);
+            showToast("Trigger deleted.", Toasts.Type.MESSAGE);
+        } catch (error) {
+            showToast(`Failed to delete trigger: ${error}`, Toasts.Type.FAILURE);
+        }
         modalProps.onClose();
     };
 
