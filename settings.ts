@@ -11,11 +11,15 @@ import { OpenPluginButton } from "./components/ui/buttons/OpenPluginButton";
 
 export const ACTION_OPTIONS = [
     { label: "Nothing (not recommended)", value: "nothing" },
-    { label: "Join a public server", value: "public", default: true },
+    { label: "Join a public server", value: "public" },
     { label: "Close Roblox", value: "close" },
     { label: "Go to private server", value: "private" },
     { label: "Prepare ADB (for LDP method)", value: "prep-adb" },
 ] as const;
+
+// utilitary function to construct the action map with an specific default value
+const actionOptions = (defaultValue: string) =>
+    ACTION_OPTIONS.map(o => ({ ...o, default: o.value === defaultValue }));
 
 export const settings = definePluginSettings({
 
@@ -230,19 +234,19 @@ export const settings = definePluginSettings({
     onBadLink: {
         type: OptionType.SELECT,
         description: "What to do when a bad link is detected. A bad link is a server link that fails verification (e.g. because it's expired or fake).",
-        options: ACTION_OPTIONS,
+        options: actionOptions("public"),
         hidden: true,
     },
     onBiomeFalse: {
         type: OptionType.SELECT,
         description: "What to do when the detected biome is fake (expected biome doesn't match what was announced).",
-        options: ACTION_OPTIONS,
+        options: actionOptions("nothing"),
         hidden: true,
     },
     onBiomeEnd: {
         type: OptionType.SELECT,
         description: "What to do when the confirmed biome ends (biome changed or disconnected).",
-        options: ACTION_OPTIONS,
+        options: actionOptions("nothing"),
         hidden: true,
     },
     biomeFalseActionTimeout: {
