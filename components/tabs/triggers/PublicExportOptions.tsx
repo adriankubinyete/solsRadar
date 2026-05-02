@@ -10,23 +10,28 @@ import { React } from "@webpack/common";
 
 import { RedactField } from "../../../stores/TriggerStore";
 
+type ExportOption = { fields: RedactField[]; label: string; };
+
+const OPTIONS: ExportOption[] = [
+    { fields: ["conditions"], label: "Strip IDs (users, channels, guilds)" },
+    { fields: ["bypasses"], label: "Reset bypass flags" },
+    { fields: ["webhookUrl", "webhookForwarding", "webhookPersonal"], label: "Strip webhooks" },
+    { fields: ["notificationSound"], label: "Strip notification sounds" },
+    { fields: ["customTriggers"], label: "Exclude custom triggers" },
+    { fields: ["enabled"], label: "Export all triggers as disabled" },
+];
+
+const DEFAULT_FIELDS: RedactField[] = ["conditions", "bypasses", "webhookUrl", "webhookForwarding", "webhookPersonal", "notificationSound"];
+
 export function PublicExportOptions({ onChange }: { onChange: (fields: Set<RedactField>) => void; }) {
     const [redactFields, setRedactFields] = React.useState<Set<RedactField>>(
-        () => new Set(["webhookUrl", "webhookForwarding", "notificationSound"])
+        () => new Set(DEFAULT_FIELDS)
     );
 
-    const options: { field: RedactField; label: string; }[] = [
-        { field: "customTriggers", label: "Exclude custom triggers" },
-        { field: "webhookUrl", label: "Strip webhook URLs" },
-        { field: "webhookForwarding", label: "Disable forwarding rules" },
-        { field: "notificationSound", label: "Strip notification sounds" },
-        { field: "enabled", label: "Export all triggers as disabled" },
-    ];
-
-    const toggle = (field: RedactField, checked: boolean) => {
+    const toggle = (fields: RedactField[], checked: boolean) => {
         setRedactFields(prev => {
             const next = new Set(prev);
-            checked ? next.add(field) : next.delete(field);
+            fields.forEach(f => checked ? next.add(f) : next.delete(f));
             onChange(next);
             return next;
         });
@@ -36,13 +41,13 @@ export function PublicExportOptions({ onChange }: { onChange: (fields: Set<Redac
         // i have no ####### clue how to make it auto use the max width possible. width:100% did NOT work
         // this is kind of a hack, idk if its consistent (probably not on insanely small screens)
         <div style={{ minWidth: "350px", display: "flex", flexDirection: "column", gap: 2 }}>
-            <Paragraph>Choose what to redact from the export:</Paragraph>
-            {options.map(({ field, label }) => (
+            <Paragraph style={{ paddingBottom: 28 }}>Choose what to redact from the export:</Paragraph>
+            {OPTIONS.map(({ fields, label }) => (
                 <FormSwitch
-                    key={field}
+                    key={fields.join(",")}
                     title={label}
-                    value={redactFields.has(field)}
-                    onChange={checked => toggle(field, checked)}
+                    value={fields.every(f => redactFields.has(f))}
+                    onChange={checked => toggle(fields, checked)}
                     hideBorder
                 />
             ))}

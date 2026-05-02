@@ -17,6 +17,7 @@ import {
     DEFAULT_BIOME,
     deleteTrigger,
     makeDefaultTrigger,
+    safeExportDraft,
     Trigger,
     TriggerBiome,
     TriggerConditions,
@@ -232,13 +233,14 @@ function KeywordsInput({ label, hint, value, onChange, placeholder }: {
         <div style={S.rowStacked}>
             <span style={S.label}>{label}</span>
             {hint && <span style={S.hint}>{hint}</span>}
-            <TextInput
-                value={raw}
-                placeholder={placeholder ?? "keyword1, keyword2, keyword3"}
-                onChange={setRaw}
-                onBlur={commit}
-                style={{ marginTop: 8 }}
-            />
+            <div style={{ marginTop: 8 }}>
+                <TextInput
+                    value={raw}
+                    placeholder={placeholder ?? "keyword1, keyword2, keyword3"}
+                    onChange={setRaw}
+                    onBlur={commit}
+                />
+            </div>
         </div>
     );
 }
@@ -998,17 +1000,17 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
         }
     };
 
-    const handleExportAsFile = () => {
+    const handleSafeExport = () => {
         try {
-            const { id, ...rest } = trigger!;
-            const blob = new Blob([JSON.stringify([rest], null, 2)], { type: "application/json" });
+            const sanitized = safeExportDraft(draft);
+            const blob = new Blob([JSON.stringify([sanitized], null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
             a.download = `solsradar-trigger-${draft.name.trim().replace(/\s+/g, "-").toLowerCase()}-${Date.now()}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            showToast("Trigger exported!", Toasts.Type.SUCCESS);
+            showToast("Trigger exported (safe)!", Toasts.Type.SUCCESS);
         } catch (e) {
             showToast(`Failed to export trigger: ${e}`, Toasts.Type.FAILURE);
         }
@@ -1052,8 +1054,8 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
                         <Button size="small" variant="secondary" onClick={handleCopy} style={{ marginLeft: "8px" }}>
                             Copy to clipboard
                         </Button>
-                        <Button size="small" variant="link" onClick={handleExportAsFile} style={{ marginLeft: "8px" }}>
-                            Export as file
+                        <Button size="small" variant="link" onClick={handleSafeExport} style={{ marginLeft: "8px" }}>
+                            Safe Export
                         </Button>
                     </>
                 )}

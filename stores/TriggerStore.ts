@@ -338,8 +338,11 @@ export type RedactField =
     | "enabled"             // desativa o trigger
     | "webhookUrl"          // zera forwarding.webhookUrl
     | "webhookForwarding"   // desativa onMatch/onDetection
+    | "webhookPersonal"     // limpa webhookContent, webhookEmbedDescription, excludedGuilds, excludedChannels
     | "notificationSound"   // remove o data URI do state
-    | "customTriggers";     // remove triggers do tipo CUSTOM inteiro
+    | "customTriggers"      // remove triggers do tipo CUSTOM inteiro
+    | "conditions"          // zera IDs pessoais: fromUser, inChannel, ignoredChannels, ignoredGuilds
+    | "bypasses";           // reseta todos os flags de bypass para false
 
 export type ExportOptions = {
     redact?: RedactField[];
@@ -358,6 +361,19 @@ function redactTrigger(trigger: Trigger, redact: Set<RedactField>): Trigger | nu
 
     return {
         ...trigger,
+        conditions: {
+            ...trigger.conditions,
+            ...(redact.has("conditions") && { fromUser: [], inChannel: [], ignoredChannels: [], ignoredGuilds: [] }),
+            ...(redact.has("bypasses") && {
+                bypassMatchAmbiguity: false,
+                bypassMonitoredOnly: false,
+                bypassIgnoredGuilds: false,
+                bypassForwardIgnoredGuilds: false,
+                bypassIgnoredChannels: false,
+                bypassLinkVerification: false,
+                bypassLinkDeduplication: false,
+            }),
+        },
         state: {
             ...trigger.state,
             ...(redact.has("notificationSound") && { notificationSound: "", notificationSoundVolume: 100 }),
@@ -365,7 +381,13 @@ function redactTrigger(trigger: Trigger, redact: Set<RedactField>): Trigger | nu
         },
         forwarding: {
             ...trigger.forwarding,
-            webhookUrl: redact.has("webhookUrl") ? "" : trigger.forwarding.webhookUrl,
+            ...(redact.has("webhookUrl") && { webhookUrl: "" }),
+            ...(redact.has("webhookPersonal") && {
+                webhookContent: "",
+                webhookEmbedDescription: "",
+                excludedGuilds: [],
+                excludedChannels: [],
+            }),
             onMatch: redact.has("webhookForwarding")
                 ? { ...trigger.forwarding.onMatch, enabled: false }
                 : trigger.forwarding.onMatch,
@@ -386,6 +408,12 @@ export function exportTriggersJsonRedacted(options: ExportOptions = {}): string 
 
 export function downloadTriggersJsonRedacted(options: ExportOptions = {}): void {
     _downloadJson(exportTriggersJsonRedacted(options), `solsradar-triggers-public-${Date.now()}.json`);
+}
+
+export function safeExportDraft(draft: Omit<Trigger, "id">): Omit<Trigger, "id"> {
+    const redact = new Set<RedactField>(["conditions", "bypasses", "webhookUrl", "webhookForwarding", "webhookPersonal"]);
+    const { id: _, ...rest } = redactTrigger({ id: "", ...draft }, redact)!;
+    return rest;
 }
 
 function _downloadJson(content: string, filename: string): void {
