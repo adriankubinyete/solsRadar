@@ -69,9 +69,11 @@ type Section = {
 };
 
 export function SettingsTab() {
-    const { linkVerification, robloxToken } = settings.use([
+    const { linkVerification, robloxToken, onBiomeFalse, onBiomeEnd } = settings.use([
         "linkVerification",
         "robloxToken",
+        "onBiomeFalse",
+        "onBiomeEnd",
     ]);
     const [search, setSearch] = React.useState("");
 
@@ -177,7 +179,19 @@ export function SettingsTab() {
                     Any changes there require a Discord restart to take effect.
                 </p>
             ),
-            entries: [],
+            entries: [
+                { id: "onBiomeFalse", label: "Action on Fake Biome", description: "What to do when the biome you joined doesn't match what was announced." },
+                ...(onBiomeFalse !== "nothing" ? [
+                    { id: "biomeFalseActionTimeout" as const, label: "Fake Biome Action Delay (ms)", description: "Time to wait before executing the action. A cancellation prompt is shown during this window." },
+                ] : []),
+                { id: "onBiomeEnd", label: "Action on Biome End", description: "What to do when a confirmed biome ends (biome changed or disconnected)." },
+                ...(onBiomeEnd !== "nothing" ? [
+                    { id: "biomeEndActionTimeout" as const, label: "Biome End Action Delay (ms)", description: "Time to wait before executing the action. A cancellation prompt is shown during this window." },
+                ] : []),
+                ...((onBiomeFalse !== "nothing" || onBiomeEnd !== "nothing") ? [
+                    { id: "skipActionConfirmation" as const, label: "Skip Action Confirmation", description: "Execute biome actions immediately, without showing the cancellation prompt." },
+                ] : []),
+            ],
         },
         {
             title: "Advanced",

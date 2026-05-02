@@ -7,7 +7,7 @@
 import "./IdChipInput.css";
 
 import { Button } from "@components/Button";
-import { ChannelStore, GuildStore,React, TextInput, UserStore, useState } from "@webpack/common";
+import { ChannelStore, GuildStore, React, TextInput, UserStore, useState } from "@webpack/common";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

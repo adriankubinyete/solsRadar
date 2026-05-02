@@ -206,8 +206,6 @@ function StringControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; 
 
     return (
         <TextInput
-            type="text"
-            style={{ marginTop: 4 }}
             value={raw}
             disabled={disabled}
             placeholder={disabled ? "" : "Enter value..."}

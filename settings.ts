@@ -9,6 +9,14 @@ import { OptionType } from "@utils/types";
 
 import { OpenPluginButton } from "./components/ui/buttons/OpenPluginButton";
 
+export const ACTION_OPTIONS = [
+    { label: "Nothing (not recommended)", value: "nothing" },
+    { label: "Join a public server", value: "public", default: true },
+    { label: "Close Roblox", value: "close" },
+    { label: "Go to private server", value: "private" },
+    { label: "Prepare ADB (for LDP method)", value: "prep-adb" },
+] as const;
+
 export const settings = definePluginSettings({
 
     _openPlugin: {
@@ -222,13 +230,41 @@ export const settings = definePluginSettings({
     onBadLink: {
         type: OptionType.SELECT,
         description: "What to do when a bad link is detected. A bad link is a server link that fails verification (e.g. because it's expired or fake).",
-        options: [
-            { label: "Nothing (not recommended)", value: "nothing" },
-            { label: "Join a public server", value: "public", default: true },
-            { label: "Close Roblox", value: "close" },
-            { label: "Go to private server", value: "private" },
-            { label: "Prepare ADB (for LDP method)", value: "prep-adb" },
-        ],
+        options: ACTION_OPTIONS,
+        hidden: true,
+    },
+    onBiomeFalse: {
+        type: OptionType.SELECT,
+        description: "What to do when the detected biome is fake (expected biome doesn't match what was announced).",
+        options: ACTION_OPTIONS,
+        hidden: true,
+    },
+    onBiomeEnd: {
+        type: OptionType.SELECT,
+        description: "What to do when the confirmed biome ends (biome changed or disconnected).",
+        options: ACTION_OPTIONS,
+        hidden: true,
+    },
+    biomeFalseActionTimeout: {
+        type: OptionType.NUMBER,
+        description: "Delay (ms) before executing the onBiomeFalse action. During this window, a cancellation prompt is shown. Default: 10000",
+        default: 10000,
+        min: 0,
+        max: 60000,
+        hidden: true,
+    },
+    biomeEndActionTimeout: {
+        type: OptionType.NUMBER,
+        description: "Delay (ms) before executing the onBiomeEnd action. During this window, a cancellation prompt is shown. Default: 10000",
+        default: 10000,
+        min: 0,
+        max: 60000,
+        hidden: true,
+    },
+    skipActionConfirmation: {
+        type: OptionType.BOOLEAN,
+        description: "Skip the cancellation prompt for onBiomeFalse and onBiomeEnd actions. The action executes immediately.",
+        default: false,
         hidden: true,
     },
     allowedPlaceIds: {

@@ -17,8 +17,9 @@ import { SolsRadarIcon } from "./components/icons/SolsRadarIcon";
 import { SolsRadarChatBarButton } from "./components/ui/buttons/SolsRadarChatBarButton";
 import { SolsRadarTitleBarButton } from "./components/ui/buttons/SolsRadarTitleBarButton";
 import { Snipe } from "./models/Snipe";
+import { executeAction, scheduleCancelableAction } from "./services/ActionExecutor";
 import { BiomeDetector } from "./services/BiomeDetector";
-import { closeGame, closeGameIfNeeded, extractServerLink, getPlaceId, joinLink, joinSolsPublicServer, joinUri, prepareAdb, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
+import { closeGame, extractServerLink, getPlaceId, joinUri, RobloxLink, stripRobloxLinks } from "./services/RobloxService";
 import { getMatchingTrigger } from "./services/TriggerMatcher";
 import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
@@ -161,37 +162,6 @@ export interface JoinResult {
     linkSafe: boolean | undefined;
 }
 
-async function executeBadLinkAction(): Promise<void> {
-    switch (settings.store.onBadLink) {
-        case "nothing": return;
-        case "public": await joinSolsPublicServer(); return;
-        case "close": await closeGameIfNeeded(); return;
-        case "private": {
-            if (!settings.store.privateServerLink.trim()) {
-                showNotification({
-                    title: "⚠️ SoRa :: Plugin issues!",
-                    body: "Bad link action triggered, but you don't have a private server link set\nJoining a public server instead!",
-                });
-                await joinSolsPublicServer();
-                return;
-            }
-            await joinLink(settings.store.privateServerLink);
-            return;
-        }
-        case "prep-adb": {
-            if (!settings.store.privateServerLink.trim()) {
-                showNotification({
-                    title: "⚠️ SoRa :: Plugin issues!",
-                    body: "Bad link action triggered, but you don't have a private server link set\nJoining a public server instead!",
-                });
-                await joinSolsPublicServer();
-                return;
-            }
-            await prepareAdb(settings.store.privateServerLink);
-            return;
-        }
-    }
-}
 
 type VerifyLinkResult =
     | { ok: true; placeId: string; }
@@ -213,7 +183,7 @@ async function verifyLink(link: RobloxLink, log: Logger): Promise<VerifyLinkResu
 
     if (placeId === null) {
         log.warn(`Failed to resolve link: ${link.code}`);
-        await executeBadLinkAction();
+        await executeAction(settings.store.onBadLink);
         return { ok: false, reason: "resolve-failed", detail: link.code };
     }
 
@@ -276,6 +246,12 @@ function _watchForBiomeEnd(snipe: Snipe, log: Logger): void {
         JoinLockStore.release();
         unsubChange();
         unsubClear();
+        scheduleCancelableAction(
+            settings.store.onBiomeEnd,
+            settings.store.biomeEndActionTimeout ?? 10_000,
+            `Biome ended — ${snipe.trigger.name}`,
+            snipe.trigger.iconUrl,
+        );
     };
 
     const unsubChange = BiomeDetector.on("biomeChanged", ({ from, to }) => {
@@ -361,6 +337,12 @@ function startBiomeDetection(snipe: Snipe, log: Logger): void {
                 body: `Got "${to}" instead (${elapsed}ms)`,
                 icon: snipe.trigger.iconUrl,
             });
+            scheduleCancelableAction(
+                settings.store.onBiomeFalse,
+                settings.store.biomeFalseActionTimeout ?? 10_000,
+                `Fake biome — ${snipe.trigger.name}`,
+                snipe.trigger.iconUrl,
+            );
         }
     });
 

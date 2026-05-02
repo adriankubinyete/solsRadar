@@ -94,8 +94,8 @@ export function SolsRadarTitleBarButton({ className = "" }: SolsRadarTitleBarBut
                         style={{ position: "relative", display: "inline-block" }}
                     >
                         <SolsRadarIcon
-                            height={20}
-                            width={20}
+                            height={18}
+                            width={18}
                             color={hovered ? "var(--interactive-icon-hover)" : "var(--interactive-icon-default)"}
                         />
                         {(isActive || !hideInactiveIndicator) && (

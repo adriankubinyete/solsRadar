@@ -174,7 +174,7 @@ function TextField({ label, hint, value, placeholder, onChange, type, maxLength 
         <div style={S.rowStacked}>
             <span style={S.label}>{label}</span>
             {hint && <span style={S.hint}>{hint}</span>}
-            <TextInput value={value} placeholder={placeholder} onChange={onChange} maxLength={maxLength} style={{ marginTop: 8 }} />
+            <TextInput value={value} placeholder={placeholder} onChange={onChange} maxLength={maxLength} />
         </div>
     );
 }
@@ -193,7 +193,6 @@ function TextAreaField({ label, hint, value, placeholder, onChange, maxLength }:
                 onChange={e => onChange(e.target.value)}
                 maxLength={maxLength}
                 style={{
-                    marginTop: 8,
                     width: "100%",
                     resize: "vertical",
                     padding: "8px 10px",
