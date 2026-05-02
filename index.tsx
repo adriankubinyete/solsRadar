@@ -26,6 +26,7 @@ import { JoinLockStore } from "./stores/JoinLockStore";
 import { SnipeMetrics, SnipeStore } from "./stores/SnipeStore";
 import { getActiveTriggers, Trigger, TriggerType } from "./stores/TriggerStore";
 import { formatElapsedTime, parseCsv, playAudio, sendWebhook } from "./utils";
+import { PLUGIN_VERSION } from "./version";
 
 const logger = new Logger("SolRadar");
 const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("./native")>;
@@ -193,7 +194,7 @@ async function verifyLink(link: RobloxLink, log: Logger): Promise<VerifyLinkResu
         return { ok: true, placeId: String(placeId) };
     }
 
-    await executeBadLinkAction();
+    await executeAction(settings.store.onBadLink);
     return { ok: false, reason: "place-not-allowed", detail: String(placeId) };
 }
 
@@ -337,6 +338,8 @@ function startBiomeDetection(snipe: Snipe, log: Logger): void {
                 body: `Got "${to}" instead (${elapsed}ms)`,
                 icon: snipe.trigger.iconUrl,
             });
+
+            snipe.logWarn("Sending cancelable notification");
             scheduleCancelableAction(
                 settings.store.onBiomeFalse,
                 settings.store.biomeFalseActionTimeout ?? 10_000,
@@ -818,6 +821,7 @@ async function handleMessage(message: Message, channel: Channel, guild: Guild, t
 export default definePlugin({
     name: "SolRadar",
     description: "Does Sols RNG stuff",
+    version: PLUGIN_VERSION,
     authors: [{ name: "masutty", id: 188851299255713792n }],
     settings,
 

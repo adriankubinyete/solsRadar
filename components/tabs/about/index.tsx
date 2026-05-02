@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Card } from "@components/Card";
-import { Divider } from "@components/Divider";
 import { React, useState } from "@webpack/common";
 
-const PLUGIN_VERSION = "1.0.0";
+import { PLUGIN_VERSION } from "../../../version";
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const DESCRIPTION =
     "SolRadar monitors Discord channels for private Roblox server links and — if configured — " +
@@ -16,121 +16,55 @@ const DESCRIPTION =
 
 const QUICK_STEPS = [
     {
-        step: 1,
         title: "Import or create your triggers",
-        detail: "Check out the support server for a file with the triggers you'll need, or create your own triggers."
+        detail: "Check out the support server for a pre-made trigger pack, or build your own from scratch.",
     },
     {
-        step: 2,
         title: "Enable the triggers you want",
-        detail: "Also remember to enable either join or notification on each trigger or they won't do anything!"
+        detail: "Toggle on auto-join and/or notifications on each trigger individually.",
     },
     {
-        step: 3,
-        title: "Enable join or notifications on settings",
-        detail: "Right-click the plugin icon to toggle on/off"
+        title: "Enable globally via the icon",
+        detail: "Right-click the plugin icon in the chat bar to toggle auto-join and notifications globally.",
     },
     {
-        step: 4,
-        title: "Sit back and wait for snipes",
-        detail: "You did it! Now sit back and wait for snipes to happen."
-    }
+        title: "Sit back and wait",
+        detail: "SolRadar runs in the background and handles the rest.",
+    },
 ];
+
+type CreditRole = "Author" | "Credits" | "Thanks" | "Framework";
 
 interface CreditEntry {
     name: string;
-    role: string;
+    role: CreditRole;
     note?: string;
     url?: string;
 }
 
 const CREDITS: CreditEntry[] = [
-    {
-        name: "masutty",
-        role: "(Author)",
-        note: "oh hey thats me",
-        url: "https://gitlab.com/masutty"
-    },
-    {
-        name: "maxstellar",
-        role: "(Credits)",
-        note: "Biome icons (uploaded to imgur)",
-        url: "https://github.com/maxstellar"
-    },
-    {
-        name: "vexthecoder",
-        role: "(Credits)",
-        note: "Merchant icons (uploaded to imgur)",
-        url: "https://github.com/vexsyx"
-    },
-    {
-        name: "cresqnt-sys",
-        role: "(Credits)",
-        note: "Biome Detection logic",
-        url: "https://github.com/cresqnt-sys/MultiScope-V1/blob/94f1f06114a3e7cbff64e5fd0bf31ced99b0af79/detection.py"
-    },
-    {
-        name: "MonaSync",
-        role: "(Thanks)",
-        note: "LDPlayer Method; testing and debugging",
-        url: ""
-    },
-    {
-        name: "Vencord",
-        role: "(Framework)",
-        note: "This plugin wouldn't exist without it!",
-        url: "https://vencord.dev"
-    }
+    { name: "masutty", role: "Author", note: "oh hey thats me", url: "https://gitlab.com/masutty" },
+    { name: "maxstellar", role: "Credits", note: "Biome icons", url: "https://github.com/maxstellar" },
+    { name: "vexthecoder", role: "Credits", note: "Merchant icons", url: "https://github.com/vexsyx" },
+    { name: "cresqnt-sys", role: "Credits", note: "Biome detection logic", url: "https://github.com/cresqnt-sys" },
+    { name: "MonaSync", role: "Thanks", note: "ADB method; testing & debugging" },
+    { name: "Vencord", role: "Framework", note: "This plugin wouldn't exist without it!", url: "https://vencord.dev" },
 ];
 
 const LINKS = [
-    { label: "Source Code (plugin)", url: "https://gitlab.com/masutty/solradar" },
-    { label: "Source Code (installer)", url: "https://gitlab.com/masutty/solradar-installer" },
-    { label: "Support Server", url: "https://discord.gg/EfWHGGz7MG" },
+    { label: "Plugin source", url: "https://gitlab.com/masutty/solradar" },
+    { label: "Installer source", url: "https://gitlab.com/masutty/solradar-installer" },
+    { label: "Support server", url: "https://discord.gg/EfWHGGz7MG" },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
-function SectionLabel({ children }: { children: React.ReactNode; }) {
-    return (
-        <span
-            style={{
-                fontSize: "0.68rem",
-                color: "var(--text-muted)",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-                fontWeight: "700"
-            }}
-        >
-            {children}
-        </span>
-    );
-}
-
-function LinkButton({ label, url }: { label: string; url: string; }) {
-    return (
-        <a
-            href={url}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-                fontSize: "0.8rem",
-                color: "var(--text-link)",
-                textDecoration: "none",
-                padding: "0.2rem 0.65rem",
-                borderRadius: "4px",
-                border: "1px solid var(--background-modifier-accent)",
-                background: "transparent",
-                cursor: "pointer",
-                transition: "background 0.12s ease"
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = "var(--background-modifier-hover)")}
-            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-        >
-            {label}
-        </a>
-    );
-}
+const ROLE_COLOR: Record<CreditRole, string> = {
+    Author: "var(--brand-500)",
+    Credits: "hsl(140deg 50% 44%)",
+    Thanks: "hsl(38deg 95% 50%)",
+    Framework: "hsl(270deg 60% 58%)",
+};
 
 // ─── Quick Setup ──────────────────────────────────────────────────────────────
 
@@ -138,74 +72,55 @@ function QuickSetup() {
     const [open, setOpen] = useState(false);
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+        <div>
             <button
                 onClick={() => setOpen(o => !o)}
                 style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.4rem",
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                    cursor: "pointer",
-                    width: "fit-content"
+                    display: "flex", alignItems: "center", gap: 8,
+                    width: "100%", background: "none", border: "none",
+                    padding: "10px 0", cursor: "pointer", textAlign: "left",
                 }}
             >
-                <span
-                    style={{
-                        fontSize: "0.6rem",
-                        color: "var(--text-muted)",
-                        display: "inline-block",
-                        transition: "transform 0.15s ease",
-                        transform: open ? "rotate(90deg)" : "rotate(0deg)",
-                        lineHeight: 1
-                    }}
-                >
-                    ▶
+                <span style={{
+                    color: "var(--text-muted)", fontSize: 10,
+                    display: "inline-block", lineHeight: 1,
+                    transition: "transform 0.15s",
+                    transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                }}>▶</span>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)" }}>
+                    Quick Setup
                 </span>
-                <SectionLabel>Quick Setup</SectionLabel>
             </button>
 
             {open && (
-                <div
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "1rem",
-                        paddingLeft: "0.2rem"
-                    }}
-                >
-                    {QUICK_STEPS.map(({ step, title, detail }) => (
-                        <div
-                            key={step}
-                            style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}
-                        >
-                            <span
-                                style={{
-                                    minWidth: "1.35rem",
-                                    height: "1.35rem",
-                                    borderRadius: "50%",
-                                    background: "var(--background-modifier-accent)",
-                                    color: "var(--text-muted)",
-                                    fontSize: "0.68rem",
-                                    fontWeight: "700",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    flexShrink: 0,
-                                    marginTop: "0.1rem"
-                                }}
-                            >
-                                {step}
-                            </span>
-                            <div style={{ display: "flex", flexDirection: "column", gap: "0.05rem" }}>
-                                <span style={{ fontSize: "0.85rem", color: "var(--text-default)", fontWeight: "600" }}>
+                <div style={{ paddingLeft: 6, paddingBottom: 4 }}>
+                    {QUICK_STEPS.map(({ title, detail }, i) => (
+                        <div key={i} style={{ display: "flex", gap: 12, position: "relative" }}>
+                            {/* vertical connector */}
+                            {i < QUICK_STEPS.length - 1 && (
+                                <div style={{
+                                    position: "absolute",
+                                    left: 11, top: 26,
+                                    width: 2, height: "calc(100% - 10px)",
+                                    background: "var(--background-mod-normal)",
+                                }} />
+                            )}
+                            {/* step dot */}
+                            <div style={{
+                                width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                                background: "var(--brand-500)", marginTop: 2,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                fontSize: 11, fontWeight: 700, color: "#fff", zIndex: 1,
+                            }}>
+                                {i + 1}
+                            </div>
+                            <div style={{ paddingBottom: 20 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-default)", lineHeight: 1.3 }}>
                                     {title}
-                                </span>
-                                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", lineHeight: "1.45" }}>
+                                </div>
+                                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 3, lineHeight: 1.45 }}>
                                     {detail}
-                                </span>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -218,141 +133,134 @@ function QuickSetup() {
 // ─── Credit Card ──────────────────────────────────────────────────────────────
 
 function CreditCard({ entry }: { entry: CreditEntry; }) {
-    const inner = (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.1rem" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: "0.45rem" }}>
-                <span style={{ fontWeight: "600", color: "var(--text-default)", fontSize: "0.9rem" }}>
-                    {entry.name}
-                </span>
-                <span
-                    style={{
-                        fontSize: "0.65rem",
-                        color: "var(--text-muted)",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                        fontWeight: "600"
-                    }}
-                >
-                    {entry.role}
-                </span>
+    const color = ROLE_COLOR[entry.role];
+
+    const content = (
+        <div style={{
+            display: "flex", flexDirection: "column", gap: 2,
+            padding: "10px 12px", borderRadius: 8,
+            background: "var(--background-mod-subtle)",
+            height: "100%", boxSizing: "border-box",
+        }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-default)", lineHeight: 1.2 }}>
+                {entry.name}
+            </div>
+            <div style={{
+                fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                letterSpacing: "0.05em", color,
+            }}>
+                {entry.role}
             </div>
             {entry.note && (
-                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 1, lineHeight: 1.35 }}>
                     {entry.note}
-                </span>
+                </div>
             )}
         </div>
     );
 
     const wrapStyle: React.CSSProperties = {
-        flex: "1 1 175px",
-        minWidth: "150px",
-        textDecoration: "none",
-        display: "block",
-        transition: "opacity 0.15s ease"
+        flex: "1 1 180px", minWidth: 160, textDecoration: "none", display: "block",
+        transition: "opacity 0.12s",
     };
 
     if (entry.url) {
         return (
-            <a
-                href={entry.url}
-                target="_blank"
-                rel="noreferrer"
-                style={wrapStyle}
-                onMouseEnter={e => (e.currentTarget.style.opacity = "0.7")}
+            <a href={entry.url} target="_blank" rel="noreferrer" style={wrapStyle}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.65")}
                 onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
             >
-                <Card variant="normal" defaultPadding>{inner}</Card>
+                {content}
             </a>
         );
     }
 
-    return (
-        <div style={wrapStyle}>
-            <Card variant="normal" defaultPadding>{inner}</Card>
-        </div>
-    );
+    return <div style={wrapStyle}>{content}</div>;
 }
 
-// ─── Main Tab ─────────────────────────────────────────────────────────────────
+// ─── AboutTab ─────────────────────────────────────────────────────────────────
 
 export function AboutTab() {
     return (
-        <div
-            style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1.1rem",
-                width: "100%",
-                maxWidth: "100%",
-                padding: "1.25rem",
-                boxSizing: "border-box"
-            }}
-        >
-            {/* Identity */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-                    <span
-                        style={{
-                            fontSize: "1.1rem",
-                            fontWeight: "700",
-                            color: "var(--text-default)",
-                            letterSpacing: "-0.01em"
-                        }}
-                    >
+        <div style={{ display: "flex", flexDirection: "column", padding: 16, gap: 0, boxSizing: "border-box" }}>
+
+            {/* ── Hero ── */}
+            <div style={{
+                borderRadius: 10,
+                background: "var(--background-mod-subtle)",
+                border: "1px solid var(--background-mod-normal)",
+                padding: "16px 18px",
+                marginBottom: 16,
+            }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text-default)", letterSpacing: "-0.02em" }}>
                         SolRadar
                     </span>
-                    <span
-                        style={{
-                            fontSize: "0.68rem",
-                            color: "var(--text-muted)",
-                            background: "var(--background-modifier-accent)",
-                            padding: "0.1rem 0.45rem",
-                            borderRadius: "999px",
-                            fontWeight: "600",
-                            letterSpacing: "0.04em"
-                        }}
-                    >
+                    <span style={{
+                        fontSize: 10, fontWeight: 700, color: "var(--brand-400)",
+                        background: "hsl(var(--brand-500-hsl) / 0.15)",
+                        border: "1px solid hsl(var(--brand-500-hsl) / 0.3)",
+                        padding: "2px 8px", borderRadius: 999, letterSpacing: "0.04em",
+                    }}>
                         v{PLUGIN_VERSION}
                     </span>
                 </div>
-                <p
-                    style={{
-                        fontSize: "0.875rem",
-                        color: "var(--text-muted)",
-                        lineHeight: "1.55",
-                        margin: 0,
-                        maxWidth: "560px"
-                    }}
-                >
+                <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55, margin: "0 0 14px" }}>
                     {DESCRIPTION}
                 </p>
-            </div>
-
-            <Divider />
-
-            {/* Quick Setup */}
-            <QuickSetup />
-
-            <Divider />
-
-            {/* Credits */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                <SectionLabel>Credits</SectionLabel>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
-                    {CREDITS.map(entry => (
-                        <CreditCard key={entry.name} entry={entry} />
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {LINKS.map(({ label, url }) => (
+                        <a
+                            key={label}
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                                fontSize: 12, color: "var(--text-link)", textDecoration: "none",
+                                padding: "4px 12px", borderRadius: 6,
+                                border: "1px solid var(--background-mod-normal)",
+                                background: "var(--background-mod-strong)",
+                                transition: "border-color 0.12s, background 0.12s",
+                            }}
+                            onMouseEnter={e => {
+                                e.currentTarget.style.borderColor = "var(--brand-500)";
+                                e.currentTarget.style.background = "hsl(var(--brand-500-hsl) / 0.08)";
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.borderColor = "var(--background-mod-normal)";
+                                e.currentTarget.style.background = "var(--background-mod-strong)";
+                            }}
+                        >
+                            {label}
+                        </a>
                     ))}
                 </div>
             </div>
 
-            {/* Footer Links */}
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                {LINKS.map(l => <LinkButton key={l.label} {...l} />)}
+            {/* ── Quick Setup ── */}
+            <div style={{
+                borderRadius: 10,
+                border: "1px solid var(--background-mod-normal)",
+                padding: "4px 18px 4px",
+                marginBottom: 16,
+            }}>
+                <QuickSetup />
             </div>
-            {/* <p style={{ fontSize: "0.73rem", color: "var(--text-muted)", margin: 0, opacity: 0.55 }}>
-                Licensed under AGPL-3.0-or-later. Not affiliated with Discord Inc. or Roblox Corporation.
-            </p> */}
+
+            {/* ── Credits ── */}
+            <div>
+                <span style={{
+                    fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+                    letterSpacing: "0.07em", color: "var(--text-muted)",
+                    display: "block", marginBottom: 8,
+                }}>
+                    Credits
+                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {CREDITS.map(entry => <CreditCard key={entry.name} entry={entry} />)}
+                </div>
+            </div>
+
         </div>
     );
 }

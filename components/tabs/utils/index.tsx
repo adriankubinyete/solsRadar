@@ -12,6 +12,7 @@ import { React, showToast, Toasts } from "@webpack/common";
 
 import { closeGame, emulatorJoinLink, goToHome, joinLink, prepareAdb } from "../../../services/RobloxService";
 import { settings } from "../../../settings";
+import { isDeveloper } from "../../../utils";
 
 const logger = new Logger("SolRadar.Utils");
 
@@ -69,9 +70,9 @@ export function UtilsTab() {
                 )}
             </div>
 
-            {/* LDPlayer */}
+            {/* ADB */}
             <div style={section}>
-                <span style={sectionTitle}>LDPlayer</span>
+                <span style={sectionTitle}>ADB</span>
                 <Divider />
                 <div style={row}>
                     <Button size="small" disabled={!hasPrivateServerLink} onClick={async () => {
@@ -97,6 +98,18 @@ export function UtilsTab() {
                     <Button size="small" variant="dangerPrimary" onClick={() => Native.closeRobloxOnEmulator(settings.store.ldpAdbPath, settings.store.ldpAdbDeviceSerial, settings.store.ldpAdbPackageName)}>
                         Send close signal
                     </Button>
+                    {isDeveloper() && (
+                        <Button size="small" variant="dangerPrimary" onClick={async () => {
+                            const result = await Native.killAdbServer(settings.store.ldpAdbPath);
+                            if (!result.ok) {
+                                showToast(`Failed to kill ADB server: ${result.error}`, Toasts.Type.FAILURE);
+                            } else {
+                                showToast("ADB server killed", Toasts.Type.SUCCESS);
+                            }
+                        }}>
+                            Kill ADB server
+                        </Button>
+                    )}
                 </div>
                 {!hasPrivateServerLink && (
                     <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
