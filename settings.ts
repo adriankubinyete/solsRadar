@@ -10,14 +10,15 @@ import { OptionType } from "@utils/types";
 import { OpenPluginButton } from "./components/ui/buttons/OpenPluginButton";
 
 export const ACTION_OPTIONS = [
-    { label: "Nothing (not recommended)", value: "nothing" },
+    { label: "Nothing", value: "nothing" },
     { label: "Join a public server", value: "public" },
+    { label: "Join your private server", value: "private" },
     { label: "Close Roblox", value: "close" },
-    { label: "Go to private server", value: "private" },
-    { label: "Prepare ADB (for LDP method)", value: "prep-adb" },
+    { label: "Launch Roblox home page", value: "home" },
+    { label: "Prepare ADB", value: "prep-adb" },
 ] as const;
 
-// utilitary function to construct the action map with an specific default value
+// utilitary function to construct the action map with an specific selected default value
 const actionOptions = (defaultValue: string) =>
     ACTION_OPTIONS.map(o => ({ ...o, default: o.value === defaultValue }));
 

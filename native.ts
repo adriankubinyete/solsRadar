@@ -348,6 +348,24 @@ export async function emulatorOpenUri(
     }
 }
 
+export async function listAdbDevices(
+    _: IpcMainInvokeEvent,
+    adbPath: string
+): Promise<{ ok: true; output: string; } | { ok: false; error: string; }> {
+    if (process.platform !== "win32") {
+        return { ok: false, error: "Windows only." };
+    }
+    if (!adbPath || !fs.existsSync(adbPath)) {
+        return { ok: false, error: `adb.exe not found at: ${adbPath}` };
+    }
+    try {
+        const { stdout } = await exec(`"${adbPath}" devices`);
+        return { ok: true, output: stdout.trim() };
+    } catch (err: any) {
+        return { ok: false, error: err.message };
+    }
+}
+
 // ─── Biome detection ──────────────────────────────────────────────────────────
 // As funções abaixo são responsabilidade do Detector.ts mas ficam aqui
 // pois requerem acesso ao Node/fs (native context).

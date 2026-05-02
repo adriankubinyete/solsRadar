@@ -4,11 +4,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Button } from "@components/Button";
+import { PluginNative } from "@utils/types";
 import { React, TextInput } from "@webpack/common";
 
 import { settings } from "../../../settings";
 import { ChipKind } from "../../ui/IdChipInput";
+import { Note } from "../../ui/Note";
 import { Setting } from "./Setting";
+
+const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../../../native")>;
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -22,37 +27,74 @@ const sectionTitle: React.CSSProperties = {
     marginTop: 20,
 };
 
-const note = (variant: "default" | "warning" | "danger" = "default"): React.CSSProperties => ({
-    color: variant === "default" ? "var(--text-muted)"
-        : variant === "warning" ? "var(--status-warning)"
-            : "var(--text-feedback-critical)",
-    background: variant === "default" ? "var(--background-mod-subtle)"
-        : variant === "warning" ? "hsl(38deg 95% 54% / 10%)"
-            : "hsl(359deg 87% 54% / 10%)",
-    border: `1px solid ${variant === "default" ? "transparent"
-        : variant === "warning" ? "hsl(38deg 95% 54% / 25%)"
-            : "hsl(359deg 87% 54% / 25%)"
-        }`,
-    fontSize: 12,
-    lineHeight: 1.5,
-    padding: "8px 12px",
-    borderRadius: 6,
-});
+// ─── ADB section ─────────────────────────────────────────────────────────────
 
-const noteBaseStyle: React.CSSProperties = {
-    color: "var(--text-muted)",
-    fontSize: 12,
-    lineHeight: 1.5,
-    padding: "8px 12px",
-    borderRadius: 6,
-    background: "var(--background-modifier-accent)",
-};
+function AdbEntries() {
+    const { ldpAdbDeviceSerial } = settings.use(["ldpAdbDeviceSerial"]);
+    const [devicesOutput, setDevicesOutput] = React.useState<string | null>(null);
+    const [checking, setChecking] = React.useState(false);
 
-const warningNote: React.CSSProperties = {
-    ...noteBaseStyle,
-    color: "var(--status-warning)",
-    background: "hsl(38deg 95% 54% / 10%)",
-};
+    const handleCheck = async () => {
+        setChecking(true);
+        setDevicesOutput(null);
+        const result = await Native.listAdbDevices(settings.store.ldpAdbPath);
+        setDevicesOutput(result.ok ? result.output : `Error: ${result.error}`);
+        setChecking(false);
+    };
+
+    return (
+        <>
+            <Setting id="ldpAdbPath" label="ADB Path" description="Path to adb.exe." />
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                padding: "10px 14px",
+                borderRadius: 8,
+                background: "var(--background-mod-subtle)",
+            }}>
+                <span style={{ color: "var(--control-secondary-text-default)", fontSize: 14, fontWeight: 500 }}>
+                    ADB Device Serial
+                </span>
+                <span style={{ color: "var(--text-muted)", fontSize: 12, lineHeight: 1.4, marginTop: 2 }}>
+                    Serial of the target device. Default: emulator-5554
+                </span>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                    <TextInput
+                        style={{ flex: 1 }}
+                        value={ldpAdbDeviceSerial ?? ""}
+                        onChange={v => { settings.store.ldpAdbDeviceSerial = v; }}
+                        placeholder="emulator-5554"
+                    />
+                    <Button
+                        size="medium"
+                        variant="primary"
+                        onClick={handleCheck}
+                        disabled={checking}
+                    >
+                        {checking ? "Checking…" : "Check devices"}
+                    </Button>
+                </div>
+                {devicesOutput && (
+                    <pre style={{
+                        margin: "6px 0 0",
+                        padding: "8px 10px",
+                        background: "var(--background-mod-strong)",
+                        borderRadius: "var(--radius-sm, 4px)",
+                        color: "var(--text-default)",
+                        fontSize: 12,
+                        fontFamily: "var(--font-code)",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-all",
+                    }}>
+                        {devicesOutput}
+                    </pre>
+                )}
+            </div>
+            <Setting id="ldpAdbPackageName" label="ADB Package Name" description="Package to force-stop on the device. Default: com.roblox.client" />
+        </>
+    );
+}
+
 // ─── SettingsTab ──────────────────────────────────────────────────────────────
 
 type SettingEntry = {
@@ -66,6 +108,7 @@ type Section = {
     title: string;
     note?: React.ReactNode;
     entries: SettingEntry[];
+    CustomEntries?: React.FC;
 };
 
 export function SettingsTab() {
@@ -101,24 +144,21 @@ export function SettingsTab() {
             ],
         },
         {
-            title: "LDPlayer ADB",
+            title: "ADB",
             note: (
                 <>
                     {settings.store.killMode !== "ldp-adb" && (
-                        <p style={note("warning")}>
+                        <Note variant="warning">
                             "LDPlayer ADB" is not selected as the close mode. These settings will have no effect.
-                        </p>
+                        </Note>
                     )}
-                    <p style={note("default")}>
-                        ADB launch is an advanced sniping method which you keep your game open on the home screen, and running on LDPlayer. When a snipe trigger is matched, the game, instantly start joining, while sending a close request to LDPlayer.
-                    </p>
+                    <Note>
+                        ADB launch keeps the game open on the home screen. When a snipe triggers, the plugin instantly launches the join URI while sending a close signal via ADB.
+                    </Note>
                 </>
             ),
-            entries: [
-                { id: "ldpAdbPath", label: "LDPlayer ADB Path", description: "Path to LDPlayer ADB executable." },
-                { id: "ldpAdbDeviceSerial", label: "LDPlayer ADB Device Serial", description: "Serial number of the device to use with LDPlayer. Default 'emulator-5554'" },
-                { id: "ldpAdbPackageName", label: "LDPlayer ADB Package Name", description: "Package name of LDPlayer on the device. Default 'com.roblox.client'" },
-            ]
+            entries: [],
+            CustomEntries: AdbEntries,
         },
         {
             title: "Interface",
@@ -155,29 +195,29 @@ export function SettingsTab() {
             note: verificationEnabled ? (
                 <>
                     {!hasToken && (
-                        <p style={note("danger")}>
+                        <Note variant="danger">
                             No Roblox token configured — link verification won't work without one.
                             Open Vencord's plugin settings to add your token.
-                        </p>
+                        </Note>
                     )}
-                    <p style={note("warning")}>
+                    <Note variant="warning">
                         Your Roblox token is sensitive — treat it like a password and never share it.
                         It is strongly recommended to use an alt account's token instead of your main account's.
-                    </p>
+                    </Note>
                 </>
             ) : (
-                <p style={note("danger")}>
+                <Note variant="danger">
                     Link verification is disabled. The plugin will join any link without checking if it's valid.
-                </p>
+                </Note>
             ),
         },
         {
             title: "Biome Detection",
             note: (
-                <p style={note("warning")}>
+                <Note variant="warning">
                     Biome detection settings are managed on the plugin page in Vencord's plugin menu.
                     Any changes there require a Discord restart to take effect.
-                </p>
+                </Note>
             ),
             entries: [
                 { id: "onBiomeFalse", label: "Action on Fake Biome", description: "What to do when the biome you joined doesn't match what was announced." },
@@ -195,7 +235,7 @@ export function SettingsTab() {
         },
         {
             title: "Advanced",
-            note: <p style={note("danger")}>Do <strong>NOT</strong> change these unless you know what you're doing.</p>,
+            note: <Note variant="danger">Do <strong>NOT</strong> change these unless you know what you're doing.</Note>,
             entries: [
                 { id: "ignoreWebhookForwards", label: "Ignore Webhook Forwards", description: 'Ignore any message whose embed footer contains "solradar". Prevents the plugin from acting on its own forwarded webhooks.' },
                 { id: "customNotificationSoundDelay", label: "Custom Notification Sound Delay (ms)", description: "Delay in milliseconds before playing the trigger's defined custom notification sound." },
@@ -207,8 +247,11 @@ export function SettingsTab() {
     const q = search.trim().toLowerCase();
     const filtered = q
         ? sections
-            .map(s => ({ ...s, entries: s.entries.filter(e => e.label.toLowerCase().includes(q)) }))
-            .filter(s => s.entries.length > 0)
+            .map(s => {
+                if (s.CustomEntries) return s.title.toLowerCase().includes(q) ? s : null;
+                return { ...s, entries: s.entries.filter(e => e.label.toLowerCase().includes(q)) };
+            })
+            .filter((s): s is Section => s !== null && (!!s.CustomEntries || s.entries.length > 0))
         : sections;
 
     return (
@@ -222,16 +265,19 @@ export function SettingsTab() {
             />
 
             {filtered.length === 0 && (
-                <p style={note("default")}>No settings found for "{search}".</p>
+                <Note>No settings found for "{search}".</Note>
             )}
 
             {filtered.map(section => (
                 <React.Fragment key={section.title}>
                     <p style={sectionTitle}>{section.title}</p>
                     {section.note}
-                    {section.entries.map(e => (
-                        <Setting key={e.id} id={e.id} label={e.label} description={e.description} chipKind={e.chipKind} />
-                    ))}
+                    {section.CustomEntries
+                        ? <section.CustomEntries />
+                        : section.entries.map(e => (
+                            <Setting key={e.id} id={e.id} label={e.label} description={e.description} chipKind={e.chipKind} />
+                        ))
+                    }
                 </React.Fragment>
             ))}
 

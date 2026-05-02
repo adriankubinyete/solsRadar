@@ -26,6 +26,7 @@ import {
 } from "../../../stores/TriggerStore";
 import { playAudio, showToast } from "../../../utils";
 import { IdChipInput } from "../../ui/IdChipInput";
+import { Note } from "../../ui/Note";
 
 const logger = new Logger("SolRadar.TriggerModal");
 
@@ -120,48 +121,6 @@ const S = {
         maxWidth: 220,
     } as React.CSSProperties,
 
-    note: {
-        color: "var(--text-muted)",
-        background: "var(--background-mod-subtle)",
-        fontSize: 12,
-        lineHeight: 1.5,
-        padding: "8px 12px",
-        borderRadius: 6,
-        margin: 0,
-    } as React.CSSProperties,
-
-    noteWarning: {
-        color: "var(--status-warning)",
-        background: "hsl(38deg 95% 54% / 10%)",
-        border: "1px solid hsl(38deg 95% 54% / 25%)",
-        fontSize: 12,
-        lineHeight: 1.5,
-        padding: "8px 12px",
-        borderRadius: 6,
-        margin: 0,
-    } as React.CSSProperties,
-
-    noteDanger: {
-        color: "var(--text-feedback-critical)",
-        background: "hsl(359deg 87% 54% / 10%)",
-        border: "1px solid hsl(359deg 87% 54% / 25%)",
-        fontSize: 12,
-        lineHeight: 1.5,
-        padding: "8px 12px",
-        borderRadius: 6,
-        margin: 0,
-    } as React.CSSProperties,
-
-    noteSuccess: {
-        color: "hsl(140deg 50% 50%)",
-        background: "hsl(140deg 50% 50% / 10%)",
-        border: "1px solid hsl(140deg 50% 50% / 25%)",
-        fontSize: 12,
-        lineHeight: 1.5,
-        padding: "8px 12px",
-        borderRadius: 6,
-        margin: 0,
-    } as React.CSSProperties,
 };
 
 // ─── Primitive field components ───────────────────────────────────────────────
@@ -533,14 +492,14 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
                 onChange={v => patch({ iconUrl: v })}
             />
             {iconAllowed === false && (
-                <p style={{ ...S.noteDanger, fontSize: 14 }}>
+                <Note variant="danger" style={{ fontSize: 14 }}>
                     This image probably won't load — Discord blocks external images that aren't on its allowlist.
                     Use an image from <strong>cdn.discordapp.com</strong>, <strong>imgur.com</strong> or <strong>githubusercontent.com</strong> instead.<br />
                     <strong>This doesn't affect how the trigger works, only the icon display.</strong>
-                </p>
+                </Note>
             )}
             {iconAllowed === true && (
-                <p style={{ ...S.noteSuccess, fontSize: 14 }}>✅ This image should load correctly.</p>
+                <Note variant="positive" style={{ fontSize: 14 }}>✅ This image should load correctly.</Note>
             )}
 
             {/* ── Behavior ── */}
@@ -671,14 +630,14 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
             {globallyDisabled && (
-                <p style={S.noteDanger}>
+                <Note variant="danger">
                     Biome detection is disabled in the plugin settings. Enable it there first.
-                </p>
+                </Note>
             )}
             {!globallyDisabled && noAccounts && (
-                <p style={S.noteDanger}>
+                <Note variant="danger">
                     No accounts configured. Biome detection will not work until you add one in the plugin settings.
-                </p>
+                </Note>
             )}
 
             <p style={S.sectionTitle}>Detection</p>
@@ -710,7 +669,7 @@ function BiomeTab({ biome, onChange }: { biome: TriggerBiome; onChange: (b: Trig
                     />
                 </>
             ) : (
-                <p style={S.note}>Enable biome detection above to configure keyword and behavior options.</p>
+                <Note>Enable biome detection above to configure keyword and behavior options.</Note>
             )}
 
         </div>
@@ -776,9 +735,9 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
 
             {/* ── Bypasses ── */}
             <p style={S.sectionTitle}>Bypasses</p>
-            <p style={{ ...S.noteDanger, fontSize: 14 }}>
+            <Note variant="danger" style={{ fontSize: 14 }}>
                 These options disable global safety checks. Only enable them if you know what you're doing.
-            </p>
+            </Note>
 
             <SwitchField
                 label="Bypass monitored channels"
@@ -846,12 +805,12 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <p style={{ ...S.noteWarning, fontSize: 14 }}>
+            <Note variant="warning" style={{ fontSize: 14 }}>
                 ⚠️ This section is intended for advanced users only. Forwarding is <strong>not required</strong> for
                 normal use — most users should leave this unconfigured. Sending webhooks on every match can trigger
                 Discord's rate limits and get your webhook permanently disabled. Only set this up if you know exactly
                 what you are doing.
-            </p>
+            </Note>
 
             {/* ── Webhook ── */}
             <p style={S.sectionTitle}>Webhook</p>
@@ -888,9 +847,9 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
             />
 
             {!hasEffectiveWebhook && (
-                <p style={S.noteWarning}>
+                <Note variant="warning">
                     No webhook is configured. Forwarding will do nothing even when enabled. Set a webhook here or in plugin settings.
-                </p>
+                </Note>
             )}
 
             {/* ── On Match ── */}
@@ -922,16 +881,16 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
                     value={forwarding.onDetection.enabled}
                     onChange={v => patch({ onDetection: { enabled: v } })}
                 />
-                <p style={S.note}>
+                <Note>
                     For this to work, you obviously need to have biome detection set up in settings, and you need to join the biome to actually do the detection. It is impossible to verify if a biome is real or not without joining it.
-                </p>
+                </Note>
             </>}
 
             {!showBiome && (
-                <p style={S.note}>
+                <Note>
                     On-detection forwarding is only available for trigger types that support biome detection
                     (Rare Biome, Event Biome, Biome, Weather, Custom).
-                </p>
+                </Note>
             )}
 
             {/* ── Forwarding Filters ── */}

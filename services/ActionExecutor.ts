@@ -7,15 +7,16 @@
 import { showNotification } from "@api/Notifications";
 
 import { settings } from "../settings";
-import { closeGame, joinLink, joinSolsPublicServer, prepareAdb } from "./RobloxService";
+import { closeGame, goToHome, joinLink, joinSolsPublicServer, prepareAdb } from "./RobloxService";
 
-export type UserAction = "nothing" | "public" | "close" | "private" | "prep-adb";
+export type UserAction = "nothing" | "public" | "close" | "private" | "home" | "prep-adb";
 
 const ACTION_LABELS: Record<string, string> = {
     nothing: "nothing",
     public: "join a public server",
     close: "close Roblox",
     private: "go to your private server",
+    home: "launch Roblox home page",
     "prep-adb": "prepare ADB",
 };
 
@@ -24,6 +25,7 @@ export async function executeAction(action: UserAction | string): Promise<void> 
         case "nothing": return;
         case "public": await joinSolsPublicServer(); return;
         case "close": await closeGame(); return;
+        case "home": await goToHome(); return;
         case "private": {
             if (!settings.store.privateServerLink.trim()) {
                 showNotification({
