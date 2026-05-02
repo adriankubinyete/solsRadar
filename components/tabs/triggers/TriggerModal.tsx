@@ -27,6 +27,7 @@ import {
 } from "../../../stores/TriggerStore";
 import { playAudio, showToast } from "../../../utils";
 import { IdChipInput } from "../../ui/IdChipInput";
+import { KeywordsInput } from "../../ui/KeywordsInput";
 import { Note } from "../../ui/Note";
 
 const logger = new Logger("SolRadar.TriggerModal");
@@ -46,9 +47,6 @@ const TRIGGER_TYPE_OPTIONS = [
 
 const needsBiomeTab = (type: TriggerType) =>
     type === "RARE_BIOME" || type === "EVENT_BIOME" || type === "BIOME" || type === "WEATHER" || type === "CUSTOM";
-
-const arrToStr = (arr: string[]) => arr.join(", ");
-const strToArr = (str: string): string[] => str.split(",").map(s => s.trim()).filter(Boolean);
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
@@ -209,42 +207,6 @@ function SelectField({ label, hint, options, value, onChange }: {
         </div>
     );
 }
-// ─── KeywordsInput ────────────────────────────────────────────────────────────
-
-function KeywordsInput({ label, hint, value, onChange, placeholder }: {
-    label: string; hint?: string; value: string[];
-    onChange: (v: string[]) => void; placeholder?: string;
-}) {
-    const [raw, setRaw] = React.useState(() => arrToStr(value));
-    const prevRef = React.useRef(value);
-
-    React.useEffect(() => {
-        if (prevRef.current !== value) { prevRef.current = value; setRaw(arrToStr(value)); }
-    }, [value]);
-
-    const commit = () => {
-        const arr = strToArr(raw);
-        prevRef.current = arr;
-        onChange(arr);
-        setRaw(arrToStr(arr));
-    };
-
-    return (
-        <div style={S.rowStacked}>
-            <span style={S.label}>{label}</span>
-            {hint && <span style={S.hint}>{hint}</span>}
-            <div style={{ marginTop: 8 }}>
-                <TextInput
-                    value={raw}
-                    placeholder={placeholder ?? "keyword1, keyword2, keyword3"}
-                    onChange={setRaw}
-                    onBlur={commit}
-                />
-            </div>
-        </div>
-    );
-}
-
 // ─── IdChipInput ──────────────────────────────────────────────────────────────
 
 function RoleChipInput({ roles, onChange }: {
@@ -574,38 +536,186 @@ function GeneralTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: P
     );
 }
 
+// ─── Match Preview ────────────────────────────────────────────────────────────
+
+function generatePreviewMessages(name: string): string[] {
+    const n = name.trim() || "Trigger";
+    const mid = Math.ceil(n.length / 2);
+    const lastChar = n[n.length - 1];
+    return [
+        `${n}`,
+        `${n.toUpperCase()}`,
+        `${n} biome`,
+        `${n} biome!!!!`,
+        `omg ${n} spotted!`,
+        `Hunting biome ${n}!`,
+        `${n.slice(0, mid)} ${n.slice(mid)}`,
+        `${n}${lastChar.repeat(5)}`,
+        `${n}Biome`,
+        `${n} hunt come help`
+    ];
+}
+
+function escapeRegex(s: string) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function testKw(text: string, kw: string, strict: boolean) {
+    const pat = strict ? `\\b${escapeRegex(kw)}\\b` : escapeRegex(kw);
+    return new RegExp(pat, "i").test(text);
+}
+
+function highlightMatches(text: string, kws: string[], strict: boolean): React.ReactNode[] {
+    const active = kws.filter(k => k.trim());
+    if (!active.length) return [text];
+    const pats = active.map(k => strict ? `\\b${escapeRegex(k)}\\b` : escapeRegex(k));
+    const re = new RegExp(`(${pats.join("|")})`, "gi");
+    return text.split(re).map((part, i) =>
+        i % 2 === 1
+            ? <mark key={i} style={{
+                background: "hsl(140deg 50% 44% / 0.35)",
+                color: "hsl(140deg 50% 68%)",
+                borderRadius: 3, padding: "0 2px", fontWeight: 700,
+            }}>{part}</mark>
+            : part
+    );
+}
+
+function MatchPreview({ triggerName, matchKeywords, matchStrict, excludeKeywords, excludeStrict }: {
+    triggerName: string;
+    matchKeywords: string[];
+    matchStrict: boolean;
+    excludeKeywords: string[];
+    excludeStrict: boolean;
+}) {
+    const [open, setOpen] = useState(true);
+    const hasAnyKeyword = matchKeywords.some(k => k.trim());
+    const messages = generatePreviewMessages(triggerName);
+    const displayName = triggerName.trim() || "UnnamedTrigger";
+
+    return (
+        <div style={{ borderRadius: 8, background: "var(--background-mod-subtle)", overflow: "hidden" }}>
+            <button
+                onClick={() => setOpen(o => !o)}
+                style={{
+                    display: "flex", alignItems: "center", gap: 8,
+                    width: "100%", background: "none", border: "none",
+                    padding: "10px 14px", cursor: "pointer", textAlign: "left",
+                }}
+            >
+                <span style={{
+                    color: "var(--text-muted)", fontSize: 10, lineHeight: 1,
+                    display: "inline-block", transition: "transform 0.15s",
+                    transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                }}>▶</span>
+                <span style={{
+                    fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+                    letterSpacing: "0.06em", color: "var(--control-secondary-text-default)",
+                }}>
+                    Live Preview
+                </span>
+            </button>
+
+            {open && (
+                <div style={{ padding: "0 14px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.55, margin: 0 }}>
+                        Use these example messages to test how your trigger will work.{" "}
+                        <strong style={{ color: "var(--text-default)" }}>
+                            Try adding "{displayName}" as a keyword above and watch the matches light up.
+                        </strong>
+                        <p style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 4 }}>Note: These examples were generated based on your current trigger name of "{displayName}".</p>
+                    </p>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                        {messages.map(msg => {
+                            const hasMatch = matchKeywords.some(kw => kw && testKw(msg, kw, matchStrict));
+                            const isExcluded = excludeKeywords.some(kw => kw && testKw(msg, kw, excludeStrict));
+                            const matched = hasMatch && !isExcluded;
+
+                            return (
+                                <div key={msg} style={{
+                                    display: "flex", alignItems: "center", gap: 10,
+                                    padding: "6px 10px", borderRadius: 6,
+                                    background: matched
+                                        ? "hsl(140deg 50% 44% / 0.1)"
+                                        : isExcluded
+                                            ? "hsl(0deg 65% 50% / 0.08)"
+                                            : "var(--background-mod-normal)",
+                                    border: `1px solid ${matched ? "hsl(140deg 50% 44% / 0.25)" : "transparent"}`,
+                                    transition: "background 0.12s, border-color 0.12s",
+                                }}>
+                                    <span style={{
+                                        fontSize: 13, fontWeight: 700, flexShrink: 0, lineHeight: 1,
+                                        color: matched ? "hsl(140deg 50% 55%)" : isExcluded ? "hsl(0deg 65% 60%)" : "var(--text-muted)",
+                                    }}>
+                                        {matched ? "✓" : isExcluded ? "⊘" : "·"}
+                                    </span>
+                                    <span style={{
+                                        fontSize: 12, fontFamily: "var(--font-code)", flex: 1,
+                                        color: matched ? "var(--text-default)" : "var(--text-muted)",
+                                    }}>
+                                        {matched ? highlightMatches(msg, matchKeywords, matchStrict) : msg}
+                                    </span>
+                                    {isExcluded && (
+                                        <span style={{ fontSize: 10, color: "hsl(0deg 65% 60%)", fontStyle: "italic", flexShrink: 0 }}>
+                                            excluded
+                                        </span>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {!hasAnyKeyword && (
+                        <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0, textAlign: "center", fontStyle: "italic" }}>
+                            Add keywords above to see matches here.
+                        </p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ─── Tab: Conditions ──────────────────────────────────────────────────────────
 
-function ConditionsTab({ conditions, onChange }: { conditions: TriggerConditions; onChange: (c: TriggerConditions) => void; }) {
+function ConditionsTab({ conditions, onChange, triggerName }: { conditions: TriggerConditions; onChange: (c: TriggerConditions) => void; triggerName: string; }) {
     const { keywords } = conditions;
 
     const patchKeywords = (side: "match" | "exclude", p: Partial<typeof keywords.match>) =>
         onChange({ ...conditions, keywords: { ...keywords, [side]: { ...keywords[side], ...p } } });
 
-    const strictHint = (example: string) =>
-        `When enabled, "${example}" only matches the word "${example}" by itself — not "${example}s" or "${example}ing".`;
-
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
 
-            <p style={S.sectionTitle}>Match Keywords</p>
-            <p style={S.sectionDescription}>Message must contain at least one of these. Separate with commas.</p>
-            <KeywordsInput label="Keywords" value={keywords.match.value} onChange={v => patchKeywords("match", { value: v })} placeholder="cyber, cyberspace, cyber space" />
-            <SwitchField
-                label="Strict match"
-                hint={strictHint(keywords.match.value[0] ?? "cyber")}
-                value={keywords.match.strict}
-                onChange={v => patchKeywords("match", { strict: v })}
+            <KeywordsInput
+                label="Match Keywords"
+                hint="Message must contain at least one of these."
+                value={keywords.match.value}
+                strict={keywords.match.strict}
+                variant="match"
+                onChangeValue={v => patchKeywords("match", { value: v })}
+                onChangeStrict={v => patchKeywords("match", { strict: v })}
+                placeholder="e.g. glitch, glitched, glitching"
             />
 
-            <p style={S.sectionTitle}>Exclude Keywords</p>
-            <p style={S.sectionDescription}>Message must <strong>NOT</strong> contain any of these. Separate with commas.</p>
-            <KeywordsInput label="Keywords" value={keywords.exclude.value} onChange={v => patchKeywords("exclude", { value: v })} placeholder="hunt, help" />
-            <SwitchField
-                label="Strict match"
-                hint={strictHint(keywords.exclude.value[0] ?? "hunt")}
-                value={keywords.exclude.strict}
-                onChange={v => patchKeywords("exclude", { strict: v })}
+            <KeywordsInput
+                label="Exclude Keywords"
+                hint="Message must NOT contain any of these."
+                value={keywords.exclude.value}
+                strict={keywords.exclude.strict}
+                variant="exclude"
+                onChangeValue={v => patchKeywords("exclude", { value: v })}
+                onChangeStrict={v => patchKeywords("exclude", { strict: v })}
+                placeholder="e.g. hunt, help, looking for"
+            />
+
+            <MatchPreview
+                triggerName={triggerName}
+                matchKeywords={keywords.match.value}
+                matchStrict={keywords.match.strict}
+                excludeKeywords={keywords.exclude.value}
+                excludeStrict={keywords.exclude.strict}
             />
 
             <p style={S.sectionTitle}>Mention Roles</p>
@@ -1036,7 +1146,7 @@ function TriggerModal({ modalProps, trigger }: TriggerModalProps) {
 
             <ModalContent separator>
                 {innerTab === "general" && <GeneralTab draft={draft} patch={patch} />}
-                {innerTab === "conditions" && <ConditionsTab conditions={draft.conditions} onChange={c => patch({ conditions: c })} />}
+                {innerTab === "conditions" && <ConditionsTab conditions={draft.conditions} onChange={c => patch({ conditions: c })} triggerName={draft.name} />}
                 {innerTab === "biome" && draft.biome && <BiomeTab biome={draft.biome} onChange={b => patch({ biome: b })} />}
                 {innerTab === "advanced" && <AdvancedTab draft={draft} patch={patch} />}
                 {innerTab === "forwarding" && <ForwardingTab forwarding={draft.forwarding} onChange={f => patch({ forwarding: f })} showBiome={showBiome} />}
