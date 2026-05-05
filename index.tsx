@@ -50,6 +50,7 @@ function flattenEmbeds(message: Message): void {
 
 function extractLink(message: Message): RobloxLink | null {
     const result = extractServerLink(message.content);
+    logger.debug(`[${message.id}] Extracted link: ${result.ok ? result.result : "none"}`);
     return result.ok ? result.result! : null;
 }
 
@@ -424,6 +425,12 @@ async function verifySnipeSafety(snipe: Snipe, log: Logger): Promise<void> {
     }
     if (settings.store.linkVerification === "disabled") {
         snipe.logInfo("Link verification disabled — skipping.");
+        return;
+    }
+
+    if (settings.store.interpretJoinguardLinks) {
+        snipe.logWarn("Joinguard links are unverifiable due to cf turnstile.");
+        snipe.markAsLinkNotVerified();
         return;
     }
 

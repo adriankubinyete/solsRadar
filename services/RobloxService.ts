@@ -32,27 +32,49 @@ export interface RobloxShareLink {
     code: string;
 }
 
-export type RobloxLink = RobloxPrivateServerLink | RobloxShareLink;
+export interface SSTJoinGuardLink {
+    type: "joinguard";
+    link: string;
+    code: string;
+}
+
+export type RobloxLink = RobloxPrivateServerLink | RobloxShareLink | SSTJoinGuardLink;
 
 // ─── Extração ─────────────────────────────────────────────────────────────────
 
 export function extractServerLink(content: string): { ok: boolean; result: RobloxLink | null; reason: string; } {
-    if (!content?.trim()) return { ok: false, result: null, reason: "no-content" };
+    if (!content?.trim()) {
+        return { ok: false, result: null, reason: "no-content" };
+    }
 
-    const normalized = content.toLowerCase();
+    const normalized = content.trim();
+
     const shareMatch = /https?:\/\/(?:www\.)?roblox\.com\/share\?code=([a-f0-9]+)/i.exec(normalized);
     const privateMatch = /https?:\/\/(?:www\.)?roblox\.com\/games\/(\d+)(?:\/[^?]*)?\?privateserverlinkcode=([a-f0-9]+)/i.exec(normalized);
+    const joinGuardMatch = /https?:\/\/(?:www\.)?join-guard\.solsstattracker\.com\/([a-zA-Z0-9_]+)/i.exec(normalized);
 
     const hasShare = Boolean(shareMatch);
     const hasPrivate = Boolean(privateMatch);
+    const hasJoinGuard = Boolean(joinGuardMatch);
 
-    if (hasShare && hasPrivate) return { ok: false, result: null, reason: "ambiguous" };
-    if (!hasShare && !hasPrivate) return { ok: false, result: null, reason: "message-has-no-match" };
+    const matches = [hasShare, hasPrivate, hasJoinGuard].filter(Boolean).length;
+
+    if (matches === 0) {
+        return { ok: false, result: null, reason: "message-has-no-match" };
+    }
+
+    if (matches > 1) {
+        return { ok: false, result: null, reason: "ambiguous" };
+    }
 
     if (hasShare && shareMatch) {
         return {
             ok: true,
-            result: { type: "share", link: shareMatch[0] + "&type=Server", code: shareMatch[1] },
+            result: {
+                type: "share",
+                link: shareMatch[0] + "&type=Server",
+                code: shareMatch[1],
+            },
             reason: "",
         };
     }
@@ -60,7 +82,24 @@ export function extractServerLink(content: string): { ok: boolean; result: Roblo
     if (hasPrivate && privateMatch) {
         return {
             ok: true,
-            result: { type: "private", link: privateMatch[0], code: privateMatch[2], placeId: privateMatch[1] },
+            result: {
+                type: "private",
+                link: privateMatch[0],
+                code: privateMatch[2],
+                placeId: privateMatch[1],
+            },
+            reason: "",
+        };
+    }
+
+    if (hasJoinGuard && joinGuardMatch && settings.store.interpretJoinguardLinks) {
+        return {
+            ok: true,
+            result: {
+                type: "joinguard",
+                link: joinGuardMatch[0],
+                code: joinGuardMatch[1],
+            },
             reason: "",
         };
     }
@@ -104,6 +143,8 @@ export function buildJoinUri(link: RobloxLink | string): string {
 
     if (link.type === "share") {
         return `roblox://navigation/share_links?code=${link.code}&type=Server`;
+    } else if (link.type === "joinguard") {
+        return link.link;
     }
     return `roblox://experiences/start?placeId=${link.placeId}&linkCode=${link.code}`;
 }

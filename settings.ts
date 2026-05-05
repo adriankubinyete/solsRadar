@@ -141,6 +141,12 @@ export const settings = definePluginSettings({
         default: false,
         hidden: true,
     },
+    interpretJoinguardLinks: {
+        type: OptionType.BOOLEAN,
+        description: "Interpret Sol's Stat Tracker Join-guard links. Default: false",
+        default: false,
+        hidden: true,
+    },
 
     // adb emulator stuff
     ldpAdbPath: {
