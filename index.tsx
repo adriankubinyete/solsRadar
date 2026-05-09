@@ -428,7 +428,7 @@ async function verifySnipeSafety(snipe: Snipe, log: Logger): Promise<void> {
         return;
     }
 
-    if (settings.store.interpretJoinguardLinks) {
+    if (snipe.link.type === "joinguard" && settings.store.interpretJoinguardLinks) {
         snipe.logWarn("Joinguard links are unverifiable due to cf turnstile.");
         snipe.markAsLinkNotVerified();
         return;
