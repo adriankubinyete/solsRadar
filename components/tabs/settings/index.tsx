@@ -241,6 +241,7 @@ export function SettingsTab() {
                 { id: "customNotificationSoundDelay", label: "Custom Notification Sound Delay (ms)", description: "Delay in milliseconds before playing the trigger's defined custom notification sound." },
                 { id: "omitAdbErrorNotifications", label: "Omit ADB error notifications", description: "Omits the notification sent when an ADB kill signal fails. Will still get logged to the console." },
                 { id: "interpretJoinguardLinks", label: "Interpret Joinguard Links", description: "Interpret links from Sol's Stat Tracker Joinguard. Joinguard links will open your browser to handle cloudflare verification (we cannot bypass that!), also, we cannot verify the game from joinguard links!" },
+                { id: "advancedEmbedFlattening", label: "Advanced Embed Flattening", description: "Enabling this will cause the plugin to interpret the fields of rich embeds and flatten them into the message content." },
             ],
         },
     ];

@@ -147,6 +147,12 @@ export const settings = definePluginSettings({
         default: false,
         hidden: true,
     },
+    advancedEmbedFlattening: {
+        type: OptionType.BOOLEAN,
+        description: "Enable advanced embed flattening. Default: false",
+        default: false,
+        hidden: true,
+    },
 
     // adb emulator stuff
     ldpAdbPath: {

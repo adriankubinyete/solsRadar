@@ -43,6 +43,18 @@ function flattenEmbeds(message: Message): void {
         if (embed.title) flattened += ` ${embed.title}`;
         // @ts-ignore
         if (embed.description) flattened += ` ${embed.description}`;
+
+        if (settings.store.advancedEmbedFlattening) {
+            // also flatten embed fields
+            if (embed.fields?.length) {
+                for (const field of embed.fields) {
+                    // @ts-ignore
+                    if (field.name) flattened += ` ${field.name}`;
+                    // @ts-ignore
+                    if (field.value) flattened += ` ${field.value}`;
+                }
+            }
+        }
     }
     message.content = flattened;
     message.embeds = [];
