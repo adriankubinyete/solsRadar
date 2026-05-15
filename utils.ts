@@ -107,3 +107,28 @@ export function showToast(...args: Parameters<typeof defaultShowToast>): void {
         });
     }
 }
+
+/**
+ * Recursively extracts all URLs from a Discord message component tree.
+ *
+ * Traverses nested components (such as action rows, buttons, and other
+ * container components) and collects every `url` property found.
+ *
+ * @param {any[]} components Array of Discord message components.
+ * @returns {string[]} Array containing all extracted URLs.
+ */
+export function extractComponentUrls(components: any[]): string[] {
+    const urls: string[] = [];
+
+    for (const component of components) {
+        if (component.url) {
+            urls.push(component.url);
+        }
+
+        if (component.components?.length) {
+            urls.push(...extractComponentUrls(component.components));
+        }
+    }
+
+    return urls;
+}

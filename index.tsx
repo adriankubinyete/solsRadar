@@ -25,7 +25,7 @@ import { settings } from "./settings";
 import { JoinLockStore } from "./stores/JoinLockStore";
 import { SnipeMetrics, SnipeStore } from "./stores/SnipeStore";
 import { getActiveTriggers, Trigger, TriggerType } from "./stores/TriggerStore";
-import { formatElapsedTime, parseCsv, playAudio, sendWebhook } from "./utils";
+import { extractComponentUrls,formatElapsedTime, parseCsv, playAudio, sendWebhook } from "./utils";
 import { PLUGIN_VERSION } from "./version";
 
 const logger = new Logger("SolRadar");
@@ -52,6 +52,16 @@ function flattenEmbeds(message: Message): void {
                     if (field.name) flattened += ` ${field.name}`;
                     // @ts-ignore
                     if (field.value) flattened += ` ${field.value}`;
+                }
+            }
+
+            // also gets any url from components
+            // note: this is kind of misleading, since this method is intended for embeds and component is outside of embed
+            if (message.components?.length) {
+                const urls = extractComponentUrls(message.components);
+
+                for (const url of urls) {
+                    flattened += ` ${url}`;
                 }
             }
         }
