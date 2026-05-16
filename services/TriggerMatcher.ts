@@ -53,6 +53,10 @@ function evaluateTrigger(message: Message, trigger: Trigger): TriggerEvalResult 
     const authorId = message.author.id;
     const channelId = message.channel_id;
 
+    // extract all role ids from content: <@&123456789>
+    // NOTE 15/05/26: DO NOT TRUST message.mentionRoles THIS SHIT IS undefined
+    const mentionRoles = [...content.matchAll(/<@&(\d+)>/g)].map(m => m[1]);
+
     if (conditions.fromUser.length > 0 && !conditions.fromUser.includes(authorId))
         return { trigger, matched: false, reason: `author ${authorId} not in fromUser list` };
 
@@ -64,10 +68,16 @@ function evaluateTrigger(message: Message, trigger: Trigger): TriggerEvalResult 
 
     if (hasKeywords || hasMentionRoles) {
         const keywordMatch = hasKeywords && evaluateKeywordSet(content, conditions.keywords.match, "require");
-        const mentionMatch = hasMentionRoles && conditions.mentionRoles.some(r => message.mentionRoles?.includes(r.id));
+        const mentionMatch = hasMentionRoles && conditions.mentionRoles.some(r => mentionRoles.includes(r.id));
 
-        if (!keywordMatch && !mentionMatch)
+        if (!keywordMatch && !mentionMatch) {
+            // logger.debug(`[${trigger.name}] conditions mentionRoles: ${conditions.mentionRoles.map(r => r.id + " (" + r.label + ")").join(", ")}`);
+            // logger.debug(`[${trigger.name}] parsed mentionRoles: ${mentionRoles.join(", ")}`);
+            // logger.debug(`[${trigger.name}] keywords: ${conditions.keywords.match.value.join(", ")}`);
+            // logger.debug(`[${trigger.name}] content: ${content}`);
+
             return { trigger, matched: false, reason: "neither keywords nor mentionRoles matched" };
+        }
     }
 
     if (!evaluateKeywordSet(content, conditions.keywords.exclude, "exclude"))
@@ -151,7 +161,7 @@ export function getMatchingTrigger(message: Message, activeTriggers: Trigger[]):
     const winner = candidates[0];
 
     // logger.info(
-    //     `Winner: "${winner.name}" (priority ${winner.state.priority}, bypass=${winner.state.bypassAmbiguity})` +
+    //     `Winner: "${winner.name}" (priority ${winner.state.priority}, bypass=${winner.conditions.bypassMatchAmbiguity})` +
     //     (bypass.length > 0 ? ` | bypass triggers: ${bypass.map(t => t.name).join(", ")}` : "")
     // );
 
