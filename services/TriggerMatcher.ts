@@ -4,13 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-// import { Logger } from "@utils/Logger";
 import { Logger } from "@utils/Logger";
 import { Message } from "@vencord/discord-types";
 
 import { KeywordSet, Trigger } from "../stores/TriggerStore";
-
-const logger = new Logger("SolRadar.TriggerMatcher");
 
 // ─── Helpers de matching ──────────────────────────────────────────────────────
 
@@ -71,11 +68,6 @@ function evaluateTrigger(message: Message, trigger: Trigger): TriggerEvalResult 
         const mentionMatch = hasMentionRoles && conditions.mentionRoles.some(r => mentionRoles.includes(r.id));
 
         if (!keywordMatch && !mentionMatch) {
-            // logger.debug(`[${trigger.name}] conditions mentionRoles: ${conditions.mentionRoles.map(r => r.id + " (" + r.label + ")").join(", ")}`);
-            // logger.debug(`[${trigger.name}] parsed mentionRoles: ${mentionRoles.join(", ")}`);
-            // logger.debug(`[${trigger.name}] keywords: ${conditions.keywords.match.value.join(", ")}`);
-            // logger.debug(`[${trigger.name}] content: ${content}`);
-
             return { trigger, matched: false, reason: "neither keywords nor mentionRoles matched" };
         }
     }
@@ -115,19 +107,17 @@ export interface MatchResult {
  * 3. Se houver mais de 1 trigger normal → mensagem ambígua → descarta normais
  * 4. Junta bypass + (normais válidos), ordena por prioridade, retorna o primeiro
  */
-export function getMatchingTrigger(message: Message, activeTriggers: Trigger[]): MatchResult {
+export function getMatchingTrigger(message: Message, activeTriggers: Trigger[], log: Logger): MatchResult {
     const results = activeTriggers.map(t => evaluateTrigger(message, t));
 
-    // rejection logs. uncomment this if you ever need to debug misbehaving triggers
-    // for (const r of results) {
-    //     if (!r.matched)
-    //         logger.debug(`Trigger "${r.trigger.name}" rejected: ${r.reason}`);
-    // }
+    for (const r of results) {
+        if (!r.matched)
+            log.debug(`Trigger "${r.trigger.name}" rejected: ${r.reason}`);
+    }
 
     const matched = results.filter(r => r.matched).map(r => r.trigger);
 
     if (matched.length === 0) {
-        // logger.debug("No triggers matched.");
         return { trigger: null, status: "none", allMatched: [] };
     }
 
@@ -139,11 +129,11 @@ export function getMatchingTrigger(message: Message, activeTriggers: Trigger[]):
 
     if (normals.length > 1) {
         // Ambiguidade nos normais — descarta todos os normais
-        // logger.warn(
-        //     `Ambiguous message — ${normals.length} normal triggers matched: ` +
-        //     normals.map(t => `"${t.name}"`).join(", ") +
-        //     ". Discarding all normal triggers."
-        // );
+        log.warn(
+            `Ambiguous — ${normals.length} normal triggers matched: ` +
+            normals.map(t => `"${t.name}"`).join(", ") +
+            ". Discarding all normal triggers."
+        );
         validNormals = [];
     } else {
         validNormals = normals;
@@ -152,7 +142,6 @@ export function getMatchingTrigger(message: Message, activeTriggers: Trigger[]):
     const candidates = [...bypass, ...validNormals];
 
     if (candidates.length === 0) {
-        // Havia só normais ambíguos e nenhum bypass
         return { trigger: null, status: "ambiguous", allMatched: matched };
     }
 
@@ -160,10 +149,10 @@ export function getMatchingTrigger(message: Message, activeTriggers: Trigger[]):
     candidates.sort((a, b) => a.state.priority - b.state.priority);
     const winner = candidates[0];
 
-    // logger.info(
-    //     `Winner: "${winner.name}" (priority ${winner.state.priority}, bypass=${winner.conditions.bypassMatchAmbiguity})` +
-    //     (bypass.length > 0 ? ` | bypass triggers: ${bypass.map(t => t.name).join(", ")}` : "")
-    // );
+    log.debug(
+        `Winner: "${winner.name}" (p${winner.state.priority}, bypass=${winner.conditions.bypassMatchAmbiguity})` +
+        (bypass.length > 0 ? ` | bypass: ${bypass.map(t => t.name).join(", ")}` : "")
+    );
 
     return { trigger: winner, status: "matched", allMatched: matched };
 }

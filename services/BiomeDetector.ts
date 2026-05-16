@@ -84,13 +84,13 @@ class BiomeDetectorService {
     async configure(usernames: string[]): Promise<void> {
         if (!usernames.length) return;
 
-        logger.info(`Configuring accounts: ${usernames.join(", ")}`);
         const mapping = await Native.robloxUsernamesToUserIds(usernames);
 
         this._accounts.clear();
+        const failed: string[] = [];
         for (const [username, userid] of Object.entries(mapping)) {
             if (userid === null) {
-                logger.warn(`Could not resolve userid for "${username}" — skipping.`);
+                failed.push(username);
                 continue;
             }
             this._accounts.set(String(userid), {
@@ -103,7 +103,8 @@ class BiomeDetectorService {
             });
         }
 
-        logger.info(`Configured ${this._accounts.size} account(s).`);
+        const ok = [...this._accounts.values()].map(s => s.username);
+        logger.info(`Configured ${ok.length}/${usernames.length} account(s): ${ok.join(", ")}${failed.length ? ` | failed: ${failed.join(", ")}` : ""}`);
     }
 
     start(intervalMs = 1_000): void {
@@ -195,7 +196,7 @@ class BiomeDetectorService {
         for (const [userid, state] of this._accounts) {
             const found = newest[userid];
             if (found && found.path !== state.logPath) {
-                logger.debug(`Log path for ${state.username} updated: ${found.path}`);
+                logger.debug(`Log path for ${state.username}: ${found.path.split(/[\\/]/).pop()}`);
                 state.logPath = found.path;
                 state.lastKnownBiome = undefined;
                 state.lastSeenRpcTs = undefined;

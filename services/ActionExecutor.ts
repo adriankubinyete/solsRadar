@@ -5,9 +5,12 @@
  */
 
 import { showNotification } from "@api/Notifications";
+import { Logger } from "@utils/Logger";
 
 import { settings } from "../settings";
 import { closeGame, goToHome, joinLink, joinSolsPublicServer, prepareAdb } from "./RobloxService";
+
+const logger = new Logger("SolRadar:Action");
 
 export type UserAction = "nothing" | "public" | "close" | "private" | "home" | "prep-adb";
 
@@ -21,6 +24,8 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export async function executeAction(action: UserAction | string): Promise<void> {
+    if (action !== "nothing")
+        logger.info(`Executing: ${ACTION_LABELS[action] ?? action}`);
     switch (action) {
         case "nothing": return;
         case "public": await joinSolsPublicServer(); return;
@@ -61,14 +66,17 @@ export function scheduleCancelableAction(
 ): void {
     if (action === "nothing") return;
 
+    const label = ACTION_LABELS[action] ?? action;
+
     if (settings.store.skipActionConfirmation) {
+        logger.info(`Executing immediately (confirmation skipped): ${label} — ${context}`);
         executeAction(action);
         return;
     }
 
     let cancelled = false;
     const seconds = Math.round(timeoutMs / 1000);
-    const label = ACTION_LABELS[action] ?? action;
+    logger.info(`Scheduled: ${label} in ${seconds}s — ${context}`);
 
     showNotification({
         title: "⏳ SoRa :: Scheduled action",

@@ -13,6 +13,7 @@ import { React, showToast, Toasts } from "@webpack/common";
 import { closeGame, emulatorJoinLink, goToHome, joinLink, prepareAdb } from "../../../services/RobloxService";
 import { settings } from "../../../settings";
 import { isDeveloper } from "../../../utils";
+import { openActiveChannelsModal } from "../../modals/ActiveChannelsModal";
 
 const logger = new Logger("SolRadar.Utils");
 
@@ -46,7 +47,7 @@ export function UtilsTab() {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", padding: "1rem", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem", width: "100%", padding: "1rem 1rem 2rem", boxSizing: "border-box" }}>
 
             {/* General */}
             <div style={section}>
@@ -116,6 +117,20 @@ export function UtilsTab() {
                         Some buttons are disabled because no private server link is set. Configure it in settings.
                     </span>
                 )}
+            </div>
+
+            {/* Monitoring */}
+            <div style={section}>
+                <span style={sectionTitle}>Monitoring</span>
+                <Divider />
+                <div style={row}>
+                    <Button size="small" onClick={openActiveChannelsModal}>
+                        Active Channels
+                    </Button>
+                </div>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                    Channels where messages were intercepted since the plugin started. This does not represent all channels Discord is delivering events for.
+                </span>
             </div>
 
         </div>

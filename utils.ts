@@ -10,7 +10,7 @@ import { PluginNative } from "@utils/types";
 import { AuthenticationStore, showToast as defaultShowToast } from "@webpack/common";
 export const cl = classNameFactory("vc-sora-");
 
-const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("./native")>;
+export const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("./native")>;
 const logger = new Logger("SolRadar");
 
 /**
