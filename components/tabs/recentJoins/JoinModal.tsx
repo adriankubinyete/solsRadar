@@ -126,6 +126,7 @@ function JoinModal({ entry: initialEntry, modalProps }: {
     };
 
     const isBiomeEntry = entry.tags.some(t => t.startsWith("biome-"));
+    const [overridesOpen, setOverridesOpen] = React.useState(false);
 
     const markBiome = (verdict: "real" | "bait") => {
         const newTag: SnipeTag = verdict === "real" ? "biome-verified-real" : "biome-verified-bait";
@@ -156,19 +157,48 @@ function JoinModal({ entry: initialEntry, modalProps }: {
             <ModalContent>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "12px 0" }}>
 
-                    <section>
-                        <Heading tag="h5" style={{ marginBottom: 8 }}>Status</Heading>
+                    <section style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <Heading tag="h5">Status</Heading>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                             {entry.tags.map(t => <TagBadge key={t} tag={t} />)}
                         </div>
-                        {isBiomeEntry && <>
-                            <Divider style={{ margin: "8px 0" }} />
-                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>Override biome tag:</span>
-                                <Button size="small" variant="positive" onClick={() => markBiome("real")}>Mark as real</Button>
-                                <Button size="small" variant="dangerPrimary" onClick={() => markBiome("bait")}>Mark as bait</Button>
+                        {isBiomeEntry && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <button
+                                    onClick={() => setOverridesOpen(v => !v)}
+                                    style={{
+                                        display: "flex", alignItems: "center", gap: 8,
+                                        background: "none", border: "none",
+                                        padding: "4px 0", cursor: "pointer", textAlign: "left",
+                                    }}
+                                >
+                                    <span style={{
+                                        color: "var(--text-muted)", fontSize: 10,
+                                        display: "inline-block", lineHeight: 1,
+                                        transition: "transform 0.15s",
+                                        transform: overridesOpen ? "rotate(90deg)" : "rotate(0deg)",
+                                    }}>▶</span>
+                                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--text-muted)" }}>
+                                        Overrides
+                                    </span>
+                                </button>
+                                {overridesOpen && (
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                        <div style={{
+                                            display: "flex", flexDirection: "column", gap: 8,
+                                            padding: "10px 12px", borderRadius: 6,
+                                            background: "var(--background-mod-subtle)",
+                                        }}>
+                                            <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Biome tag</span>
+                                            <div style={{ display: "flex", gap: 6 }}>
+                                                <Button size="small" variant="positive" onClick={() => markBiome("real")} style={{ flex: 1 }}>Biome was real</Button>
+                                                <Button size="small" variant="dangerPrimary" onClick={() => markBiome("bait")} style={{ flex: 1 }}>Biome was fake</Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        </>}
+                        )}
                     </section>
 
                     <Divider />
