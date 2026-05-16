@@ -12,7 +12,7 @@ import { closeAllModals, ModalCloseButton, ModalContent, ModalFooter, ModalHeade
 import { NavigationRouter, React, showToast, Toasts } from "@webpack/common";
 
 import { joinUri } from "../../../services/RobloxService";
-import { SnipeEntry, SnipeLogEntry, SnipeStore, useSnipeEntry } from "../../../stores/SnipeStore";
+import { SnipeEntry, SnipeLogEntry, SnipeStore, SnipeTag, useSnipeEntry } from "../../../stores/SnipeStore";
 import { formatElapsedTime } from "../../../utils";
 import { FallbackImage, formatTimeAgo, TagBadge } from "./components";
 
@@ -26,6 +26,17 @@ export function DetailRow({ label, value }: { label: string; value: React.ReactN
         </div>
     );
 }
+
+// ─── Biome verdict ────────────────────────────────────────────────────────────
+
+// When the user manually marks a biome verdict, we strip only these tags before
+// adding the new one — so real/bait never coexist and unrelated tags are untouched.
+const BIOME_VERDICT_TAGS: SnipeTag[] = [
+    "biome-verified-real",
+    "biome-verified-bait",
+    "biome-verified-timeout",
+    "biome-not-verified",
+];
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 
@@ -114,6 +125,14 @@ function JoinModal({ entry: initialEntry, modalProps }: {
         }
     };
 
+    const isBiomeEntry = entry.tags.some(t => t.startsWith("biome-"));
+
+    const markBiome = (verdict: "real" | "bait") => {
+        const newTag: SnipeTag = verdict === "real" ? "biome-verified-real" : "biome-verified-bait";
+        const newTags = [...entry.tags.filter(t => !BIOME_VERDICT_TAGS.includes(t)), newTag];
+        SnipeStore.update(entry.id, { tags: newTags }, { replaceTags: true });
+    };
+
     const joinServer = () => {
         if (!entry.joinUri) return showToast("No join link detected.", Toasts.Type.FAILURE);
         try {
@@ -142,6 +161,14 @@ function JoinModal({ entry: initialEntry, modalProps }: {
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                             {entry.tags.map(t => <TagBadge key={t} tag={t} />)}
                         </div>
+                        {isBiomeEntry && <>
+                            <Divider style={{ margin: "8px 0" }} />
+                            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>Override biome tag:</span>
+                                <Button size="small" variant="positive" onClick={() => markBiome("real")}>Mark as real</Button>
+                                <Button size="small" variant="dangerPrimary" onClick={() => markBiome("bait")}>Mark as bait</Button>
+                            </div>
+                        </>}
                     </section>
 
                     <Divider />
@@ -227,7 +254,7 @@ function JoinModal({ entry: initialEntry, modalProps }: {
             </ModalContent>
 
             <ModalFooter>
-                <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                <div style={{ display: "flex", gap: 8, width: "100%", flexWrap: "wrap" }}>
                     {entry.joinUri && (
                         <Button variant="positive" size="small" onClick={joinServer}>Join</Button>
                     )}
