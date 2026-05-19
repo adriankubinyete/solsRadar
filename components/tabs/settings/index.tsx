@@ -150,6 +150,8 @@ export function SettingsTab() {
                 { id: "interpretJoinguardLinks", label: "Interpret Joinguard Links", description: "Process links from Sol's Stat Tracker Joinguard. These open your browser for Cloudflare verification and cannot be place-verified." },
                 { id: "resolveAmbiguousLinks", label: "Force Match on Multiple Links", description: "When a message has more than one link type (e.g. a share link alongside a private server link), use the first one found. By default, messages with multiple link types are skipped as ambiguous." },
                 { id: "deduplicateLinks", label: "Deduplicate Links", description: "Ignore a link if the same one was seen in the last 10 minutes for the same trigger." },
+                { id: "joinMode", label: "Join Mode", description: "How to handle the running Roblox instance when a trigger fires." },
+                { id: "sendAdbSignal", label: "Send ADB Signal", description: "Send a close signal to the emulator via ADB after launching the join URI. Requires ADB configuration in Advanced." },
             ],
         },
         {
@@ -204,13 +206,6 @@ export function SettingsTab() {
     // ── Advanced sections ─────────────────────────────────────────────────────
 
     const advancedSections: Section[] = [
-        {
-            title: "Game Launch",
-            entries: [
-                { id: "joinMode", label: "Join Mode", description: "How to handle the running Roblox instance when a trigger fires." },
-                { id: "sendAdbSignal", label: "Send ADB Signal", description: "Send a close signal to the emulator via ADB after launching the join URI. Requires ADB configuration below." },
-            ],
-        },
         {
             title: "ADB",
             note: (
