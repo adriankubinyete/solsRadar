@@ -9,8 +9,9 @@ import { Channel, Guild, Message } from "@vencord/discord-types";
 import { UserStore } from "@webpack/common";
 
 import { buildJoinUri } from "../services/RobloxService";
-import { SnipeMetrics, SnipeStore, SnipeTag } from "../stores/SnipeStore";
-import { RobloxLink, Trigger } from "../types";
+import { SnipeStore } from "../stores/SnipeStore";
+import { SnipeMetrics, SnipeTag } from "../types";
+import { SnipableLink, Trigger } from "../types";
 
 const logger = new Logger("SolRadar.Model/Snipe");
 
@@ -26,7 +27,7 @@ export class Snipe {
     readonly message: Message;
     readonly channel: Channel;
     readonly guild: Guild;
-    readonly link: RobloxLink;
+    readonly link: SnipableLink;
     readonly tMessageReceived: number;
     readonly messageContent: string = "";
 
@@ -36,7 +37,7 @@ export class Snipe {
         message: Message,
         channel: Channel,
         guild: Guild,
-        link: RobloxLink,
+        link: SnipableLink,
         tMessageReceived: number,
     ) {
         this.id = id;
@@ -50,7 +51,7 @@ export class Snipe {
 
     static create(
         message: Message,
-        link: RobloxLink,
+        link: SnipableLink,
         trigger: Trigger,
         channel: Channel,
         guild: Guild,

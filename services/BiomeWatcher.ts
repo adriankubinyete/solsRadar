@@ -77,7 +77,7 @@ export function startBiomeDetection(snipe: Snipe): void {
     }
 
     const expected = (snipe.trigger.biome.detectionKeyword || snipe.trigger.name).toLowerCase();
-    const startDelayMs = settings.store.closeGameBeforeJoin ? 6_000 : 0;
+    const startDelayMs = settings.store.joinMode === "safe" ? 6_000 : 0;
     const t0 = performance.now();
 
     snipe.logInfo(`Awaiting biome — expecting "${expected}"${startDelayMs > 0 ? ` (delay: ${startDelayMs}ms)` : ""}.`);

@@ -6,7 +6,7 @@
 
 import { Channel, Guild } from "@vencord/discord-types";
 
-import { RobloxLink } from "../services/RobloxService";
+import { SnipableLink } from "../types";
 
 export interface ActiveChannel {
     channelId: string;
@@ -40,7 +40,7 @@ export const ActiveChannelStore = {
         });
     },
 
-    registerLink(channel: Channel, guild: Guild, link: RobloxLink): void {
+    registerLink(channel: Channel, guild: Guild, link: SnipableLink): void {
         const existing = _registry.get(channel.id);
         const now = Date.now();
         _registry.set(channel.id, {

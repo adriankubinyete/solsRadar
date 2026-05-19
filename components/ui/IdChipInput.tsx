@@ -68,7 +68,7 @@ export function resolveId(id: string, kind: ChipKind): ResolvedEntry | null {
 
 export function IdChipInput({ kind, label, hint, ids, onChange }: {
     kind: ChipKind;
-    label: string;
+    label: React.ReactNode;
     hint?: string;
     ids: string[];
     onChange: (ids: string[]) => void;

@@ -12,7 +12,8 @@ import { closeAllModals, ModalCloseButton, ModalContent, ModalFooter, ModalHeade
 import { NavigationRouter, React, showToast, Toasts } from "@webpack/common";
 
 import { joinUri } from "../../../services/RobloxService";
-import { SnipeEntry, SnipeLogEntry, SnipeStore, SnipeTag, useSnipeEntry } from "../../../stores/SnipeStore";
+import { SnipeEntry, SnipeLogEntry, SnipeStore, useSnipeEntry } from "../../../stores/SnipeStore";
+import { SnipeTag } from "../../../types";
 import { formatElapsedTime } from "../../../utils";
 import { FallbackImage, formatTimeAgo, TagBadge } from "./components";
 

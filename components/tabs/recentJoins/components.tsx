@@ -7,7 +7,8 @@
 import { Logger } from "@utils/Logger";
 import { React, useState } from "@webpack/common";
 
-import { SnipeTag, TAG_CONFIGS } from "../../../stores/SnipeStore";
+import { TAG_CONFIGS } from "../../../stores/SnipeStore";
+import { SnipeTag } from "../../../types";
 import { Pill, PillVariant } from "../../ui/Pill";
 
 const logger = new Logger("SolRadar.RecentJoins.components");

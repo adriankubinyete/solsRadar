@@ -10,13 +10,12 @@ import { Logger } from "@utils/Logger";
 import { Snipe } from "../models/Snipe";
 import { settings } from "../settings";
 import { JoinLockStore } from "../stores/JoinLockStore";
-import { SnipeMetrics } from "../stores/SnipeStore";
-import { Trigger } from "../types";
+import { SnipableLink, SnipeMetrics, Trigger } from "../types";
 import { Native, parseCsv } from "../utils";
 import { executeAction } from "./ActionExecutor";
 import { BiomeDetector } from "./BiomeDetector";
 import { startBiomeDetection } from "./BiomeWatcher";
-import { closeGame, getPlaceId, RobloxLink } from "./RobloxService";
+import { closeGame, getPlaceId } from "./RobloxService";
 
 const logger = new Logger("SolRadar:Join");
 
@@ -96,7 +95,7 @@ export function shouldJoin(snipe: Snipe): boolean {
 
 // ─── Link verification ────────────────────────────────────────────────────────
 
-async function verifyLink(link: RobloxLink): Promise<VerifyLinkResult> {
+async function verifyLink(link: SnipableLink): Promise<VerifyLinkResult> {
     if (!settings.store.robloxToken) {
         showNotification({
             title: "⚠️ SoRa :: Link verification warning",
@@ -164,15 +163,8 @@ async function joinServer(uri: string, snipe: Snipe): Promise<JoinServerResult> 
     const tKillStart = performance.now();
     let killDurationMs: number | null = null;
     try {
-        if (settings.store.closeGameBeforeJoin) {
-            if (settings.store.killMode === "ldp-adb") {
-                snipe.logWarn("closeGameBeforeJoin has no effect in ldp method");
-            } else if (settings.store.killMode === "fire-and-forget") {
-                Native.killProcess({ pname: "RobloxPlayerBeta.exe" });
-                await new Promise(res => setTimeout(res, settings.store.closeGameDelay));
-            } else {
-                await closeGame();
-            }
+        if (settings.store.joinMode === "safe") {
+            await closeGame();
         }
         killDurationMs = performance.now() - tKillStart;
     } catch (err) {
@@ -181,11 +173,7 @@ async function joinServer(uri: string, snipe: Snipe): Promise<JoinServerResult> 
 
     const tOpenStart = performance.now();
     try {
-        if (settings.store.useBrowserLaunch) {
-            window.open(uri, "_blank", "noopener,noreferrer");
-        } else {
-            await Native.openUri(uri);
-        }
+        await Native.openUri(uri);
     } catch (err) {
         return { ok: false, reason: "native-failed", detail: (err as Error).message };
     }
@@ -193,7 +181,7 @@ async function joinServer(uri: string, snipe: Snipe): Promise<JoinServerResult> 
 
     const tJoinEnd = performance.now();
 
-    if (settings.store.killMode === "ldp-adb") {
+    if (settings.store.sendAdbSignal) {
         if (!settings.store.ldpAdbPath?.trim()) {
             snipe.logWarn("LDPlayer adb path not configured!");
         } else {

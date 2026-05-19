@@ -9,7 +9,8 @@ import { Paragraph } from "@components/Paragraph";
 import { closeAllModals } from "@utils/modal";
 import { NavigationRouter, React, showToast, TextInput, Toasts, useEffect, useState } from "@webpack/common";
 
-import { SnipeEntry, SnipeStore, SnipeTag, useSnipeHistory } from "../../../stores/SnipeStore";
+import { SnipeEntry, SnipeStore, useSnipeHistory } from "../../../stores/SnipeStore";
+import { SnipeTag } from "../../../types";
 import { UIState } from "../../../stores/UIStateStore";
 import { formatElapsedTime } from "../../../utils";
 import { JoinLockBanner } from "../../JoinLockBanner";

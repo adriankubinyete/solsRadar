@@ -6,7 +6,7 @@
 
 import { localStorage } from "@utils/localStorage";
 
-import { SnipeTag } from "./SnipeStore";
+import { SnipeTag } from "../types";
 
 const STORAGE_KEY = "vc-sora-ui-state";
 

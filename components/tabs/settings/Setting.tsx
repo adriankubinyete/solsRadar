@@ -6,7 +6,7 @@
 
 import { FormSwitch } from "@components/FormSwitch";
 import { OptionType } from "@utils/types";
-import { React, Select, TextInput } from "@webpack/common";
+import { React, Select, TextInput, Tooltip } from "@webpack/common";
 
 import { settings } from "../../../settings";
 import { ChipKind, IdChipInput } from "../../ui/IdChipInput";
@@ -19,6 +19,7 @@ export type SettingProps = {
     id: SettingsKey;
     label: string; // always required — no auto-guessing from def.description
     description?: string; // shown below the control as a hint
+    tooltip?: string; // shown in a ? badge on hover next to the label
     disabled?: boolean;
     style?: React.CSSProperties;
     chipKind?: ChipKind;
@@ -129,18 +130,45 @@ const S = {
 // Lazy getter — não acessa settings.store no module scope, só em render time
 const s = () => settings.store as Record<string, any>;
 
-function IdChipControl({ id, kind, label, hint }: {
+function IdChipControl({ id, kind, label, hint, tooltip }: {
     id: SettingsKey;
     kind: ChipKind;
     label: string;
     hint?: string;
+    tooltip?: string;
 }) {
     const raw = settings.use([id])[id] as string ?? "";
     const ids = raw.split(",").map(v => v.trim()).filter(Boolean);
+
+    const labelNode = tooltip ? (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            {label}
+            <Tooltip text={tooltip}>
+                {props => (
+                    <span {...props} style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 15,
+                        height: 15,
+                        borderRadius: "50%",
+                        background: "var(--background-mod-strong)",
+                        color: "var(--text-muted)",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        cursor: "help",
+                        flexShrink: 0,
+                        userSelect: "none",
+                    }}>?</span>
+                )}
+            </Tooltip>
+        </span>
+    ) : label;
+
     return (
         <IdChipInput
             kind={kind}
-            label={label}
+            label={labelNode}
             hint={hint}
             ids={ids}
             onChange={newIds => { s()[id] = newIds.join(", "); }}
@@ -253,7 +281,7 @@ function NumberControl({ id, disabled }: { id: SettingsKey; disabled?: boolean; 
 
 // ─── Setting ──────────────────────────────────────────────────────────────────
 
-export function Setting({ id, label, description, disabled, style, chipKind }: SettingProps) {
+export function Setting({ id, label, description, tooltip, disabled, style, chipKind }: SettingProps) {
     const def = settings.def[id] as any;
     if (!def) return null;
 
@@ -267,6 +295,27 @@ export function Setting({ id, label, description, disabled, style, chipKind }: S
         <span style={S.label}>
             {label}
             {restartNeeded && <span style={S.restartBadge}>restart</span>}
+            {tooltip && (
+                <Tooltip text={tooltip}>
+                    {props => (
+                        <span {...props} style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 15,
+                            height: 15,
+                            borderRadius: "50%",
+                            background: "var(--background-mod-strong)",
+                            color: "var(--text-muted)",
+                            fontSize: 10,
+                            fontWeight: 700,
+                            cursor: "help",
+                            flexShrink: 0,
+                            userSelect: "none",
+                        }}>?</span>
+                    )}
+                </Tooltip>
+            )}
         </span>
     );
 
@@ -275,7 +324,7 @@ export function Setting({ id, label, description, disabled, style, chipKind }: S
         case OptionType.BOOLEAN: control = <BooleanControl id={id} disabled={disabled} />; break;
         case OptionType.SELECT: control = <SelectControl id={id} disabled={disabled} />; break;
         case OptionType.STRING:
-            if (chipKind) return <IdChipControl id={id} kind={chipKind} label={label} hint={description} />;
+            if (chipKind) return <IdChipControl id={id} kind={chipKind} label={label} hint={description} tooltip={tooltip} />;
             control = <StringControl id={id} disabled={disabled} />;
             break;
         case OptionType.NUMBER: control = <NumberControl id={id} disabled={disabled} />; break;

@@ -30,6 +30,12 @@ export const settings = definePluginSettings({
         component: OpenPluginButton,
     },
 
+    showMessageDebugButton: {
+        type: OptionType.BOOLEAN,
+        description: "Show a debug button in the message hover menu. Clicking it analyses how the plugin would process that message.",
+        default: false,
+    },
+
     // main ui stuff
     pluginIconLocation: {
         type: OptionType.SELECT,
@@ -66,33 +72,18 @@ export const settings = definePluginSettings({
         default: false,
         hidden: true,
     },
-    closeGameBeforeJoin: {
-        type: OptionType.BOOLEAN,
-        description: "Close Roblox before joining a server. Prevents silent join failures at the cost of extra latency.",
-        default: true,
-        hidden: true,
-    },
-    killMode: {
+    joinMode: {
         type: OptionType.SELECT,
-        description: "How to close Roblox before joining. 'await' waits for the process to fully die before launching (reliable, slower). 'fire-and-forget' sends the kill signal and waits a fixed delay (faster, may fail if delay is too low).",
+        description: "How to handle the running Roblox instance when a trigger fires.",
         options: [
-            { label: "Await (default)", value: "await", default: true },
-            { label: "Fire and forget (faster, may fail if delay is too low)", value: "fire-and-forget" },
-            { label: "LDPlayer adb.exe (requires setup)", value: "ldp-adb" },
+            { label: "Safe (close game if open)", value: "safe", default: true },
+            { label: "Unsafe (launch without closing)", value: "unsafe" },
         ],
         hidden: true,
     },
-    closeGameDelay: {
-        type: OptionType.NUMBER,
-        description: "Delay (ms) between kill signal and launch, when using fire-and-forget mode. Increase if joins are failing. Default: 100",
-        default: 100,
-        min: 0,
-        max: 5000,
-        hidden: true,
-    },
-    useBrowserLaunch: {
+    sendAdbSignal: {
         type: OptionType.BOOLEAN,
-        description: "Launch the Roblox URI via window.open() instead of Native exec. Faster but metrics become unreliable (fire-and-forget).",
+        description: "Send a close signal to the emulator via ADB after launching the join URI. Requires ADB configuration below.",
         default: false,
         hidden: true,
     },
@@ -144,6 +135,12 @@ export const settings = definePluginSettings({
     interpretJoinguardLinks: {
         type: OptionType.BOOLEAN,
         description: "Interpret Sol's Stat Tracker Join-guard links. Default: false",
+        default: false,
+        hidden: true,
+    },
+    resolveAmbiguousLinks: {
+        type: OptionType.BOOLEAN,
+        description: "When a message contains multiple Roblox links, pick the first one found instead of discarding the message. Default: false",
         default: false,
         hidden: true,
     },

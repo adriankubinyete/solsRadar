@@ -15,17 +15,18 @@ import { PropsWithChildren } from "react";
 import { SolsRadarIcon } from "./components/icons/SolsRadarIcon";
 import { SolsRadarChatBarButton } from "./components/ui/buttons/SolsRadarChatBarButton";
 import { SolsRadarTitleBarButton } from "./components/ui/buttons/SolsRadarTitleBarButton";
+import { openMessageDebugModal, SolRadarDebugIcon } from "./components/ui/MessageDebugModal";
 import { Snipe } from "./models/Snipe";
 import { BiomeDetector } from "./services/BiomeDetector";
 import { cancelBiomeDetection } from "./services/BiomeWatcher";
 import { forwardSnipe } from "./services/ForwardingService";
 import { isJoinLocked, join, shouldJoin } from "./services/JoinService";
-import { extractLink, flattenEmbeds, resolveTrigger,sanitizeContent } from "./services/MessagePreprocessor";
+import { flattenEmbeds, getSnipableLink, isMessageAllowed, isValidMessage, resolveTrigger, sanitizeContent } from "./services/MessageProcessor";
 import { canNotify, notify } from "./services/NotificationService";
-import { isDuplicateLink, isMessageAllowed, isValidMessage, markAsSeen } from "./services/SnipeFilter";
+import { isDuplicateLink, markAsSeen } from "./services/SnipeDeduplicator";
 import { settings } from "./settings";
 import { ActiveChannelStore } from "./stores/ActiveChannelStore";
-import { SnipeMetrics } from "./stores/SnipeStore";
+import { SnipeMetrics } from "./types";
 import { PLUGIN_VERSION } from "./version";
 
 const logger = new Logger("SolRadar");
@@ -39,24 +40,22 @@ export interface JoinResult {
 // ─── orchestration ─────────────────────────────────────────────────────────────
 
 async function handleMessage(message: Message, channel: Channel, guild: Guild, tMessageReceived: number): Promise<void> {
-    const log = new Logger(`SolRadar:${message.id}`);
-
-    if (!isValidMessage(message, log)) return;
+    if (!isValidMessage(message)) return;
     ActiveChannelStore.registerMessage(channel, guild);
 
     flattenEmbeds(message);
-    const link = extractLink(message);
+    const link = getSnipableLink(message.content);
     if (!link) return;
-    log.debug(`#${channel.name} @ ${guild.name} | ${link.type.toUpperCase()} ${link.code}`);
+    logger.debug(`#${channel.name} @ ${guild.name} | ${link.type.toUpperCase()} ${link.code}`);
     ActiveChannelStore.registerLink(channel, guild, link);
     sanitizeContent(message);
 
-    const trigger = resolveTrigger({ message, channel, guild }, log);
+    const trigger = resolveTrigger({ message, channel, guild });
     if (!trigger) return;
 
-    log.info(`Match: "${trigger.name}" (p${trigger.state.priority}) — #${channel.name} @ ${guild.name}`);
+    logger.info(`Match: "${trigger.name}" (p${trigger.state.priority}) — #${channel.name} @ ${guild.name}`);
 
-    if (!isMessageAllowed({ channel, message, trigger }, log)) return;
+    if (!isMessageAllowed({ channel, message, trigger })) return;
     if (isJoinLocked(trigger)) return;
 
     const snipe = Snipe.create(message, link, trigger, channel, guild, tMessageReceived);
@@ -115,6 +114,25 @@ export default definePlugin({
     chatBarButton: {
         icon: SolsRadarIcon,
         render: SolsRadarChatBarButton,
+    },
+
+    messagePopoverButton: {
+        icon: SolRadarDebugIcon,
+        render(msg) {
+            if (!settings.store.showMessageDebugButton) return null;
+            const channel = ChannelStore.getChannel(msg.channel_id);
+            if (!channel || channel.type === ChannelType.DM || channel.type === ChannelType.GROUP_DM) return null;
+            const guild = GuildStore.getGuild(channel.guild_id!);
+            if (!guild) return null;
+
+            return {
+                label: "Debug with SolRadar",
+                icon: SolRadarDebugIcon,
+                message: msg,
+                channel,
+                onClick: () => openMessageDebugModal(msg, channel, guild),
+            };
+        },
     },
 
     async start() {

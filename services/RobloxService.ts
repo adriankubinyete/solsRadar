@@ -11,120 +11,13 @@ import type { RunningGame } from "@vencord/discord-types";
 import { RunningGameStore } from "@webpack/common";
 
 import { settings } from "../settings";
+import { SnipableLink } from "../types";
 import { BiomeDetector } from "./BiomeDetector";
+import { getSnipableLink } from "./MessageProcessor";
 
 const logger = new Logger("SolRadar.RobloxService");
 
 const Native = VencordNative.pluginHelpers.SolRadar as PluginNative<typeof import("../native")>;
-
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-
-export interface RobloxPrivateServerLink {
-    type: "private";
-    link: string;
-    code: string;
-    placeId: string;
-}
-
-export interface RobloxShareLink {
-    type: "share";
-    link: string;
-    code: string;
-}
-
-export interface SSTJoinGuardLink {
-    type: "joinguard";
-    link: string;
-    code: string;
-}
-
-export type RobloxLink = RobloxPrivateServerLink | RobloxShareLink | SSTJoinGuardLink;
-
-// ─── Extração ─────────────────────────────────────────────────────────────────
-
-export function extractServerLink(content: string): { ok: boolean; result: RobloxLink | null; reason: string; } {
-    if (!content?.trim()) {
-        return { ok: false, result: null, reason: "no-content" };
-    }
-
-    const normalized = content.trim();
-
-    const shareMatch = /https?:\/\/(?:www\.)?roblox\.com\/share\?code=([a-f0-9]+)/i.exec(normalized);
-    const privateMatch = /https?:\/\/(?:www\.)?roblox\.com\/games\/(\d+)(?:\/[^?]*)?\?privateserverlinkcode=([a-f0-9]+)/i.exec(normalized);
-    const joinGuardMatch = /https?:\/\/(?:www\.)?join-guard\.solsstattracker\.com\/([a-zA-Z0-9_]+)/i.exec(normalized);
-
-    const hasShare = Boolean(shareMatch);
-    const hasPrivate = Boolean(privateMatch);
-    const hasJoinGuard = Boolean(joinGuardMatch);
-
-    const matches = [hasShare, hasPrivate, hasJoinGuard].filter(Boolean).length;
-
-    if (matches === 0) {
-        return { ok: false, result: null, reason: "message-has-no-match" };
-    }
-
-    if (matches > 1) {
-        return { ok: false, result: null, reason: "ambiguous" };
-    }
-
-    if (hasShare && shareMatch) {
-        return {
-            ok: true,
-            result: {
-                type: "share",
-                link: shareMatch[0] + "&type=Server",
-                code: shareMatch[1],
-            },
-            reason: "",
-        };
-    }
-
-    if (hasPrivate && privateMatch) {
-        return {
-            ok: true,
-            result: {
-                type: "private",
-                link: privateMatch[0],
-                code: privateMatch[2],
-                placeId: privateMatch[1],
-            },
-            reason: "",
-        };
-    }
-
-    if (hasJoinGuard && joinGuardMatch && settings.store.interpretJoinguardLinks) {
-        return {
-            ok: true,
-            result: {
-                type: "joinguard",
-                link: joinGuardMatch[0],
-                code: joinGuardMatch[1],
-            },
-            reason: "",
-        };
-    }
-
-    return { ok: false, result: null, reason: "message-has-no-match" };
-}
-
-// ─── Sanitização ──────────────────────────────────────────────────────────────
-
-// Regex que cobre todos os formatos de link Roblox que o plugin reconhece.
-// Usado para remover os links do conteúdo antes do keyword matching,
-// evitando que slugs como "Cyberspace" ou "Blood-Rain" disparem triggers acidentalmente.
-const ROBLOX_LINK_PATTERN = /https?:\/\/(?:www\.)?roblox\.com\/(?:share\?code=[a-f0-9]+(?:&[^\s]*)?|games\/\d+(?:\/[^\s?]*)?(?:\?[^\s]*)?)/gi;
-
-/**
- * Remove todos os links Roblox do conteúdo da mensagem.
- * Deve ser chamado antes de passar o conteúdo para o TriggerMatcher.
- *
- * Exemplo:
- *   "https://roblox.com/games/123/Sols-RNG-Cyberspace?privateServerLinkCode=abc rainy"
- *   → "rainy"
- */
-export function stripRobloxLinks(content: string): string {
-    return content.replace(ROBLOX_LINK_PATTERN, "").replace(/\s{2,}/g, " ").trim();
-}
 
 // ─── Join URI ─────────────────────────────────────────────────────────────────
 // Ambos os tipos de link viram deeplinks diretos — sem chamada à API do Roblox.
@@ -134,11 +27,11 @@ export function stripRobloxLinks(content: string): string {
 //
 // Referência: https://devforum.roblox.com/t/parsing-deeplink-information-from-a-private-server-link-with-the-newer-format/3464724
 
-export function buildJoinUri(link: RobloxLink | string): string {
+export function buildJoinUri(link: SnipableLink | string): string {
     if (typeof link === "string") {
-        const { ok, result } = extractServerLink(link);
-        if (!ok || !result) throw new Error(`Invalid Roblox link: ${link}`);
-        link = result;
+        const resolved = getSnipableLink(link);
+        if (!resolved) throw new Error(`Invalid Roblox link: ${link}`);
+        link = resolved;
     }
 
     if (link.type === "share") {
@@ -181,7 +74,7 @@ export function isRobloxRunning(): boolean {
     return getRobloxProcess() !== null;
 }
 
-export async function getPlaceId(link: RobloxLink): Promise<number | null> {
+export async function getPlaceId(link: SnipableLink): Promise<number | null> {
     if (link.type === "private") {
         return Number(link.placeId);
     }
@@ -207,14 +100,8 @@ export async function getPlaceId(link: RobloxLink): Promise<number | null> {
  * Closes the Roblox process before joining, if the setting is enabled.
  * This can help prevent failed joins, at the cost of slightly increased join time (~100-200ms).
  */
-// export async function closeGameIfNeeded(): Promise<void> {
-//     if (!settings.store.closeGameBeforeJoin) return;
-//     await closeGame();
-// }
-
-// closeGameIfNeeded repassa o retorno
 export async function closeGameIfNeeded(): Promise<boolean | null> {
-    if (!settings.store.closeGameBeforeJoin) return null;
+    if (settings.store.joinMode !== "safe") return null;
     return await closeGame();
 }
 
@@ -259,7 +146,7 @@ export async function joinUri(uri: string | undefined): Promise<void> {
     return await Native.openUri(uri);
 }
 
-export async function joinLink(link: RobloxLink | string): Promise<void> {
+export async function joinLink(link: SnipableLink | string): Promise<void> {
     await closeGameIfNeeded();
     return await Native.openUri(buildJoinUri(link));
 }
@@ -281,7 +168,7 @@ export async function emulatorJoinUri(uri: string | undefined): Promise<Emulator
     return { ok: true };
 }
 
-export async function emulatorJoinLink(link: RobloxLink | string): Promise<EmulatorJoinResult> {
+export async function emulatorJoinLink(link: SnipableLink | string): Promise<EmulatorJoinResult> {
     return emulatorJoinUri(buildJoinUri(link));
 }
 
