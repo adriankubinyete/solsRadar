@@ -15,7 +15,7 @@ import { PropsWithChildren } from "react";
 import { SolsRadarIcon } from "./components/icons/SolsRadarIcon";
 import { SolsRadarChatBarButton } from "./components/ui/buttons/SolsRadarChatBarButton";
 import { SolsRadarTitleBarButton } from "./components/ui/buttons/SolsRadarTitleBarButton";
-import { openMessageDebugModal, SolRadarDebugIcon } from "./components/ui/MessageDebugModal";
+import { openMessageDebugModal } from "./components/ui/MessageDebugModal";
 import { Snipe } from "./models/Snipe";
 import { BiomeDetector } from "./services/BiomeDetector";
 import { cancelBiomeDetection } from "./services/BiomeWatcher";
@@ -117,7 +117,7 @@ export default definePlugin({
     },
 
     messagePopoverButton: {
-        icon: SolRadarDebugIcon,
+        icon: SolsRadarIcon,
         render(msg) {
             if (!settings.store.showMessageDebugButton) return null;
             const channel = ChannelStore.getChannel(msg.channel_id);
@@ -127,7 +127,7 @@ export default definePlugin({
 
             return {
                 label: "Debug with SolRadar",
-                icon: SolRadarDebugIcon,
+                icon: SolsRadarIcon,
                 message: msg,
                 channel,
                 onClick: () => openMessageDebugModal(msg, channel, guild),

@@ -13,16 +13,6 @@ import { React } from "@webpack/common";
 import { flattenEmbeds, getSnipableLink, isMessageAllowed, isValidMessage, resolveTrigger, sanitizeContent } from "../../services/MessageProcessor";
 import { settings } from "../../settings";
 
-// ─── Icon ─────────────────────────────────────────────────────────────────────
-
-export function SolRadarDebugIcon({ width = 20, height = 20 }: { width?: number; height?: number; }) {
-    return (
-        <svg width={width} height={height} viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-        </svg>
-    );
-}
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const headerTitle: React.CSSProperties = { fontWeight: 700, fontSize: "1rem", flex: 1, color: "var(--text-default)" };
@@ -33,7 +23,7 @@ const sectionLabel: React.CSSProperties = { fontSize: "0.72rem", fontWeight: 700
 interface DebugStep {
     label: string;
     ok: boolean;
-    detail: string;
+    detail: React.ReactNode;
 }
 
 interface AnalysisResult {
@@ -44,6 +34,16 @@ interface AnalysisResult {
 function analyze(_message: Message, channel: Channel, guild: Guild): AnalysisResult {
     const steps: DebugStep[] = [];
     const message = { ..._message, embeds: [..._message.embeds] } as Message; // me when i lie
+
+    const isNativeForward = Array.isArray((_message as any).messageSnapshots) && (_message as any).messageSnapshots.length > 0;
+    if (isNativeForward) {
+        steps.push({
+            label: "Discord forward",
+            ok: false,
+            detail: "This is a natively forwarded message (messageSnapshots detected). The plugin only processes original messages — forwarded messages are ignored.",
+        });
+        return { steps, interpretedContent: message.content };
+    }
 
     const valid = isValidMessage(message);
     steps.push({
@@ -68,14 +68,28 @@ function analyze(_message: Message, channel: Channel, guild: Guild): AnalysisRes
     const interpretedContent = message.content;
 
     const link = getSnipableLink(message.content);
+
+    const hasShareLink = /roblox\.com\/share\?code=/i.test(interpretedContent);
+    const hasPrivateLink = /roblox\.com\/games\/\d+[^?]*\?privateserverlinkcode=/i.test(interpretedContent);
+    const hasJoinguardLink = /join-guard\.solsstattracker\.com\//i.test(interpretedContent);
+    const multipleTypes = [hasShareLink, hasPrivateLink, hasJoinguardLink].filter(Boolean).length > 1;
+
+    const noLinkHints: string[] = [];
+    if (_message.embeds.length > 0 && !settings.store.flattenEmbeds)
+        noLinkHints.push("This message has embeds — enable \"Interpret Embeds\" in Snipe Configuration.");
+    else if (_message.embeds.length > 0 && settings.store.flattenEmbeds && !settings.store.advancedEmbedFlattening)
+        noLinkHints.push("Embeds were interpreted but the link wasn't found. If it's inside embed fields or buttons, enable \"Advanced Embed Flattening\" in Advanced settings.");
+    if (multipleTypes && !settings.store.resolveAmbiguousLinks)
+        noLinkHints.push("Multiple link types detected — enable \"Force Match on Multiple Links\" in Snipe Configuration.");
+
     steps.push({
         label: "Link detection",
         ok: !!link,
         detail: link
             ? `${link.type.toUpperCase()} link — code: ${link.code}${link.type === "private" ? `, place: ${link.placeId}` : ""}`
-            : settings.store.resolveAmbiguousLinks
-                ? "No Roblox link found in this message."
-                : "No Roblox link found - it either contains multiple different link types or, most likely, no link at all. If the message contains multiple links, enable 'Force Match on Multiple Links' in General settings to force a join.",
+            : noLinkHints.length > 0
+                ? <>{noLinkHints.map((h, i) => <div key={i} style={{ marginTop: i > 0 ? 3 : 0 }}>• {h}</div>)}</>
+                : "No Roblox link found in this message.",
     });
     if (!link) return { steps, interpretedContent };
 
@@ -131,7 +145,7 @@ function DebugModal({ props, message, channel, guild }: {
     return (
         <ModalRoot {...props} size={ModalSize.SMALL}>
             <ModalHeader>
-                <span style={headerTitle}>Message Debug</span>
+                <span style={headerTitle}>SolRadar Snipe Debug</span>
                 <ModalCloseButton onClick={props.onClose} />
             </ModalHeader>
             <Divider />
