@@ -216,7 +216,7 @@ export function SettingsTab() {
                         </Note>
                     )}
                     <Note>
-                        ADB launch keeps the game open on the home screen. When a snipe triggers, the plugin instantly launches the join URI while sending a close signal via ADB.
+                        When a snipe triggers, the plugin launches the join URI and simultaneously sends a close signal via ADB.
                     </Note>
                 </>
             ),

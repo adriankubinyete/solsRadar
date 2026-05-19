@@ -70,18 +70,22 @@ export function flattenEmbeds(message: Message): void {
     for (const embed of message.embeds) {
         if (embed.type !== "rich") continue;
 
+        // @ts-ignore - flux event uses title/description, message store uses rawTitle/rawDescription
+        const title = embed.rawTitle ?? embed.title;
         // @ts-ignore
-        if (embed.title) flattened += ` ${embed.title}`;
-        // @ts-ignore
-        if (embed.description) flattened += ` ${embed.description}`;
+        const description = embed.rawDescription ?? embed.description;
+        if (title) flattened += ` ${title}`;
+        if (description) flattened += ` ${description}`;
 
         if (settings.store.advancedEmbedFlattening) {
             if (embed.fields?.length) {
                 for (const field of embed.fields) {
                     // @ts-ignore
-                    if (field.name) flattened += ` ${field.name}`;
+                    const name = field.rawName ?? field.name;
                     // @ts-ignore
-                    if (field.value) flattened += ` ${field.value}`;
+                    const value = field.rawValue ?? field.value;
+                    if (name) flattened += ` ${name}`;
+                    if (value) flattened += ` ${value}`;
                 }
             }
 

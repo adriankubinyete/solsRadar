@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { CodeBlock } from "@components/CodeBlock";
 import { Divider } from "@components/Divider";
 import { ModalCloseButton, ModalContent, ModalHeader, ModalProps, ModalRoot, ModalSize, openModal } from "@utils/modal";
 import { Channel, Guild, Message } from "@vencord/discord-types";
 import { React } from "@webpack/common";
 
-import { flattenEmbeds, getSnipableLink, isMessageAllowed, isValidMessage, resolveTrigger } from "../../services/MessageProcessor";
+import { flattenEmbeds, getSnipableLink, isMessageAllowed, isValidMessage, resolveTrigger, sanitizeContent } from "../../services/MessageProcessor";
 import { settings } from "../../settings";
 
 // ─── Icon ─────────────────────────────────────────────────────────────────────
@@ -35,11 +36,16 @@ interface DebugStep {
     detail: string;
 }
 
-function analyze(message: Message, channel: Channel, guild: Guild): DebugStep[] {
-    const steps: DebugStep[] = [];
-    const msg = { ...message, content: message.content, embeds: [...message.embeds] };
+interface AnalysisResult {
+    steps: DebugStep[];
+    interpretedContent: string;
+}
 
-    const valid = isValidMessage(msg);
+function analyze(_message: Message, channel: Channel, guild: Guild): AnalysisResult {
+    const steps: DebugStep[] = [];
+    const message = { ..._message, embeds: [..._message.embeds] } as Message; // me when i lie
+
+    const valid = isValidMessage(message);
     steps.push({
         label: "Message validity",
         ok: valid,
@@ -47,31 +53,35 @@ function analyze(message: Message, channel: Channel, guild: Guild): DebugStep[] 
             ? "Not a self-forward or re-forward."
             : "Matches the self-forward or re-forward filter — would be silently ignored.",
     });
-    if (!valid) return steps;
+    if (!valid) return { steps, interpretedContent: message.content };
 
-    if (settings.store.flattenEmbeds && msg.embeds.length > 0) {
-        const before = msg.content;
-        flattenEmbeds(msg);
+    const contentBefore = message.content;
+    flattenEmbeds(message);
+    if (message.content !== contentBefore) {
         steps.push({
             label: "Interpret Embeds",
             ok: true,
-            detail: msg.content !== before
-                ? "Embed content merged into message."
-                : "Embeds present but nothing to merge.",
+            detail: "Embed content merged into message.",
         });
     }
 
-    const link = getSnipableLink(msg.content);
+    const interpretedContent = message.content;
+
+    const link = getSnipableLink(message.content);
     steps.push({
         label: "Link detection",
         ok: !!link,
         detail: link
             ? `${link.type.toUpperCase()} link — code: ${link.code}${link.type === "private" ? `, place: ${link.placeId}` : ""}`
-            : "No Roblox link found in this message.",
+            : settings.store.resolveAmbiguousLinks
+                ? "No Roblox link found in this message."
+                : "No Roblox link found - it either contains multiple different link types or, most likely, no link at all. If the message contains multiple links, enable 'Force Match on Multiple Links' in General settings to force a join.",
     });
-    if (!link) return steps;
+    if (!link) return { steps, interpretedContent };
 
-    const trigger = resolveTrigger({ message: msg, channel, guild });
+    sanitizeContent(message);
+
+    const trigger = resolveTrigger({ message, channel, guild });
     steps.push({
         label: "Trigger match",
         ok: !!trigger,
@@ -79,17 +89,17 @@ function analyze(message: Message, channel: Channel, guild: Guild): DebugStep[] 
             ? `Matched "${trigger.name}" (priority ${trigger.state.priority})`
             : "No active trigger matched this message.",
     });
-    if (!trigger) return steps;
+    if (!trigger) return { steps, interpretedContent };
 
-    const allowed = isMessageAllowed({ channel, message: msg, trigger });
+    const allowed = isMessageAllowed({ channel, message, trigger });
     steps.push({
         label: "Message filters",
         ok: allowed,
         detail: allowed
             ? "Not blocked by any global filter."
-            : "Blocked — check ignored guilds, channels, users, or monitored channels.",
+            : "Blocked - check ignored guilds, channels, users, or monitored channels.",
     });
-    if (!allowed) return steps;
+    if (!allowed) return { steps, interpretedContent };
 
     const globalJoin = settings.store.autoJoinEnabled;
     const triggerJoin = trigger.state.autojoin;
@@ -103,7 +113,7 @@ function analyze(message: Message, channel: Channel, guild: Guild): DebugStep[] 
                 : "Enabled.",
     });
 
-    return steps;
+    return { steps, interpretedContent };
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
@@ -114,8 +124,9 @@ function DebugModal({ props, message, channel, guild }: {
     channel: Channel;
     guild: Guild;
 }) {
-    const steps = React.useMemo(() => analyze(message, channel, guild), []);
-    const wouldSnipe = steps.length > 0 && steps.every(s => s.ok);
+    const { steps, interpretedContent } = React.useMemo(() => analyze(message, channel, guild), []);
+    const detectionSteps = steps.filter(s => s.label !== "Auto-join");
+    const wouldSnipe = detectionSteps.length > 0 && detectionSteps.every(s => s.ok);
 
     return (
         <ModalRoot {...props} size={ModalSize.SMALL}>
@@ -126,19 +137,9 @@ function DebugModal({ props, message, channel, guild }: {
             <Divider />
             <ModalContent style={{ padding: "0.75rem", paddingBottom: "1.25rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
 
-                <span style={sectionLabel}>Message Content</span>
-                <div style={{
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    background: "var(--background-mod-subtle)",
-                    fontFamily: "var(--font-code)",
-                    fontSize: 11,
-                    color: "var(--text-muted)",
-                    wordBreak: "break-all",
-                    marginBottom: 4,
-                }}>
-                    {message.content?.slice(0, 300) || <em>No content</em>}
-                    {(message.content?.length ?? 0) > 300 && "…"}
+                <span style={sectionLabel}>Interpreted Content (max 300 chars)</span>
+                <div style={{ marginBottom: 4 }}>
+                    <CodeBlock content={interpretedContent?.slice(0, 300) || "(no content)"} lang="" />
                 </div>
 
                 <span style={{ ...sectionLabel, marginTop: 4 }}>Pipeline</span>
@@ -173,6 +174,7 @@ function DebugModal({ props, message, channel, guild }: {
 
                 <div style={{
                     marginTop: 4,
+                    marginBottom: "0.75rem",
                     padding: "10px 12px",
                     borderRadius: 8,
                     background: wouldSnipe ? "hsl(139deg 47% 43% / 15%)" : "hsl(359deg 82% 58% / 12%)",
