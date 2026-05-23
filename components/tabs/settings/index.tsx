@@ -159,7 +159,7 @@ export function SettingsTab() {
             entries: [
                 { id: "monitoredGuilds", label: "Monitored Servers", chipKind: "guild", description: "If empty, the plugin monitors every server you're in. Add servers here to restrict it to only those.", tooltip: "Adding even one server means all other servers are silently ignored. Only use this if you want to restrict the plugin to specific servers." },
                 { id: "monitoredChannels", label: "Monitored Channels", chipKind: "channel", description: "If empty, the plugin monitors every channel in every server you're in. Add channels here to restrict it to only those.", tooltip: "Adding even one channel means every other channel is silently ignored. Only use this if you want to restrict the plugin to specific channels." },
-                { id: "ignoredGuilds", label: "Ignored Guilds", chipKind: "guild", description: "Messages from these servers are always ignored, regardless of trigger settings." },
+                { id: "ignoredGuilds", label: "Ignored Servers", chipKind: "guild", description: "Messages from these servers are always ignored, regardless of trigger settings." },
                 { id: "ignoredChannels", label: "Ignored Channels", chipKind: "channel", description: "Messages in these channels are always ignored, regardless of trigger settings." },
                 { id: "ignoredUsers", label: "Ignored Users", chipKind: "user", description: "Messages from these users are always ignored, regardless of trigger settings." },
             ],
@@ -229,7 +229,7 @@ export function SettingsTab() {
             entries: [
                 { id: "globalWebhookUrl", label: "Global Webhook URL", description: "Fallback webhook URL used when a trigger has forwarding enabled but no specific webhook configured." },
                 { id: "censorWebhooks", label: "Censor Webhooks", description: "Redact sender and channel info from forwarded webhook messages." },
-                { id: "forwardIgnoredGuilds", label: "Forward Ignored Guilds", chipKind: "guild", description: "Messages from these servers are never forwarded." },
+                { id: "forwardIgnoredGuilds", label: "No-Forward Servers", chipKind: "guild", description: "Messages from these servers are never forwarded." },
             ],
         },
         {
