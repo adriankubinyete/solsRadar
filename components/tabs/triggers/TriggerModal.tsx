@@ -839,8 +839,8 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
             />
             <IdChipInput
                 kind="guild"
-                label="Ignored Guilds"
-                hint={`Never match in these guilds. Useful for servers with no-sniper policies.${qtyIgnoredGuildsGlobal ? ` (${qtyIgnoredGuildsGlobal} globally ignored)` : ""}`}
+                label="Ignored Servers"
+                hint={`Never match in these servers. Useful for servers with no-sniper policies.${qtyIgnoredGuildsGlobal ? ` (${qtyIgnoredGuildsGlobal} globally ignored)` : ""}`}
                 ids={ignoredGuilds}
                 onChange={ids => patchConditions({ ignoredGuilds: ids })}
             />
@@ -864,14 +864,14 @@ function AdvancedTab({ draft, patch }: { draft: Omit<Trigger, "id">; patch: (p: 
                 onChange={v => patchConditions({ bypassIgnoredChannels: v })}
             />
             <SwitchField
-                label="Bypass ignored guilds"
-                hint="Allows matching even in globally ignored guilds."
+                label="Bypass ignored servers"
+                hint="Allows matching even in globally ignored servers."
                 value={bypassIgnoredGuilds}
                 onChange={v => patchConditions({ bypassIgnoredGuilds: v })}
             />
             <SwitchField
-                label="Bypass forward ignored guilds"
-                hint="Allows forwarding even from globally forward-ignored guilds."
+                label="Bypass forward ignored servers"
+                hint="Allows forwarding even from globally forward-ignored servers."
                 value={bypassForwardIgnoredGuilds}
                 onChange={v => patchConditions({ bypassForwardIgnoredGuilds: v })}
             />
@@ -1012,7 +1012,7 @@ function ForwardingTab({ forwarding, onChange, showBiome }: {
             </p>
             <IdChipInput
                 kind="guild"
-                label="Excluded Guilds"
+                label="Excluded Servers"
                 hint={`Add any server you don't want to forward matches from.${qtyIgnoredGuilds > 0 ? ` (${qtyIgnoredGuilds} globally ignored)` : ""}`}
                 ids={forwarding.excludedGuilds ?? []}
                 onChange={ids => patch({ excludedGuilds: ids })}

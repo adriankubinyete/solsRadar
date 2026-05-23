@@ -88,7 +88,7 @@ export function IdChipInput({ kind, label, hint, ids, onChange }: {
             message: kind === "user"
                 ? "User not found in local cache. They need to be visible in your current session."
                 : kind === "guild"
-                    ? "Guild not found in local cache. You need to be in this server."
+                    ? "Server not found in local cache. You need to be in this server."
                     : "Channel not found in local cache. Open the channel first so Discord loads it.",
         });
     };
@@ -167,7 +167,7 @@ export function IdChipInput({ kind, label, hint, ids, onChange }: {
                         value={inputVal}
                         placeholder={
                             kind === "user" ? "User ID (e.g. 188851299255713792)"
-                                : kind === "guild" ? "Guild ID (e.g. 123456789012345678)"
+                                : kind === "guild" ? "Server ID (e.g. 123456789012345678)"
                                     : "Channel ID (e.g. 123456789012345678)"
                         }
                         onChange={handleChange}

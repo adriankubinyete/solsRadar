@@ -393,7 +393,7 @@ function TriggerCard({
                 {hasAnyBypass && (() => {
                     const bypasses: string[] = [];
                     if (bypassMonitoredOnly) bypasses.push("Monitor-only bypass");
-                    if (bypassIgnoredGuilds) bypasses.push("Guild bypass");
+                    if (bypassIgnoredGuilds) bypasses.push("Server bypass");
                     if (bypassIgnoredChannels) bypasses.push("Channel bypass");
                     if (bypassMatchAmbiguity) bypasses.push("Match ambiguity bypass");
                     if (bypassLinkVerification) bypasses.push("Link verification bypass");
