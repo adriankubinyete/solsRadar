@@ -200,9 +200,15 @@ export const settings = definePluginSettings({
     },
 
     // monitoring
+    monitoredGuilds: {
+        type: OptionType.STRING,
+        description: "Comma-separated list of guild IDs that the plugin should monitor. If empty, all guilds will be monitored. Example: `123456789012345678, 987654321098765432`",
+        default: "",
+        hidden: true,
+    },
     monitoredChannels: {
         type: OptionType.STRING,
-        description: "Comma-separated list of channel IDs that the plugin should monitor. If empty, no channel will be monitored. Example: `123456789012345678, 987654321098765432`",
+        description: "Comma-separated list of channel IDs that the plugin should monitor. If empty, all channel will be monitored. Example: `123456789012345678, 987654321098765432`",
         default: "",
         hidden: true,
     },

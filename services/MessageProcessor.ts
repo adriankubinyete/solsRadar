@@ -167,10 +167,24 @@ export function isMessageAllowed(
         return false;
     }
 
+    // if (!trigger.conditions.bypassMonitoredOnly) {
+    //     const monitored = parseCsv(settings.store.monitoredChannels);
+    //     if (monitored.size > 0 && !monitored.has(channel.id)) {
+    //         logger.debug(`[${trigger.name}] Channel #${channel.name} is not monitored — skipping.`);
+    //         return false;
+    //     }
+    // }
+
     if (!trigger.conditions.bypassMonitoredOnly) {
-        const monitored = parseCsv(settings.store.monitoredChannels);
-        if (monitored.size > 0 && !monitored.has(channel.id)) {
-            logger.debug(`[${trigger.name}] Channel #${channel.name} is not monitored — skipping.`);
+        const monitoredChannels = parseCsv(settings.store.monitoredChannels);
+        const monitoredGuilds = parseCsv(settings.store.monitoredGuilds);
+
+        const hasMonitors = monitoredChannels.size > 0 || monitoredGuilds.size > 0;
+        const channelAllowed = monitoredChannels.has(channel.id);
+        const guildAllowed = monitoredGuilds.has(channel.guild_id);
+
+        if (hasMonitors && !channelAllowed && !guildAllowed) {
+            logger.debug(`[${trigger.name}] Channel #${channel.name} / Guild ${channel.guild_id} not monitored — skipping.`);
             return false;
         }
     }

@@ -157,7 +157,8 @@ export function SettingsTab() {
         {
             title: "Monitoring",
             entries: [
-                { id: "monitoredChannels", label: "Monitored Channels", chipKind: "channel", description: "If empty, the plugin monitors every channel in every server you're in. Add channels here to restrict it to only those.", tooltip: "This is a global allowlist. Adding even one channel means all other channels — across every server — are silently ignored. Only use this if you want to restrict the plugin to specific channels." },
+                { id: "monitoredGuilds", label: "Monitored Servers", chipKind: "guild", description: "If empty, the plugin monitors every server you're in. Add servers here to restrict it to only those.", tooltip: "Adding even one server means all other servers are silently ignored. Only use this if you want to restrict the plugin to specific servers." },
+                { id: "monitoredChannels", label: "Monitored Channels", chipKind: "channel", description: "If empty, the plugin monitors every channel in every server you're in. Add channels here to restrict it to only those.", tooltip: "Adding even one channel means every other channel is silently ignored. Only use this if you want to restrict the plugin to specific channels." },
                 { id: "ignoredGuilds", label: "Ignored Guilds", chipKind: "guild", description: "Messages from these servers are always ignored, regardless of trigger settings." },
                 { id: "ignoredChannels", label: "Ignored Channels", chipKind: "channel", description: "Messages in these channels are always ignored, regardless of trigger settings." },
                 { id: "ignoredUsers", label: "Ignored Users", chipKind: "user", description: "Messages from these users are always ignored, regardless of trigger settings." },

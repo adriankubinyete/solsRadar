@@ -5,12 +5,12 @@
  */
 
 import { Button } from "@components/Button";
-import { IPluginOptionComponentProps } from "@utils/types";
+import { PluginSettingComponentProps } from "@utils/types";
 import { React } from "@webpack/common";
 
 import { openSolsRadarModal } from "../../SolsRadarModal";
 
-export function OpenPluginButton(_props: IPluginOptionComponentProps) {
+export function OpenPluginButton(_props: PluginSettingComponentProps) {
     return (
         <Button onClick={() => openSolsRadarModal()}>
             Open SolRadar Settings
