@@ -58,16 +58,21 @@ export function JoinLockBanner({
                 width: "100%",
                 boxSizing: "border-box",
                 border: "1px solid color-mix(in srgb, var(--yellow-300) 40%, transparent)",
-                background: "color-mix(in srgb, var(--yellow-300) 8%, var(--background-secondary))",
+                background: "color-mix(in srgb, var(--yellow-300) 15%, transparent)",
                 flexShrink: 0,
                 cursor: isMinimal ? "pointer" : "default",
-                transition: isMinimal ? "filter 0.1s" : undefined,
+                transition: isMinimal ? "filter 0.12s, box-shadow 0.12s" : undefined,
                 userSelect: "none",
                 ...style,
             }}
-            // Subtle hover feedback only on minimal (entire row is clickable)
-            onMouseEnter={isMinimal ? e => (e.currentTarget.style.filter = "brightness(1.08)") : undefined}
-            onMouseLeave={isMinimal ? e => (e.currentTarget.style.filter = "") : undefined}
+            onMouseEnter={isMinimal ? e => {
+                e.currentTarget.style.filter = "brightness(1.14)";
+                e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.22)";
+            } : undefined}
+            onMouseLeave={isMinimal ? e => {
+                e.currentTarget.style.filter = "";
+                e.currentTarget.style.boxShadow = "";
+            } : undefined}
         >
             <span style={{ fontSize: isMinimal ? 13 : 16, flexShrink: 0 }}>🔒</span>
 

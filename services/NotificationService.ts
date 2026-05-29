@@ -50,24 +50,24 @@ export function notify(snipe: Snipe): void {
             icon: snipe.trigger.iconUrl,
             onClick,
         });
-        snipe.logWarn("Notification sent — unsafe link.");
+        snipe.logWarn("Notification sent - unsafe link.");
         return;
     }
 
     if (tags.has("failed")) {
         showNotification({
-            title: `❌ SoRa :: Failed — ${snipe.trigger.name}`,
+            title: `❌ SoRa :: Failed - ${snipe.trigger.name}`,
             body: `In: "${snipe.channel.name}" ("${snipe.guild.name}")`,
             icon: snipe.trigger.iconUrl,
         });
-        snipe.logWarn("Notification sent — join failed.");
+        snipe.logWarn("Notification sent - join failed.");
         return;
     }
 
     showNotification({
         title: entry.joinUri
-            ? `🎯 SoRa :: Sniped — ${snipe.trigger.name}!`
-            : `✅ SoRa :: Matched — ${snipe.trigger.name}!`,
+            ? `🎯 SoRa :: Sniped ${snipe.trigger.name}!`
+            : `✅ SoRa :: Matched ${snipe.trigger.name}!`,
         body: `In: "${snipe.channel.name}" ("${snipe.guild.name}")`,
         icon: snipe.trigger.iconUrl,
         onClick,

@@ -9,6 +9,7 @@ import { showNotification } from "@api/Notifications";
 import { Snipe } from "../models/Snipe";
 import { settings } from "../settings";
 import { JoinLockStore } from "../stores/JoinLockStore";
+import { SnipeStore } from "../stores/SnipeStore";
 import { TriggerType } from "../stores/TriggerStore";
 import { formatElapsedTime } from "../utils";
 import { scheduleCancelableAction } from "./ActionExecutor";
@@ -26,35 +27,35 @@ export function cancelBiomeDetection(): void {
 
 function _watchForBiomeEnd(snipe: Snipe): void {
     const biomeStartedAt = performance.now();
-    const activeBiome = (snipe.trigger.biome?.detectionKeyword || snipe.trigger.name).toLowerCase();
+    const activeBiome = (snipe.trigger.biome?.detectionKeyword || snipe.trigger.name).toUpperCase();
     snipe.logInfo(`Watching for biome "${activeBiome}" to end.`);
 
     const finish = (reason: string, to?: string) => {
         const duration = Math.round(performance.now() - biomeStartedAt);
         const formattedDuration = formatElapsedTime(duration);
         snipe.setBiomeDuration(duration);
-        snipe.logInfo(`Biome ended (${reason}) - duration: ${formattedDuration}${to ? ` (now "${to}")` : ""}.`);
+        snipe.logInfo(`Biome ended (${reason}) - duration: ${formattedDuration}${to ? ` (now "${to?.toUpperCase()}")` : ""}.`);
         JoinLockStore.release();
         unsubChange();
         unsubClear();
-        scheduleCancelableAction(
-            settings.store.onBiomeEnd,
-            settings.store.biomeEndActionTimeout ?? 10_000,
-            `Biome ended — ${snipe.trigger.name}`,
-            snipe.trigger.iconUrl,
-        );
+        scheduleCancelableAction({
+            action: settings.store.onBiomeEnd,
+            timeoutMs: settings.store.biomeEndActionTimeout ?? 10_000,
+            title: `${snipe.trigger.name} biome ended`,
+            iconUrl: snipe.trigger.iconUrl,
+        });
     };
 
     const unsubChange = BiomeDetector.on("biomeChanged", ({ from, to }) => {
-        if (from?.toLowerCase() !== activeBiome) {
-            snipe.logDebug(`Biome changed "${from}" → "${to}" — not "${activeBiome}", skipping.`);
+        if (from?.toUpperCase() !== activeBiome) {
+            snipe.logDebug(`Biome changed "${from?.toUpperCase()}" → "${to?.toUpperCase()}" - not "${activeBiome}", skipping.`);
             return;
         }
         finish("biome changed", to);
     });
 
     const unsubClear = BiomeDetector.on("biomeCleared", ({ from }) => {
-        if (from.toLowerCase() !== activeBiome) return;
+        if (from.toUpperCase() !== activeBiome) return;
         finish("disconnected");
     });
 }
@@ -76,11 +77,11 @@ export function startBiomeDetection(snipe: Snipe): void {
         return;
     }
 
-    const expected = (snipe.trigger.biome.detectionKeyword || snipe.trigger.name).toLowerCase();
+    const expected = (snipe.trigger.biome.detectionKeyword || snipe.trigger.name).toUpperCase();
     const startDelayMs = settings.store.joinMode === "safe" ? 6_000 : 0;
     const t0 = performance.now();
 
-    snipe.logInfo(`Awaiting biome — expecting "${expected}"${startDelayMs > 0 ? ` (delay: ${startDelayMs}ms)` : ""}.`);
+    snipe.logInfo(`Awaiting biome - expecting "${expected}"${startDelayMs > 0 ? ` (delay: ${startDelayMs}ms)` : ""}.`);
 
     let detecting = true;
 
@@ -89,17 +90,21 @@ export function startBiomeDetection(snipe: Snipe): void {
         if (startDelayMs > 0 && performance.now() - t0 < startDelayMs) return;
 
         const elapsed = Math.round(performance.now() - t0);
-        const detected = to.toLowerCase();
+        const detected = to.toUpperCase();
         detecting = false;
         _unsubscribeBiomeDetection = null;
 
         if (detected === expected) {
             snipe.markAsBiomeReal();
-            snipe.logInfo(`Biome confirmed — "${to}" matched in ${elapsed}ms.`);
+            snipe.logInfo(`Biome confirmed - "${detected}" matched in ${elapsed}ms.`);
             _watchForBiomeEnd(snipe);
+            const joinMs = SnipeStore.getById(snipe.id)?.metrics?.timeToJoinMs;
             showNotification({
-                title: `✅ SoRa :: Real — ${snipe.trigger.name}`,
-                body: `Detected in ${elapsed}ms`,
+                title: `✅ SoRa :: ${snipe.trigger.name} — biome confirmed`,
+                body: [
+                    joinMs != null && `Join took ${formatElapsedTime(joinMs)}`,
+                    `Detection took ${formatElapsedTime(elapsed)}`,
+                ].filter(Boolean).join(" · "),
                 icon: snipe.trigger.iconUrl,
             });
             if (snipe.trigger.forwarding.onDetection.enabled) {
@@ -110,25 +115,29 @@ export function startBiomeDetection(snipe: Snipe): void {
             }
         } else {
             snipe.markAsBiomeBait();
-            snipe.logWarn(`Biome bait — got "${to}" instead of "${expected}" (${elapsed}ms).`);
+            snipe.logWarn(`Biome bait - got "${detected}" instead of "${expected}" (${elapsed}ms).`);
             unsubChange();
             if (JoinLockStore.isLocked) {
-                snipe.logWarn("Releasing join lock — bait detected.");
+                snipe.logWarn("Releasing join lock due to fake biome");
                 JoinLockStore.release();
             }
-            showNotification({
-                title: `❌ SoRa :: Fake — ${snipe.trigger.name}`,
-                body: `Got "${to}" instead (${elapsed}ms)`,
-                icon: snipe.trigger.iconUrl,
-            });
 
-            snipe.logWarn("Sending cancelable notification");
-            scheduleCancelableAction(
-                settings.store.onBiomeFalse,
-                settings.store.biomeFalseActionTimeout ?? 10_000,
-                `Fake biome — ${snipe.trigger.name}`,
-                snipe.trigger.iconUrl,
-            );
+            if (settings.store.onBiomeFalse !== "nothing") {
+                snipe.logWarn("Sending cancelable notification");
+                scheduleCancelableAction({
+                    action: settings.store.onBiomeFalse,
+                    timeoutMs: settings.store.biomeFalseActionTimeout ?? 10_000,
+                    title: `${snipe.trigger.name} — fake biome`,
+                    description: `Got "${detected}" instead of "${expected}"`,
+                    iconUrl: snipe.trigger.iconUrl,
+                });
+            } else {
+                showNotification({
+                    title: `❌ SoRa :: ${snipe.trigger.name} — fake biome`,
+                    body: `Got "${detected}" instead of "${expected}" (${elapsed}ms)`,
+                    icon: snipe.trigger.iconUrl,
+                });
+            }
         }
     });
 
@@ -141,15 +150,15 @@ export function startBiomeDetection(snipe: Snipe): void {
         snipe.logWarn(`Biome detection timed out after ${((settings.store.detectorTimeoutMs ?? 30_000) + startDelayMs) / 1000}s.`);
         if (JoinLockStore.isLocked) JoinLockStore.release();
         if (settings.store.onBiomeTimeout !== "nothing") {
-            scheduleCancelableAction(
-                settings.store.onBiomeTimeout,
-                settings.store.biomeTimeoutActionTimeout ?? 10_000,
-                `Biome timeout — ${snipe.trigger.name}`,
-                snipe.trigger.iconUrl,
-            );
+            scheduleCancelableAction({
+                action: settings.store.onBiomeTimeout,
+                timeoutMs: settings.store.biomeTimeoutActionTimeout ?? 10_000,
+                title: `${snipe.trigger.name} - detection timed out`,
+                iconUrl: snipe.trigger.iconUrl,
+            });
         } else {
             showNotification({
-                title: `⌛ SoRa :: Timeout — ${snipe.trigger.name}`,
+                title: `⌛ SoRa :: Timeout - ${snipe.trigger.name}`,
                 body: "Biome detection timed out.",
                 icon: snipe.trigger.iconUrl,
             });

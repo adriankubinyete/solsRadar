@@ -4,4 +4,4 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-export const PLUGIN_VERSION = "1.1.2-beta.4";
+export const PLUGIN_VERSION = "1.2.0";

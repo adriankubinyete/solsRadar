@@ -17,8 +17,8 @@ export type UserAction = "nothing" | "public" | "close" | "private" | "home" | "
 // ─── Pending Action Store ─────────────────────────────────────────────────────
 
 export interface PendingActionState {
-    context: string;
-    label: string;
+    title: string;
+    description?: string;
     endsAt: number;
 }
 
@@ -94,28 +94,28 @@ export async function executeAction(action: UserAction | string): Promise<void> 
     }
 }
 
-export function scheduleCancelableAction(
-    action: UserAction | string,
-    timeoutMs: number,
-    context: string,
-    iconUrl?: string,
-): void {
+export function scheduleCancelableAction({ action, timeoutMs, title, iconUrl, description }: {
+    action: UserAction | string;
+    timeoutMs: number;
+    title: string;
+    iconUrl?: string;
+    description?: string;
+}): void {
     if (action === "nothing") return;
 
     const label = ACTION_LABELS[action] ?? action;
 
     if (settings.store.skipActionConfirmation) {
-        logger.info(`Executing immediately (confirmation skipped): ${label} — ${context}`);
+        logger.info(`Executing immediately (confirmation skipped): ${label} — ${title}`);
         executeAction(action);
         return;
     }
 
-    // Cancel any pre-existing pending action before scheduling a new one
     PendingActionStore.cancel();
 
     let cancelled = false;
     const seconds = Math.round(timeoutMs / 1000);
-    logger.info(`Scheduled: ${label} in ${seconds}s — ${context}`);
+    logger.info(`Scheduled: ${label} in ${seconds}s — ${title}`);
 
     const timer = setTimeout(() => {
         _cancelFn = null;
@@ -124,11 +124,13 @@ export function scheduleCancelableAction(
     }, timeoutMs);
 
     _cancelFn = () => { cancelled = true; clearTimeout(timer); };
-    _setPending({ context, label, endsAt: Date.now() + timeoutMs });
+    _setPending({ title, description, endsAt: Date.now() + timeoutMs });
 
     showNotification({
-        title: "⏳ SoRa :: Scheduled action",
-        body: `${context}\nIn ${seconds}s: ${label}. Click to cancel.`,
+        title: `⏳ SoRa :: ${title}`,
+        body: description
+            ? `${description}\nIn ${seconds}s: ${label}. Tap to cancel.`
+            : `In ${seconds}s: ${label}. Tap to cancel.`,
         icon: iconUrl,
         onClick: () => PendingActionStore.cancel(),
     });
