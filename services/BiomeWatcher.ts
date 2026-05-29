@@ -140,11 +140,20 @@ export function startBiomeDetection(snipe: Snipe): void {
         snipe.markAsBiomeTimeout();
         snipe.logWarn(`Biome detection timed out after ${((settings.store.detectorTimeoutMs ?? 30_000) + startDelayMs) / 1000}s.`);
         if (JoinLockStore.isLocked) JoinLockStore.release();
-        showNotification({
-            title: `⌛ SoRa :: Timeout — ${snipe.trigger.name}`,
-            body: "Biome detection timed out.",
-            icon: snipe.trigger.iconUrl,
-        });
+        if (settings.store.onBiomeTimeout !== "nothing") {
+            scheduleCancelableAction(
+                settings.store.onBiomeTimeout,
+                settings.store.biomeTimeoutActionTimeout ?? 10_000,
+                `Biome timeout — ${snipe.trigger.name}`,
+                snipe.trigger.iconUrl,
+            );
+        } else {
+            showNotification({
+                title: `⌛ SoRa :: Timeout — ${snipe.trigger.name}`,
+                body: "Biome detection timed out.",
+                icon: snipe.trigger.iconUrl,
+            });
+        }
     }, (settings.store.detectorTimeoutMs ?? 30_000) + startDelayMs);
 
     _unsubscribeBiomeDetection = () => {

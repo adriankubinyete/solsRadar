@@ -7,6 +7,7 @@
 import { ChatBarButton, ChatBarButtonFactory } from "@api/ChatButtons";
 import { React, showToast, Toasts } from "@webpack/common";
 
+import { PendingActionStore } from "../../../services/ActionExecutor";
 import { settings } from "../../../settings";
 import { SolsRadarIcon } from "../../icons/SolsRadarIcon";
 import { openSolsRadarModal } from "../../SolsRadarModal";
@@ -66,6 +67,9 @@ export const SolsRadarChatBarButton: ChatBarButtonFactory = ({ isMainChat }) => 
                 // sem ação → toast neutro
                 break;
         }
+
+        const cancelled = PendingActionStore.cancel();
+        if (cancelled) message += message === "No action taken." ? "Pending action cancelled!" : " + pending action cancelled!";
 
         if (message !== "No action taken.") {
             showToast(message, toastType);

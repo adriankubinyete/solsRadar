@@ -116,6 +116,7 @@ export function SettingsTab() {
         linkVerification,
         onBiomeFalse,
         onBiomeEnd,
+        onBiomeTimeout,
         sendAdbSignal,
     } = settings.use([
         "detectorEnabled",
@@ -123,6 +124,7 @@ export function SettingsTab() {
         "linkVerification",
         "onBiomeFalse",
         "onBiomeEnd",
+        "onBiomeTimeout",
         "sendAdbSignal",
     ]);
 
@@ -181,7 +183,11 @@ export function SettingsTab() {
                 ...(onBiomeEnd !== "nothing" ? [
                     { id: "biomeEndActionTimeout" as const, label: "Biome End Action Delay (ms)", description: "Time to wait before executing. A cancellation prompt is shown during this window." },
                 ] : []),
-                ...((onBiomeFalse !== "nothing" || onBiomeEnd !== "nothing") ? [
+                { id: "onBiomeTimeout" as const, label: "Action on Biome Timeout", description: "What to do when biome detection times out without detecting any biome." },
+                ...(onBiomeTimeout !== "nothing" ? [
+                    { id: "biomeTimeoutActionTimeout" as const, label: "Biome Timeout Action Delay (ms)", description: "Time to wait before executing. A cancellation prompt is shown during this window." },
+                ] : []),
+                ...((onBiomeFalse !== "nothing" || onBiomeEnd !== "nothing" || onBiomeTimeout !== "nothing") ? [
                     { id: "skipActionConfirmation" as const, label: "Skip Action Confirmation", description: "Execute actions immediately, without showing the cancellation prompt." },
                 ] : []),
             ] as SettingEntry[],

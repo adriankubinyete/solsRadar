@@ -7,6 +7,7 @@
 import { findComponentByCodeLazy } from "@webpack";
 import { React, showToast, Toasts, useState } from "@webpack/common";
 
+import { PendingActionStore } from "../../../services/ActionExecutor";
 import { settings } from "../../../settings";
 import { SolsRadarIcon } from "../../icons/SolsRadarIcon";
 import { openSolsRadarModal } from "../../SolsRadarModal";
@@ -73,6 +74,9 @@ export function SolsRadarTitleBarButton({ className = "" }: SolsRadarTitleBarBut
             default:
                 break;
         }
+
+        const cancelled = PendingActionStore.cancel();
+        if (cancelled) message += message === "No action taken." ? "Pending action cancelled!" : " + pending action cancelled!";
 
         if (message !== "No action taken.") {
             showToast(message, toastType);

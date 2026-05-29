@@ -14,6 +14,7 @@ import { SnipeTag } from "../../../types";
 import { UIState } from "../../../stores/UIStateStore";
 import { formatElapsedTime } from "../../../utils";
 import { JoinLockBanner } from "../../JoinLockBanner";
+import { PendingActionBanner } from "../../PendingActionBanner";
 import { DeleteButton } from "../../ui/buttons/DeleteButton";
 import { QuickFilterBtn } from "../../ui/buttons/QuickFilterBtn";
 import { PillVariant } from "../../ui/Pill";
@@ -294,6 +295,7 @@ export function RecentJoinsTab() {
                     ))}
                 </div>
                 <JoinLockBanner variant="minimal" />
+                <PendingActionBanner variant="minimal" />
             </div>
 
             {/* List */}

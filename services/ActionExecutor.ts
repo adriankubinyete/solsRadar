@@ -14,6 +14,42 @@ const logger = new Logger("SolRadar:Action");
 
 export type UserAction = "nothing" | "public" | "close" | "private" | "home" | "prep-adb";
 
+// ─── Pending Action Store ─────────────────────────────────────────────────────
+
+export interface PendingActionState {
+    context: string;
+    label: string;
+    endsAt: number;
+}
+
+let _pending: PendingActionState | null = null;
+let _cancelFn: (() => void) | null = null;
+const _listeners = new Set<(s: PendingActionState | null) => void>();
+
+function _setPending(s: PendingActionState | null): void {
+    _pending = s;
+    for (const fn of _listeners) { try { fn(s); } catch { /* */ } }
+}
+
+export const PendingActionStore = {
+    get current(): PendingActionState | null { return _pending; },
+    msRemaining(): number {
+        return _pending ? Math.max(0, _pending.endsAt - Date.now()) : 0;
+    },
+    subscribe(fn: (s: PendingActionState | null) => void): () => void {
+        _listeners.add(fn);
+        return () => _listeners.delete(fn);
+    },
+    cancel(): boolean {
+        if (!_pending) return false;
+        _cancelFn?.();
+        _cancelFn = null;
+        _setPending(null);
+        logger.info("Pending action cancelled.");
+        return true;
+    },
+};
+
 const ACTION_LABELS: Record<string, string> = {
     nothing: "nothing",
     public: "join a public server",
@@ -74,18 +110,26 @@ export function scheduleCancelableAction(
         return;
     }
 
+    // Cancel any pre-existing pending action before scheduling a new one
+    PendingActionStore.cancel();
+
     let cancelled = false;
     const seconds = Math.round(timeoutMs / 1000);
     logger.info(`Scheduled: ${label} in ${seconds}s — ${context}`);
+
+    const timer = setTimeout(() => {
+        _cancelFn = null;
+        _setPending(null);
+        if (!cancelled) executeAction(action);
+    }, timeoutMs);
+
+    _cancelFn = () => { cancelled = true; clearTimeout(timer); };
+    _setPending({ context, label, endsAt: Date.now() + timeoutMs });
 
     showNotification({
         title: "⏳ SoRa :: Scheduled action",
         body: `${context}\nIn ${seconds}s: ${label}. Click to cancel.`,
         icon: iconUrl,
-        onClick: () => { cancelled = true; },
+        onClick: () => PendingActionStore.cancel(),
     });
-
-    setTimeout(() => {
-        if (!cancelled) executeAction(action);
-    }, timeoutMs);
 }
